@@ -9,12 +9,14 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { X } from "lucide-react";
+import { X, PlusCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import type { Player, PlayerCard as PlayerCardType } from "@/lib/types";
 import { calculateAverage, formatAverage } from "@/lib/utils";
 import { PositionIcon } from "./position-icon";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import type { FormValues } from "./add-rating-dialog";
 
 type PlayerCardProps = {
   player: Player;
@@ -25,6 +27,7 @@ type PlayerCardProps = {
     cardId: string,
     ratingIndex: number
   ) => void;
+  onAddQuickRating: (initialData: Partial<FormValues>) => void;
 };
 
 export function PlayerCard({
@@ -32,6 +35,7 @@ export function PlayerCard({
   card,
   onDeleteCard,
   onDeleteRating,
+  onAddQuickRating,
 }: PlayerCardProps) {
   const cardAverage = calculateAverage(card.ratings);
   const cardMatches = card.ratings.length;
@@ -102,7 +106,7 @@ export function PlayerCard({
         </div>
       </CardHeader>
       <CardContent className="p-4 pt-0">
-        <div className="flex flex-wrap gap-2 p-2 bg-black/20 rounded-md">
+        <div className="flex flex-wrap items-center gap-2 p-2 bg-black/20 rounded-md">
           {card.ratings.length > 0 ? (
             card.ratings.map((rating, index) => (
               <div key={index} className="group relative">
@@ -125,6 +129,28 @@ export function PlayerCard({
               Aún no hay valoraciones para esta carta.
             </p>
           )}
+           <TooltipProvider>
+              <Tooltip>
+                  <TooltipTrigger asChild>
+                      <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 rounded-full"
+                          onClick={() => onAddQuickRating({
+                              playerName: player.name,
+                              cardName: card.name,
+                              position: player.position,
+                              style: player.style
+                          })}
+                      >
+                          <PlusCircle className="h-4 w-4 text-primary/80 hover:text-primary transition-colors" />
+                      </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                      <p>Añadir valoración rápida</p>
+                  </TooltipContent>
+              </Tooltip>
+          </TooltipProvider>
         </div>
       </CardContent>
     </Card>

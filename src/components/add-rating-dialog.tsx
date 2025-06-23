@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Check, ChevronsUpDown, PlusCircle } from 'lucide-react';
+import { Check, ChevronsUpDown } from 'lucide-react';
 
 import { Button } from "@/components/ui/button";
 import {
@@ -14,7 +14,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -24,7 +23,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -47,7 +45,7 @@ import {
 } from "@/components/ui/popover"
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
-import type { Player, Position } from "@/lib/types";
+import type { Player, Position, PlayerStyle } from "@/lib/types";
 import { positions, playerStyles } from "@/lib/types";
 
 const formSchema = z.object({
@@ -61,13 +59,14 @@ const formSchema = z.object({
 export type FormValues = z.infer<typeof formSchema>;
 
 type AddRatingDialogProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onAddRating: (values: FormValues) => void;
   players: Player[];
-  currentPosition: Position;
+  initialData?: Partial<FormValues>;
 };
 
-export function AddRatingDialog({ onAddRating, players, currentPosition }: AddRatingDialogProps) {
-  const [open, setOpen] = useState(false);
+export function AddRatingDialog({ open, onOpenChange, onAddRating, players, initialData }: AddRatingDialogProps) {
   const [playerPopoverOpen, setPlayerPopoverOpen] = useState(false);
   const [cardPopoverOpen, setCardPopoverOpen] = useState(false);
   const [cardNames, setCardNames] = useState<string[]>([]);
@@ -77,28 +76,44 @@ export function AddRatingDialog({ onAddRating, players, currentPosition }: AddRa
     defaultValues: {
       playerName: "",
       cardName: "Carta Base",
-      position: currentPosition,
+      position: "DC",
       style: "Ninguno",
       rating: 5,
     },
   });
-
+  
   const playerNameValue = form.watch('playerName');
 
   useEffect(() => {
     if (open) {
-      form.reset({
-        playerName: "",
-        cardName: "Carta Base",
-        position: currentPosition,
-        style: "Ninguno",
+      const defaultValues = {
+        playerName: '',
+        cardName: 'Carta Base',
+        position: 'DC' as Position,
+        style: 'Ninguno' as PlayerStyle,
         rating: 5,
-      });
-      setCardNames([]);
+      };
+      const resetValues = { ...defaultValues, ...initialData };
+      form.reset(resetValues);
+
+      if (resetValues.playerName) {
+        const existingPlayer = players.find(p => p.name.toLowerCase() === resetValues.playerName!.toLowerCase());
+        if (existingPlayer) {
+            setCardNames(existingPlayer.cards.map(c => c.name));
+        }
+      } else {
+        setCardNames([]);
+      }
     }
-  }, [open, currentPosition, form]);
+  }, [open, initialData, form, players]);
+
 
   useEffect(() => {
+    // Don't run this logic if we are pre-filling the form from initialData
+    if (initialData?.playerName && form.getValues('playerName') === initialData.playerName) {
+      return;
+    }
+
     if (!playerNameValue) {
       setCardNames([]);
       form.setValue('style', 'Ninguno');
@@ -117,29 +132,26 @@ export function AddRatingDialog({ onAddRating, players, currentPosition }: AddRa
         form.setValue('style', 'Ninguno');
         form.setValue('cardName', 'Carta Base');
     }
-  }, [playerNameValue, players, form]);
+  }, [playerNameValue, players, form, initialData]);
 
   function onSubmit(values: FormValues) {
     onAddRating(values);
-    form.reset();
-    setOpen(false);
+    onOpenChange(false);
   }
   
   const playerNames = [...new Set(players.map(p => p.name))];
+  const isQuickAdd = !!initialData?.playerName;
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Añadir Valoración
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Añadir Nueva Valoración</DialogTitle>
           <DialogDescription>
-            Introduce los detalles del rendimiento de un jugador en el partido.
+            {isQuickAdd 
+              ? `Añadiendo nueva valoración para ${initialData.playerName} - ${initialData.cardName}`
+              : "Introduce los detalles del rendimiento de un jugador en el partido."
+            }
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -157,7 +169,8 @@ export function AddRatingDialog({ onAddRating, players, currentPosition }: AddRa
                           variant="outline"
                           role="combobox"
                           aria-expanded={playerPopoverOpen}
-                          className="w-full justify-between"
+                          className={cn("w-full justify-between", isQuickAdd && "text-muted-foreground")}
+                          disabled={isQuickAdd}
                         >
                           {field.value || "Selecciona o crea un jugador..."}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -179,14 +192,14 @@ export function AddRatingDialog({ onAddRating, players, currentPosition }: AddRa
                                 key={name}
                                 value={name}
                                 onSelect={(currentValue) => {
-                                  form.setValue("playerName", currentValue, { shouldValidate: true });
+                                  form.setValue("playerName", currentValue === field.value ? "" : currentValue, { shouldValidate: true });
                                   setPlayerPopoverOpen(false);
                                 }}
                               >
                                 <Check
                                   className={cn(
                                     "mr-2 h-4 w-4",
-                                    field.value === name ? "opacity-100" : "opacity-0"
+                                    field.value.toLowerCase() === name.toLowerCase() ? "opacity-100" : "opacity-0"
                                   )}
                                 />
                                 {name}
@@ -214,8 +227,8 @@ export function AddRatingDialog({ onAddRating, players, currentPosition }: AddRa
                           variant="outline"
                           role="combobox"
                           aria-expanded={cardPopoverOpen}
-                          className="w-full justify-between"
-                          disabled={!playerNameValue}
+                          className={cn("w-full justify-between", isQuickAdd && "text-muted-foreground")}
+                          disabled={!playerNameValue || isQuickAdd}
                         >
                           {field.value || "Selecciona o crea una carta..."}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -226,7 +239,7 @@ export function AddRatingDialog({ onAddRating, players, currentPosition }: AddRa
                       <Command>
                         <CommandInput 
                           placeholder="Busca o crea una carta..."
-                          onValueChange={(search) => form.setValue('cardName', search)}
+                          onValue-change={(search) => form.setValue('cardName', search)}
                           value={field.value}
                         />
                         <CommandEmpty>No se encontró la carta. Puedes crearla.</CommandEmpty>
@@ -237,14 +250,14 @@ export function AddRatingDialog({ onAddRating, players, currentPosition }: AddRa
                                 key={name}
                                 value={name}
                                 onSelect={(currentValue) => {
-                                  form.setValue("cardName", currentValue, { shouldValidate: true });
+                                  form.setValue("cardName", currentValue === field.value ? "" : currentValue, { shouldValidate: true });
                                   setCardPopoverOpen(false);
                                 }}
                               >
                                 <Check
                                   className={cn(
                                     "mr-2 h-4 w-4",
-                                    field.value === name ? "opacity-100" : "opacity-0"
+                                    field.value.toLowerCase() === name.toLowerCase() ? "opacity-100" : "opacity-0"
                                   )}
                                 />
                                 {name}
@@ -265,9 +278,9 @@ export function AddRatingDialog({ onAddRating, players, currentPosition }: AddRa
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Posición</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={isQuickAdd}>
                     <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className={cn(isQuickAdd && "text-muted-foreground")}>
                         <SelectValue placeholder="Selecciona una posición" />
                     </SelectTrigger>
                     </FormControl>
@@ -287,9 +300,9 @@ export function AddRatingDialog({ onAddRating, players, currentPosition }: AddRa
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Estilo de Juego</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={isQuickAdd}>
                     <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className={cn(isQuickAdd && "text-muted-foreground")}>
                         <SelectValue placeholder="Selecciona un estilo" />
                     </SelectTrigger>
                     </FormControl>

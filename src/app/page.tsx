@@ -10,14 +10,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AddRatingDialog, type FormValues } from '@/components/add-rating-dialog';
 import { PlayerCard } from '@/components/player-card';
 import { PositionIcon } from '@/components/position-icon';
-import type { Player, PlayersByPosition, Position, PlayerCard as PlayerCardType } from '@/lib/types';
+import type { Player, PlayersByPosition, Position, PlayerCard as PlayerCardType, PlayerStyle } from '@/lib/types';
 import { positions } from '@/lib/types';
+import { Button } from '@/components/ui/button';
+import { PlusCircle } from 'lucide-react';
 
 export default function Home() {
   const [players, setPlayers] = useState<Player[] | null>(null);
   const [playersByPosition, setPlayersByPosition] = useState<PlayersByPosition | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Position>('DC');
+  const [isAddRatingDialogOpen, setAddRatingDialogOpen] = useState(false);
+  const [dialogInitialData, setDialogInitialData] = useState<Partial<FormValues> | undefined>(undefined);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -87,6 +91,11 @@ export default function Home() {
       setPlayersByPosition(grouped);
     }
   }, [players]);
+  
+  const handleOpenAddRating = (initialData?: Partial<FormValues>) => {
+    setDialogInitialData(initialData);
+    setAddRatingDialogOpen(true);
+  };
 
   const handleAddRating = async (values: FormValues) => {
     if (players === null) return;
@@ -220,12 +229,23 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-transparent">
+       <AddRatingDialog
+        open={isAddRatingDialogOpen}
+        onOpenChange={setAddRatingDialogOpen}
+        onAddRating={handleAddRating}
+        players={allPlayers}
+        initialData={dialogInitialData}
+      />
+
       <header className="sticky top-0 z-10 bg-background/70 backdrop-blur-lg border-b border-white/10">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-3xl font-bold font-headline text-primary" style={{ textShadow: '0 0 8px hsl(var(--primary))' }}>
             eFootTracker
           </h1>
-          <AddRatingDialog onAddRating={handleAddRating} players={allPlayers} currentPosition={activeTab} />
+          <Button onClick={() => handleOpenAddRating({ position: activeTab })}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Añadir Valoración
+          </Button>
         </div>
       </header>
 
@@ -257,6 +277,7 @@ export default function Home() {
                         card={card}
                         onDeleteCard={handleDeleteCard}
                         onDeleteRating={handleDeleteRating}
+                        onAddQuickRating={handleOpenAddRating}
                       />
                     ))
                   ) : (
