@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { PlusCircle } from 'lucide-react';
-import type { Player } from "@/lib/types";
+import type { Player, Position } from "@/lib/types";
 import { positions, playerStyles } from "@/lib/types";
 
 const formSchema = z.object({
@@ -49,9 +49,10 @@ export type FormValues = z.infer<typeof formSchema>;
 type AddRatingDialogProps = {
   onAddRating: (values: FormValues) => void;
   players: Player[];
+  currentPosition: Position;
 };
 
-export function AddRatingDialog({ onAddRating, players }: AddRatingDialogProps) {
+export function AddRatingDialog({ onAddRating, players, currentPosition }: AddRatingDialogProps) {
   const [open, setOpen] = useState(false);
   const [cardNames, setCardNames] = useState<string[]>([]);
 
@@ -60,13 +61,25 @@ export function AddRatingDialog({ onAddRating, players }: AddRatingDialogProps) 
     defaultValues: {
       playerName: "",
       cardName: "Carta Base",
-      position: "DC",
+      position: currentPosition,
       style: "Ninguno",
       rating: 5,
     },
   });
 
   const playerNameValue = form.watch('playerName');
+
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        playerName: "",
+        cardName: "Carta Base",
+        position: currentPosition,
+        style: "Ninguno",
+        rating: 5,
+      });
+    }
+  }, [open, currentPosition, form]);
 
   useEffect(() => {
     if (!playerNameValue) {

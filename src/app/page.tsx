@@ -17,6 +17,7 @@ export default function Home() {
   const [players, setPlayers] = useState<Player[] | null>(null);
   const [playersByPosition, setPlayersByPosition] = useState<PlayersByPosition | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<Position>('DC');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -224,12 +225,12 @@ export default function Home() {
           <h1 className="text-3xl font-bold font-headline text-primary" style={{ textShadow: '0 0 8px hsl(var(--primary))' }}>
             eFootTracker
           </h1>
-          <AddRatingDialog onAddRating={handleAddRating} players={allPlayers} />
+          <AddRatingDialog onAddRating={handleAddRating} players={allPlayers} currentPosition={activeTab} />
         </div>
       </header>
 
       <main className="container mx-auto p-4 md:p-8">
-        <Tabs defaultValue="DC" className="w-full">
+        <Tabs defaultValue="DC" className="w-full" onValueChange={(value) => setActiveTab(value as Position)}>
           <TabsList className="grid w-full grid-cols-4 sm:grid-cols-5 md:grid-cols-7 h-auto gap-1 bg-white/5">
             {positions.map((pos) => (
               <TabsTrigger key={pos} value={pos} className="py-2">
