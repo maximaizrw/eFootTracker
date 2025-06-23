@@ -239,7 +239,7 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
                       <Command>
                         <CommandInput 
                           placeholder="Busca o crea una carta..."
-                          onValue-change={(search) => form.setValue('cardName', search)}
+                          onValueChange={(search) => form.setValue('cardName', search)}
                           value={field.value}
                         />
                         <CommandEmpty>No se encontró la carta. Puedes crearla.</CommandEmpty>
