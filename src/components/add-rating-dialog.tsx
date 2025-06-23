@@ -53,6 +53,7 @@ type AddRatingDialogProps = {
 
 export function AddRatingDialog({ onAddRating, players }: AddRatingDialogProps) {
   const [open, setOpen] = useState(false);
+  const [cardNames, setCardNames] = useState<string[]>([]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -68,12 +69,18 @@ export function AddRatingDialog({ onAddRating, players }: AddRatingDialogProps) 
   const playerNameValue = form.watch('playerName');
 
   useEffect(() => {
-    if (!playerNameValue) return;
+    if (!playerNameValue) {
+      setCardNames([]);
+      return;
+    }
 
     const existingPlayer = players.find(p => p.name.toLowerCase() === playerNameValue.toLowerCase());
     if (existingPlayer) {
         form.setValue('position', existingPlayer.position, { shouldValidate: true });
         form.setValue('style', existingPlayer.style, { shouldValidate: true });
+        setCardNames(existingPlayer.cards.map(c => c.name));
+    } else {
+        setCardNames([]);
     }
   }, [playerNameValue, players, form]);
 
@@ -127,7 +134,12 @@ export function AddRatingDialog({ onAddRating, players }: AddRatingDialogProps) 
                 <FormItem>
                   <FormLabel>Nombre de la Carta</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g. POTW" {...field} />
+                    <>
+                      <Input placeholder="e.g. POTW o nueva carta" {...field} list="card-names-list" autoComplete="off" />
+                      <datalist id="card-names-list">
+                        {cardNames.map(name => <option key={name} value={name} />)}
+                      </datalist>
+                    </>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -143,7 +155,7 @@ export function AddRatingDialog({ onAddRating, players }: AddRatingDialogProps) 
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecciona una posición" />
-                      </SelectTrigger>
+                      </Trigger>
                     </FormControl>
                     <SelectContent>
                       {positions.map((pos) => (
@@ -165,7 +177,7 @@ export function AddRatingDialog({ onAddRating, players }: AddRatingDialogProps) 
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecciona un estilo" />
-                      </SelectTrigger>
+                      </Trigger>
                     </FormControl>
                     <SelectContent>
                       {playerStyles.map((style) => (
@@ -197,7 +209,7 @@ export function AddRatingDialog({ onAddRating, players }: AddRatingDialogProps) 
               )}
             />
             <DialogFooter>
-              <Button type="submit" variant="accent">Guardar Valoración</Button>
+              <Button type="submit">Guardar Valoración</Button>
             </DialogFooter>
           </form>
         </Form>
