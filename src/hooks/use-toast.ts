@@ -135,8 +135,13 @@ let memoryState: State = { toasts: [] }
 
 function dispatch(action: Action) {
   memoryState = reducer(memoryState, action)
-  listeners.forEach((listener) => {
-    listener(memoryState)
+  // Defer listener notification to prevent updates during a render cycle.
+  // This helps avoid the "Cannot update a component while rendering a different component" error,
+  // especially in React 18's Strict Mode.
+  queueMicrotask(() => {
+    listeners.forEach((listener) => {
+      listener(memoryState)
+    })
   })
 }
 
