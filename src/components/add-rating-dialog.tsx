@@ -78,12 +78,15 @@ export function AddRatingDialog({ onAddRating, players, currentPosition }: AddRa
         style: "Ninguno",
         rating: 5,
       });
+      setCardNames([]);
     }
   }, [open, currentPosition, form]);
 
   useEffect(() => {
     if (!playerNameValue) {
       setCardNames([]);
+      form.setValue('style', 'Ninguno');
+      form.setValue('cardName', 'Carta Base');
       return;
     }
 
@@ -92,8 +95,11 @@ export function AddRatingDialog({ onAddRating, players, currentPosition }: AddRa
         form.setValue('position', existingPlayer.position, { shouldValidate: true });
         form.setValue('style', existingPlayer.style, { shouldValidate: true });
         setCardNames(existingPlayer.cards.map(c => c.name));
+        form.setValue('cardName', '');
     } else {
         setCardNames([]);
+        form.setValue('style', 'Ninguno');
+        form.setValue('cardName', 'Carta Base');
     }
   }, [playerNameValue, players, form]);
 
@@ -145,7 +151,7 @@ export function AddRatingDialog({ onAddRating, players, currentPosition }: AddRa
                 <FormItem>
                   <FormLabel>Nombre de la Carta</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. POTW o nueva carta" {...field} list="card-names-list" autoComplete="off" />
+                      <Input placeholder="Selecciona o crea una carta" {...field} list="card-names-list" autoComplete="off" />
                     </FormControl>
                     <datalist id="card-names-list">
                       {cardNames.map(name => <option key={name} value={name} />)}
