@@ -321,12 +321,12 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
               name="rating"
               render={({ field }) => (
                 <FormItem>
-                   <FormLabel>Valoración: {field.value}</FormLabel>
+                   <FormLabel>Valoración: {field.value.toFixed(1)}</FormLabel>
                    <FormControl>
                     <Slider
                       min={1}
                       max={10}
-                      step={1}
+                      step={0.5}
                       defaultValue={[field.value]}
                       onValueChange={(value) => field.onChange(value[0])}
                     />
