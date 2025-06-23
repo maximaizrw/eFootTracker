@@ -4,7 +4,7 @@ import type { Position } from '@/lib/types';
 
 export const PositionIcon = ({ position, ...props }: { position: Position } & LucideProps) => {
   switch (position) {
-    case 'ARQUERO':
+    case 'PT':
       return <HandMetal {...props} />;
     case 'DFC':
     case 'LI':

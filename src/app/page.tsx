@@ -12,7 +12,7 @@ import type { Player, PlayersByPosition, Position, PlayerStyle } from '@/lib/typ
 import { positions } from '@/lib/types';
 
 const initialPlayers: PlayersByPosition = {
-  ARQUERO: [],
+  PT: [],
   DFC: [
      { id: 'p4', name: 'V. van Dijk', position: 'DFC', style: 'Ninguno', cards: [
       { id: 'c5', name: 'Club Selection', ratings: [9, 8, 9] },
@@ -212,7 +212,7 @@ export default function Home() {
           {positions.map((pos) => (
             <TabsContent key={pos} value={pos} className="mt-6">
               <div className="grid grid-cols-1 gap-4">
-                {players[pos].length > 0 ? (
+                {players[pos] && players[pos].length > 0 ? (
                   players[pos].map((player) => (
                     <PlayerCard 
                       key={player.id} 
