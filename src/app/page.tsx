@@ -3,181 +3,189 @@
 import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from "@/hooks/use-toast";
+import { db } from '@/lib/firebase';
+import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AddRatingDialog, type FormValues } from '@/components/add-rating-dialog';
 import { PlayerCard } from '@/components/player-card';
 import { PositionIcon } from '@/components/position-icon';
-import type { Player, PlayersByPosition, Position, PlayerStyle } from '@/lib/types';
+import type { Player, PlayersByPosition, Position, PlayerCard as PlayerCardType } from '@/lib/types';
 import { positions } from '@/lib/types';
 
-const initialPlayers: PlayersByPosition = {
-  PT: [],
-  DFC: [
-     { id: 'p4', name: 'V. van Dijk', position: 'DFC', style: 'Ninguno', cards: [
-      { id: 'c5', name: 'Club Selection', ratings: [9, 8, 9] },
-    ]},
-  ],
-  LI: [],
-  LD: [],
-  MCD: [],
-  MC: [
-    { id: 'p3', name: 'K. De Bruyne', position: 'MC', style: 'Ninguno', cards: [
-      { id: 'c4', name: 'Base Card', ratings: [8, 8, 9] },
-    ]},
-  ],
-  MDI: [],
-  MDD: [],
-  MO: [],
-  EXI: [],
-  EXD: [],
-  SD: [],
-  DC: [
-    { id: 'p1', name: 'L. Messi', position: 'DC', style: 'Señuelo', cards: [
-      { id: 'c1', name: 'Base Card', ratings: [8, 9, 7] },
-      { id: 'c2', name: 'POTW 24/05', ratings: [10, 9] },
-    ]},
-    { id: 'p2', name: 'K. Mbappé', position: 'DC', style: 'Cazagoles', cards: [
-      { id: 'c3', name: 'France Pack', ratings: [9, 9, 10] },
-    ]},
-  ],
-};
-
 export default function Home() {
-  const [players, setPlayers] = useState<PlayersByPosition | null>(null);
+  const [players, setPlayers] = useState<Player[] | null>(null);
+  const [playersByPosition, setPlayersByPosition] = useState<PlayersByPosition | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    try {
-      const storedPlayers = localStorage.getItem('eFootTrackerPlayers');
-      const playersData = storedPlayers ? JSON.parse(storedPlayers) : initialPlayers;
+    const unsubscribe = onSnapshot(collection(db, "players"), (snapshot) => {
+      try {
+        const playersData = snapshot.docs.map(doc => {
+            const data = doc.data();
+            const style = data.style || 'Ninguno';
+            return {
+                id: doc.id,
+                ...data,
+                style: style
+            } as Player;
+        });
+        setPlayers(playersData);
+      } catch (error) {
+          console.error("Error processing snapshot: ", error);
+          toast({
+              variant: "destructive",
+              title: "Error de Datos",
+              description: "No se pudieron procesar los datos de los jugadores."
+          });
+      }
+    }, (error) => {
+        console.error("Error fetching from Firestore: ", error);
+        toast({
+            variant: "destructive",
+            title: "Error de Conexión",
+            description: "No se pudo conectar a la base de datos. Comprueba la configuración."
+        });
+        setPlayers([]);
+    });
 
-      const sanitizedPlayers = positions.reduce((acc, pos) => {
-        const playersInPos = playersData[pos] || [];
-        acc[pos] = playersInPos.map((p: any) => ({
-          ...p,
-          style: p.style || 'Ninguno'
-        }));
-        return acc;
-      }, {} as PlayersByPosition);
-
-      setPlayers(sanitizedPlayers);
-    } catch (error) {
-      console.error("Failed to load or parse players data, resetting to initial state.", error);
-      const sanitizedInitial = positions.reduce((acc, pos) => {
-        const initialPlayersInPos = (initialPlayers as Partial<PlayersByPosition>)[pos] || [];
-         acc[pos] = initialPlayersInPos.map((p: any) => ({
-            ...p,
-            style: p.style || 'Ninguno'
-        }));
-        return acc;
-      }, {} as PlayersByPosition);
-      setPlayers(sanitizedInitial);
-    }
-  }, []);
-
+    return () => unsubscribe();
+  }, [toast]);
+  
   useEffect(() => {
-    if (players) {
-      localStorage.setItem('eFootTrackerPlayers', JSON.stringify(players));
+    if (players !== null) {
+      const grouped = positions.reduce((acc, pos) => {
+        acc[pos] = [];
+        return acc;
+      }, {} as PlayersByPosition);
+      
+      players.forEach(player => {
+        if (grouped[player.position]) {
+          grouped[player.position].push(player);
+        }
+      });
+      setPlayersByPosition(grouped);
     }
   }, [players]);
 
-  const handleAddRating = (values: FormValues) => {
-    if (!players) return;
-
+  const handleAddRating = async (values: FormValues) => {
+    if (players === null) return;
     const { playerName, cardName, position, rating, style } = values;
     
-    setPlayers(prev => {
-      const newPlayers = JSON.parse(JSON.stringify(prev)) as PlayersByPosition;
+    try {
+      const existingPlayer = players.find(p => p.name.toLowerCase() === playerName.toLowerCase());
       
-      let player = Object.values(newPlayers).flat().find(p => p.name.toLowerCase() === playerName.toLowerCase());
-      
-      if (player) {
-        // Player exists
-        player.style = style;
+      if (existingPlayer) {
+        const playerRef = doc(db, 'players', existingPlayer.id);
+        const playerDoc = await getDoc(playerRef);
+        if (!playerDoc.exists()) throw new Error("Player not found in DB.");
         
-        if(player.position !== position) {
-          // move player if position changed
-          newPlayers[player.position] = newPlayers[player.position].filter(p => p.id !== player!.id);
-          player.position = position;
-          newPlayers[position].push(player);
-        }
+        const playerData = playerDoc.data() as Player;
+        const newCards: PlayerCardType[] = [...playerData.cards];
+        let card = newCards.find(c => c.name.toLowerCase() === cardName.toLowerCase());
 
-        let card = player.cards.find(c => c.name.toLowerCase() === cardName.toLowerCase());
         if (card) {
-          // Card exists, add rating
           card.ratings.push(rating);
         } else {
-          // Card doesn't exist, create new card
-          player.cards.push({ id: uuidv4(), name: cardName, ratings: [rating] });
+          newCards.push({ id: uuidv4(), name: cardName, ratings: [rating] });
         }
+        
+        await updateDoc(playerRef, {
+            position,
+            style,
+            cards: newCards
+        });
+
       } else {
-        // Player doesn't exist, create new player and card
-        const newPlayer: Player = {
-          id: uuidv4(),
+        const newPlayer = {
           name: playerName,
           position: position,
           style: style,
           cards: [{ id: uuidv4(), name: cardName, ratings: [rating] }],
         };
-        newPlayers[position].push(newPlayer);
+        await addDoc(collection(db, 'players'), newPlayer);
       }
       
       toast({ title: "Éxito", description: `La valoración para ${playerName} ha sido guardada.` });
-      return newPlayers;
-    });
+    } catch (error) {
+      console.error("Error adding rating: ", error);
+      toast({
+        variant: "destructive",
+        title: "Error al Guardar",
+        description: "No se pudo guardar la valoración.",
+      });
+    }
   };
 
-  const handleDeletePlayer = (playerId: string) => {
+  const handleDeletePlayer = async (playerId: string) => {
+    try {
+        await deleteDoc(doc(db, 'players', playerId));
+        toast({ title: "Jugador Eliminado", description: "El jugador ha sido eliminado." });
+    } catch (error) {
+        console.error("Error deleting player: ", error);
+        toast({
+            variant: "destructive",
+            title: "Error al Eliminar",
+            description: "No se pudo eliminar al jugador."
+        });
+    }
+  };
+
+  const handleDeleteCard = async (playerId: string, cardId: string) => {
+     if (!players) return;
+     const player = players.find(p => p.id === playerId);
+     if (!player) return;
+
+     const newCards = player.cards.filter(c => c.id !== cardId);
+
+     try {
+        await updateDoc(doc(db, 'players', playerId), { cards: newCards });
+        toast({ title: "Carta Eliminada", description: "La carta ha sido eliminada." });
+     } catch (error) {
+        console.error("Error deleting card: ", error);
+        toast({
+            variant: "destructive",
+            title: "Error al Eliminar",
+            description: "No se pudo eliminar la carta."
+        });
+     }
+  };
+
+  const handleDeleteRating = async (playerId: string, cardId: string, ratingIndex: number) => {
     if (!players) return;
-    setPlayers(prev => {
-      const newPlayers = JSON.parse(JSON.stringify(prev)) as PlayersByPosition;
-      for (const pos of positions) {
-        newPlayers[pos] = newPlayers[pos].filter(p => p.id !== playerId);
-      }
-      toast({ title: "Jugador Eliminado", description: "El jugador ha sido eliminado correctamente." });
-      return newPlayers;
-    });
-  };
+    const player = players.find(p => p.id === playerId);
+    if (!player) return;
 
-  const handleDeleteCard = (playerId: string, cardId: string) => {
-     if (!players) return;
-     setPlayers(prev => {
-        const newPlayers = JSON.parse(JSON.stringify(prev)) as PlayersByPosition;
-        const player = Object.values(newPlayers).flat().find(p => p.id === playerId);
-        if(player){
-            player.cards = player.cards.filter(c => c.id !== cardId);
-        }
-        toast({ title: "Carta Eliminada", description: "La carta del jugador ha sido eliminada correctamente." });
-        return newPlayers;
-    });
-  };
-
-  const handleDeleteRating = (playerId: string, cardId: string, ratingIndex: number) => {
-     if (!players) return;
-     setPlayers(prev => {
-        const newPlayers = JSON.parse(JSON.stringify(prev)) as PlayersByPosition;
-        const player = Object.values(newPlayers).flat().find(p => p.id === playerId);
-        if(player){
-            const card = player.cards.find(c => c.id === cardId);
-            if(card) {
-                card.ratings.splice(ratingIndex, 1);
-            }
-        }
-        toast({ title: "Valoración Eliminada", description: "La valoración ha sido eliminada correctamente." });
-        return newPlayers;
-    });
+    const newCards = JSON.parse(JSON.stringify(player.cards)) as PlayerCardType[];
+    const card = newCards.find(c => c.id === cardId);
+    if(card) {
+        card.ratings.splice(ratingIndex, 1);
+    } else {
+        return;
+    }
+    
+    try {
+        await updateDoc(doc(db, 'players', playerId), { cards: newCards });
+        toast({ title: "Valoración Eliminada", description: "La valoración ha sido eliminada." });
+    } catch (error) {
+        console.error("Error deleting rating: ", error);
+        toast({
+            variant: "destructive",
+            title: "Error al Eliminar",
+            description: "No se pudo eliminar la valoración."
+        });
+    }
   };
   
-  if (!players) {
+  if (!playersByPosition) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-xl font-semibold">Cargando Tracker...</div>
+        <div className="text-xl font-semibold">Conectando a la base de datos...</div>
       </div>
     );
   }
   
-  const allPlayers = Object.values(players).flat();
+  const allPlayers = players || [];
 
   return (
     <div className="min-h-screen bg-background">
@@ -202,7 +210,7 @@ export default function Home() {
           </TabsList>
 
           {positions.map((pos) => {
-            const playersForPosition = players[pos] || [];
+            const playersForPosition = playersByPosition[pos] || [];
             const flatPlayerList = playersForPosition.flatMap(player => 
               player.cards.map(card => ({ player, card }))
             );
