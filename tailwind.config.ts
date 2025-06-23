@@ -18,6 +18,7 @@ export default {
         'potw-green': '#39FF14',
         'potw-euro': '#E020E0',
         'tsubasa-blue': '#0B1F4D',
+        'startup-blue': '#005BBB',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {
@@ -100,6 +101,7 @@ export default {
         'potw-green': '0 0 15px 0px #39FF14',
         'potw-euro': '0 0 15px 0px #E020E0',
         'tsubasa-blue': '0 0 15px 0px #0B1F4D',
+        'startup-blue': '0 0 15px 0px #005BBB',
       }
     },
   },

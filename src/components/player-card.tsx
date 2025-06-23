@@ -43,9 +43,12 @@ export function PlayerCard({
   const isEuroPotw = cardNameLower.includes("potw european club championship");
   const isGenericPotw = !isEuroPotw && cardNameLower.includes("potw");
   const isTsubasa = cardNameLower.includes("captain tsubasa collaboration campaign");
-  const isSpecialCard = isEuroPotw || isGenericPotw || isTsubasa;
+  const isStartup = cardNameLower.includes("startup campaign");
+  const isSpecialCard = isEuroPotw || isGenericPotw || isTsubasa || isStartup;
 
-  const scoreGlowStyle = isTsubasa
+  const scoreGlowStyle = isStartup
+    ? { textShadow: '0 0 10px #005BBB' }
+    : isTsubasa
     ? { textShadow: '0 0 10px #0B1F4D' }
     : isEuroPotw
     ? { textShadow: '0 0 10px #E020E0' }
@@ -58,6 +61,7 @@ export function PlayerCard({
       className={cn(
         "relative group w-full overflow-hidden transition-all duration-300 bg-card/60 backdrop-blur-sm border",
         "hover:shadow-lg hover:border-primary/50",
+        isStartup && "border-startup-blue border-2 shadow-startup-blue/20",
         isTsubasa && "border-tsubasa-blue border-2 shadow-tsubasa-blue/20",
         isEuroPotw && "border-potw-euro border-2 shadow-potw-euro/20",
         isGenericPotw && "border-potw-green border-2 shadow-potw-green/20",
@@ -94,7 +98,9 @@ export function PlayerCard({
           <span
             className={cn(
               "text-4xl font-bold",
-              isTsubasa
+              isStartup
+                ? "text-startup-blue"
+                : isTsubasa
                 ? "text-tsubasa-blue"
                 : isEuroPotw
                 ? "text-potw-euro"
