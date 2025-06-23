@@ -90,8 +90,6 @@ export function AddRatingDialog({ onAddRating, players }: AddRatingDialogProps) 
     setOpen(false);
   }
   
-  const playerNames = [...new Set(players.map(p => p.name))];
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -116,12 +114,7 @@ export function AddRatingDialog({ onAddRating, players }: AddRatingDialogProps) 
                 <FormItem>
                   <FormLabel>Nombre del Jugador</FormLabel>
                   <FormControl>
-                    <>
-                      <Input placeholder="e.g. L. Messi" {...field} list="player-names-list" autoComplete="off" />
-                      <datalist id="player-names-list">
-                        {playerNames.map(name => <option key={name} value={name} />)}
-                      </datalist>
-                    </>
+                    <Input placeholder="e.g. L. Messi" {...field} autoComplete="off" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

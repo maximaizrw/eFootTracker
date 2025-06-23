@@ -1,10 +1,8 @@
-export type PlayerStyle = 'Cazagoles' | 'Señuelo' | 'Hombre de área' | 'Portero defensivo' | 'Ninguno';
+export const playerStyles = ['Ninguno', 'Cazagoles', 'Señuelo', 'Hombre de área', 'Portero defensivo'] as const;
+export type PlayerStyle = typeof playerStyles[number];
 
-export const playerStyles: PlayerStyle[] = ['Ninguno', 'Cazagoles', 'Señuelo', 'Hombre de área', 'Portero defensivo'];
-
-export type Position = 'PT' | 'DFC' | 'LI' | 'LD' | 'MCD' | 'MC' | 'MDI' | 'MDD' | 'MO' | 'EXI' | 'EXD' | 'SD' | 'DC';
-
-export const positions: Position[] = ['PT', 'DFC', 'LI', 'LD', 'MCD', 'MC', 'MDI', 'MDD', 'MO', 'EXI', 'EXD', 'SD', 'DC'];
+export const positions = ['PT', 'DFC', 'LI', 'LD', 'MCD', 'MC', 'MDI', 'MDD', 'MO', 'EXI', 'EXD', 'SD', 'DC'] as const;
+export type Position = typeof positions[number];
 
 export type PlayerCard = {
   id: string;
