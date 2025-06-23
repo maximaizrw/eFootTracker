@@ -14,6 +14,7 @@ import type { Player, PlayersByPosition, Position, PlayerCard as PlayerCardType,
 import { positions } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
+import { calculateAverage } from '@/lib/utils';
 
 export default function Home() {
   const [players, setPlayers] = useState<Player[] | null>(null);
@@ -264,7 +265,16 @@ export default function Home() {
             const playersForPosition = playersByPosition[pos] || [];
             const flatPlayerList = playersForPosition.flatMap(player => 
               player.cards.map(card => ({ player, card }))
-            );
+            ).sort((a, b) => {
+              const avgA = calculateAverage(a.card.ratings);
+              const avgB = calculateAverage(b.card.ratings);
+
+              if (avgB !== avgA) {
+                return avgB - avgA;
+              }
+
+              return b.card.ratings.length - a.card.ratings.length;
+            });
 
             return (
               <TabsContent key={pos} value={pos} className="mt-6">
