@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useToast } from "@/hooks/use-toast";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AddRatingDialog } from '@/components/add-rating-dialog';
+import { AddRatingDialog, type FormValues } from '@/components/add-rating-dialog';
 import { PlayerCard } from '@/components/player-card';
 import { PositionIcon } from '@/components/position-icon';
 import type { Player, PlayersByPosition, Position, PlayerStyle } from '@/lib/types';
@@ -41,14 +41,6 @@ const initialPlayers: PlayersByPosition = {
       { id: 'c3', name: 'France Pack', ratings: [9, 9, 10] },
     ]},
   ],
-};
-
-type FormValues = {
-  playerName: string;
-  cardName: string;
-  position: Position;
-  rating: number;
-  style: PlayerStyle;
 };
 
 export default function Home() {

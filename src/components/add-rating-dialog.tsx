@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { PlusCircle } from 'lucide-react';
-import type { Position, Player, PlayerStyle } from "@/lib/types";
+import type { Player } from "@/lib/types";
 import { positions, playerStyles } from "@/lib/types";
 
 const formSchema = z.object({
@@ -44,7 +44,7 @@ const formSchema = z.object({
   rating: z.number().min(1).max(10),
 });
 
-type FormValues = z.infer<typeof formSchema>;
+export type FormValues = z.infer<typeof formSchema>;
 
 type AddRatingDialogProps = {
   onAddRating: (values: FormValues) => void;
