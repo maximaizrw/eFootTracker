@@ -16,7 +16,7 @@ export default {
       },
       colors: {
         'potw-green': '#39FF14',
-        'potw-euro': '#9B30FF',
+        'potw-euro': '#E020E0',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {
@@ -95,6 +95,10 @@ export default {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
       },
+      boxShadow: {
+        'potw-green': '0 0 15px 0px #39FF14',
+        'potw-euro': '0 0 15px 0px #E020E0',
+      }
     },
   },
   plugins: [require('tailwindcss-animate')],

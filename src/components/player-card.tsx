@@ -38,13 +38,22 @@ export function PlayerCard({
   const cardNameLower = card.name.toLowerCase();
   const isEuroPotw = cardNameLower.includes("potw european club championship");
   const isGenericPotw = !isEuroPotw && cardNameLower.includes("potw");
+  const isSpecialCard = isEuroPotw || isGenericPotw;
+
+  const scoreGlowStyle = isEuroPotw
+    ? { textShadow: '0 0 10px var(--color-potw-euro)' }
+    : isGenericPotw
+    ? { textShadow: '0 0 10px var(--color-potw-green)' }
+    : { textShadow: '0 0 8px hsl(var(--primary))' };
 
   return (
     <Card
       className={cn(
-        "relative group w-full overflow-hidden transition-all hover:shadow-lg",
-        isEuroPotw && "border-potw-euro",
-        isGenericPotw && "border-potw-green"
+        "relative group w-full overflow-hidden transition-all duration-300 bg-card/60 backdrop-blur-sm border",
+        "hover:shadow-lg hover:border-primary/50",
+        isEuroPotw && "border-potw-euro border-2 shadow-potw-euro/20",
+        isGenericPotw && "border-potw-green border-2 shadow-potw-green/20",
+        !isSpecialCard && "border-white/10"
       )}
     >
       <Button
@@ -57,7 +66,7 @@ export function PlayerCard({
         <X className="h-4 w-4" />
       </Button>
 
-      <CardHeader className="flex flex-row items-start bg-card p-4">
+      <CardHeader className="flex flex-row items-start bg-transparent p-4">
         <div className="flex-grow">
           <CardTitle className="font-headline text-2xl flex items-center gap-3">
             <PositionIcon
@@ -68,7 +77,7 @@ export function PlayerCard({
           </CardTitle>
           <CardDescription>{card.name}</CardDescription>
           {player.style && player.style !== "Ninguno" && (
-            <Badge variant="secondary" className="mt-2 font-normal">
+            <Badge variant="secondary" className="mt-2 font-normal bg-white/10 text-white/80">
               {player.style}
             </Badge>
           )}
@@ -76,13 +85,14 @@ export function PlayerCard({
         <div className="flex flex-col items-end">
           <span
             className={cn(
-              "text-3xl font-bold",
+              "text-4xl font-bold",
               isEuroPotw
                 ? "text-potw-euro"
                 : isGenericPotw
                 ? "text-potw-green"
                 : "text-primary"
             )}
+            style={scoreGlowStyle}
           >
             {formatAverage(cardAverage)}
           </span>
@@ -92,11 +102,11 @@ export function PlayerCard({
         </div>
       </CardHeader>
       <CardContent className="p-4 pt-0">
-        <div className="flex flex-wrap gap-2 p-2 bg-secondary/50 rounded-md">
+        <div className="flex flex-wrap gap-2 p-2 bg-black/20 rounded-md">
           {card.ratings.length > 0 ? (
             card.ratings.map((rating, index) => (
               <div key={index} className="group relative">
-                <Badge variant="default" className="text-sm">
+                <Badge variant="default" className="text-sm bg-primary/80 text-primary-foreground">
                   {rating}
                 </Badge>
                 <Button

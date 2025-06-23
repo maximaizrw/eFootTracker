@@ -218,10 +218,10 @@ export default function Home() {
   const allPlayers = players || [];
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b">
+    <div className="min-h-screen bg-transparent">
+      <header className="sticky top-0 z-10 bg-background/70 backdrop-blur-lg border-b border-white/10">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-3xl font-bold font-headline text-primary">
+          <h1 className="text-3xl font-bold font-headline text-primary" style={{ textShadow: '0 0 8px hsl(var(--primary))' }}>
             eFootTracker
           </h1>
           <AddRatingDialog onAddRating={handleAddRating} players={allPlayers} />
@@ -230,7 +230,7 @@ export default function Home() {
 
       <main className="container mx-auto p-4 md:p-8">
         <Tabs defaultValue="DC" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-5 md:grid-cols-7 h-auto gap-1">
+          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-5 md:grid-cols-7 h-auto gap-1 bg-white/5">
             {positions.map((pos) => (
               <TabsTrigger key={pos} value={pos} className="py-2">
                 <PositionIcon position={pos} className="mr-2 h-5 w-5"/>
@@ -259,7 +259,7 @@ export default function Home() {
                       />
                     ))
                   ) : (
-                    <div className="col-span-full flex flex-col items-center justify-center text-center p-10 bg-card rounded-lg shadow-sm">
+                    <div className="col-span-full flex flex-col items-center justify-center text-center p-10 bg-card/80 rounded-lg shadow-sm border border-dashed border-white/10">
                       <p className="text-lg font-medium text-muted-foreground">Todavía no hay jugadores en la posición de {pos}.</p>
                       <p className="text-sm text-muted-foreground">¡Haz clic en 'Añadir Valoración' para empezar!</p>
                     </div>
