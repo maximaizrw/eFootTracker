@@ -4,7 +4,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -28,7 +27,17 @@ export function PlayerCard({ player, card, onDeleteCard, onDeleteRating }: Playe
   const cardMatches = card.ratings.length;
 
   return (
-    <Card className="w-full overflow-hidden transition-all hover:shadow-lg">
+    <Card className="relative group w-full overflow-hidden transition-all hover:shadow-lg">
+       <Button 
+        size="icon"
+        variant="destructive"
+        className="absolute top-2 right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
+        onClick={() => onDeleteCard(player.id, card.id)}
+        aria-label={`Eliminar la carta ${card.name}`}
+      >
+        <X className="h-4 w-4" />
+      </Button>
+
       <CardHeader className="flex flex-row items-start bg-card p-4">
         <div className="flex-grow">
           <CardTitle className="font-headline text-2xl flex items-center gap-3">
@@ -67,11 +76,6 @@ export function PlayerCard({ player, card, onDeleteCard, onDeleteRating }: Playe
             )}
           </div>
       </CardContent>
-      <CardFooter className="p-4 pt-0">
-         <Button variant="destructive" size="sm" className="w-full" onClick={() => onDeleteCard(player.id, card.id)}>
-            <X className="mr-2 h-4 w-4"/> Eliminar Carta
-        </Button>
-      </CardFooter>
     </Card>
   );
 }
