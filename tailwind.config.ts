@@ -15,6 +15,7 @@ export default {
         code: ['monospace'],
       },
       colors: {
+        'potw-green': '#39FF14',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {
