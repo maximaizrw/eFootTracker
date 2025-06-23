@@ -126,14 +126,12 @@ export function AddRatingDialog({ onAddRating, players }: AddRatingDialogProps) 
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Nombre de la Carta</FormLabel>
-                  <FormControl>
-                    <>
+                    <FormControl>
                       <Input placeholder="e.g. POTW o nueva carta" {...field} list="card-names-list" autoComplete="off" />
-                      <datalist id="card-names-list">
-                        {cardNames.map(name => <option key={name} value={name} />)}
-                      </datalist>
-                    </>
-                  </FormControl>
+                    </FormControl>
+                    <datalist id="card-names-list">
+                      {cardNames.map(name => <option key={name} value={name} />)}
+                    </datalist>
                   <FormMessage />
                 </FormItem>
               )}
@@ -146,9 +144,9 @@ export function AddRatingDialog({ onAddRating, players }: AddRatingDialogProps) 
                   <FormLabel>Posición</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <SelectTrigger>
+                    <SelectTrigger>
                         <SelectValue placeholder="Selecciona una posición" />
-                      </Trigger>
+                    </SelectTrigger>
                     </FormControl>
                     <SelectContent>
                       {positions.map((pos) => (
@@ -168,9 +166,9 @@ export function AddRatingDialog({ onAddRating, players }: AddRatingDialogProps) 
                   <FormLabel>Estilo de Juego</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <SelectTrigger>
+                    <SelectTrigger>
                         <SelectValue placeholder="Selecciona un estilo" />
-                      </Trigger>
+                    </SelectTrigger>
                     </FormControl>
                     <SelectContent>
                       {playerStyles.map((style) => (
