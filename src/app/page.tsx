@@ -16,9 +16,11 @@ import { positions } from '@/lib/types';
 export default function Home() {
   const [players, setPlayers] = useState<Player[] | null>(null);
   const [playersByPosition, setPlayersByPosition] = useState<PlayersByPosition | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
+    setError(null);
     const unsubscribe = onSnapshot(collection(db, "players"), (snapshot) => {
       try {
         const playersData = snapshot.docs.map(doc => {
@@ -33,20 +35,24 @@ export default function Home() {
         setPlayers(playersData);
       } catch (error) {
           console.error("Error processing snapshot: ", error);
+          const errorMessage = "No se pudieron procesar los datos de los jugadores. Revisa la consola para más detalles.";
+          setError(errorMessage);
           toast({
               variant: "destructive",
               title: "Error de Datos",
-              description: "No se pudieron procesar los datos de los jugadores."
+              description: errorMessage,
           });
       }
-    }, (error) => {
-        console.error("Error fetching from Firestore: ", error);
+    }, (err) => {
+        console.error("Error fetching from Firestore: ", err);
+        const errorMessage = "No se pudo conectar a la base de datos. Comprueba la configuración de Firebase en Vercel y las reglas de seguridad de Firestore.";
+        setError(errorMessage);
+        setPlayers([]);
         toast({
             variant: "destructive",
             title: "Error de Conexión",
-            description: "No se pudo conectar a la base de datos. Comprueba la configuración."
+            description: errorMessage
         });
-        setPlayers([]);
     });
 
     return () => unsubscribe();
@@ -177,6 +183,17 @@ export default function Home() {
     }
   };
   
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen text-center p-4">
+        <div className="bg-destructive/10 border border-destructive text-destructive p-6 rounded-lg max-w-md">
+          <h2 className="text-xl font-bold mb-2">Error de Conexión</h2>
+          <p>{error}</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!playersByPosition) {
     return (
       <div className="flex items-center justify-center min-h-screen">
