@@ -15,7 +15,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
 
@@ -31,8 +30,7 @@ type PlayerCardProps = {
 };
 
 export function PlayerCard({ player, onDeletePlayer, onDeleteCard, onDeleteRating }: PlayerCardProps) {
-  const allRatings = player.cards.flatMap((card) => card.ratings);
-  const overallAverage = calculateAverage(allRatings);
+  const totalMatches = player.cards.reduce((sum, card) => sum + card.ratings.length, 0);
 
   return (
     <Card className="w-full overflow-hidden transition-all hover:shadow-lg">
@@ -48,26 +46,23 @@ export function PlayerCard({ player, onDeletePlayer, onDeleteCard, onDeleteRatin
           )}
         </div>
         <div className="flex flex-col items-end">
-            <span className="text-3xl font-bold text-primary">{formatAverage(overallAverage)}</span>
-            <span className="text-xs text-muted-foreground">Promedio General</span>
+            <span className="text-3xl font-bold text-primary">{totalMatches}</span>
+            <span className="text-xs text-muted-foreground">Partidos Jugados</span>
         </div>
       </CardHeader>
       <CardContent className="p-4 pt-0">
-        <div className="flex items-center gap-2 mb-4">
-            <Progress value={overallAverage * 10} className="h-2" />
-        </div>
-        
         {player.cards.length > 0 && (
-          <Accordion type="single" collapsible className="w-full">
+          <Accordion type="single" collapsible className="w-full" defaultValue={player.cards.length > 0 ? player.cards[0].id : undefined}>
             {player.cards.map((card) => {
               const cardAverage = calculateAverage(card.ratings);
+              const cardMatches = card.ratings.length;
               return (
                 <AccordionItem value={card.id} key={card.id}>
                   <AccordionTrigger>
                     <div className="flex items-center justify-between w-full pr-2">
                         <span className="font-medium">{card.name}</span>
                         <div className="flex items-center gap-2">
-                            <Badge variant="secondary">{formatAverage(cardAverage)} prom.</Badge>
+                            <Badge variant="secondary">{`${formatAverage(cardAverage)} prom. (${cardMatches} ${cardMatches === 1 ? 'partido' : 'partidos'})`}</Badge>
                              <Button
                                 variant="ghost"
                                 size="icon"
