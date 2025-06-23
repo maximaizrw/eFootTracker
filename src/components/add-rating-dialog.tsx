@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { v4 as uuidv4 } from 'uuid';
 
 import { Button } from "@/components/ui/button";
 import {
@@ -33,15 +32,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Label } from "@/components/ui/label";
 import { PlusCircle } from 'lucide-react';
-import type { Position } from "@/lib/types";
-import { positions } from "@/lib/types";
+import type { Position, Player, PlayerStyle } from "@/lib/types";
+import { positions, playerStyles } from "@/lib/types";
 
 const formSchema = z.object({
   playerName: z.string().min(2, "El nombre del jugador debe tener al menos 2 caracteres."),
   cardName: z.string().min(2, "El nombre de la carta debe tener al menos 2 caracteres."),
   position: z.enum(positions),
+  style: z.enum(playerStyles),
   rating: z.number().min(1).max(10),
 });
 
@@ -49,11 +48,11 @@ type FormValues = z.infer<typeof formSchema>;
 
 type AddRatingDialogProps = {
   onAddRating: (values: FormValues) => void;
+  players: Player[];
 };
 
-export function AddRatingDialog({ onAddRating }: AddRatingDialogProps) {
+export function AddRatingDialog({ onAddRating, players }: AddRatingDialogProps) {
   const [open, setOpen] = useState(false);
-  const [ratingValue, setRatingValue] = useState(5);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -61,16 +60,30 @@ export function AddRatingDialog({ onAddRating }: AddRatingDialogProps) {
       playerName: "",
       cardName: "Carta Base",
       position: "DC",
+      style: "Ninguno",
       rating: 5,
     },
   });
 
+  const playerNameValue = form.watch('playerName');
+
+  useEffect(() => {
+    if (!playerNameValue) return;
+
+    const existingPlayer = players.find(p => p.name.toLowerCase() === playerNameValue.toLowerCase());
+    if (existingPlayer) {
+        form.setValue('position', existingPlayer.position, { shouldValidate: true });
+        form.setValue('style', existingPlayer.style, { shouldValidate: true });
+    }
+  }, [playerNameValue, players, form]);
+
   function onSubmit(values: FormValues) {
     onAddRating(values);
     form.reset();
-    setRatingValue(5)
     setOpen(false);
   }
+  
+  const playerNames = [...new Set(players.map(p => p.name))];
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -96,7 +109,12 @@ export function AddRatingDialog({ onAddRating }: AddRatingDialogProps) {
                 <FormItem>
                   <FormLabel>Nombre del Jugador</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g. L. Messi" {...field} />
+                    <>
+                      <Input placeholder="e.g. L. Messi" {...field} list="player-names-list" autoComplete="off" />
+                      <datalist id="player-names-list">
+                        {playerNames.map(name => <option key={name} value={name} />)}
+                      </datalist>
+                    </>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -121,7 +139,7 @@ export function AddRatingDialog({ onAddRating }: AddRatingDialogProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Posición</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecciona una posición" />
@@ -130,6 +148,28 @@ export function AddRatingDialog({ onAddRating }: AddRatingDialogProps) {
                     <SelectContent>
                       {positions.map((pos) => (
                         <SelectItem key={pos} value={pos}>{pos}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="style"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Estilo de Juego</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona un estilo" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {playerStyles.map((style) => (
+                        <SelectItem key={style} value={style}>{style}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

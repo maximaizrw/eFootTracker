@@ -43,6 +43,9 @@ export function PlayerCard({ player, onDeletePlayer, onDeleteCard, onDeleteRatin
             {player.name}
           </CardTitle>
           <CardDescription>{player.position}</CardDescription>
+          {player.style && player.style !== 'Ninguno' && (
+              <Badge variant="secondary" className="mt-2 font-normal">{player.style}</Badge>
+          )}
         </div>
         <div className="flex flex-col items-end">
             <span className="text-3xl font-bold text-primary">{formatAverage(overallAverage)}</span>

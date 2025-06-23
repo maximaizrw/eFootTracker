@@ -8,13 +8,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AddRatingDialog } from '@/components/add-rating-dialog';
 import { PlayerCard } from '@/components/player-card';
 import { PositionIcon } from '@/components/position-icon';
-import type { Player, PlayersByPosition, Position } from '@/lib/types';
+import type { Player, PlayersByPosition, Position, PlayerStyle } from '@/lib/types';
 import { positions } from '@/lib/types';
 
 const initialPlayers: PlayersByPosition = {
   ARQUERO: [],
   DFC: [
-     { id: 'p4', name: 'V. van Dijk', position: 'DFC', cards: [
+     { id: 'p4', name: 'V. van Dijk', position: 'DFC', style: 'Ninguno', cards: [
       { id: 'c5', name: 'Club Selection', ratings: [9, 8, 9] },
     ]},
   ],
@@ -22,7 +22,7 @@ const initialPlayers: PlayersByPosition = {
   LD: [],
   MCD: [],
   MC: [
-    { id: 'p3', name: 'K. De Bruyne', position: 'MC', cards: [
+    { id: 'p3', name: 'K. De Bruyne', position: 'MC', style: 'Ninguno', cards: [
       { id: 'c4', name: 'Base Card', ratings: [8, 8, 9] },
     ]},
   ],
@@ -33,11 +33,11 @@ const initialPlayers: PlayersByPosition = {
   EXD: [],
   SD: [],
   DC: [
-    { id: 'p1', name: 'L. Messi', position: 'DC', cards: [
+    { id: 'p1', name: 'L. Messi', position: 'DC', style: 'Señuelo', cards: [
       { id: 'c1', name: 'Base Card', ratings: [8, 9, 7] },
       { id: 'c2', name: 'POTW 24/05', ratings: [10, 9] },
     ]},
-    { id: 'p2', name: 'K. Mbappé', position: 'DC', cards: [
+    { id: 'p2', name: 'K. Mbappé', position: 'DC', style: 'Cazagoles', cards: [
       { id: 'c3', name: 'France Pack', ratings: [9, 9, 10] },
     ]},
   ],
@@ -48,6 +48,7 @@ type FormValues = {
   cardName: string;
   position: Position;
   rating: number;
+  style: PlayerStyle;
 };
 
 export default function Home() {
@@ -60,7 +61,11 @@ export default function Home() {
       const playersData = storedPlayers ? JSON.parse(storedPlayers) : initialPlayers;
 
       const sanitizedPlayers = positions.reduce((acc, pos) => {
-        acc[pos] = playersData[pos] || [];
+        const playersInPos = playersData[pos] || [];
+        acc[pos] = playersInPos.map((p: any) => ({
+          ...p,
+          style: p.style || 'Ninguno'
+        }));
         return acc;
       }, {} as PlayersByPosition);
 
@@ -68,7 +73,11 @@ export default function Home() {
     } catch (error) {
       console.error("Failed to load or parse players data, resetting to initial state.", error);
       const sanitizedInitial = positions.reduce((acc, pos) => {
-        acc[pos] = (initialPlayers as Partial<PlayersByPosition>)[pos] || [];
+        const initialPlayersInPos = (initialPlayers as Partial<PlayersByPosition>)[pos] || [];
+         acc[pos] = initialPlayersInPos.map((p: any) => ({
+            ...p,
+            style: p.style || 'Ninguno'
+        }));
         return acc;
       }, {} as PlayersByPosition);
       setPlayers(sanitizedInitial);
@@ -84,7 +93,7 @@ export default function Home() {
   const handleAddRating = (values: FormValues) => {
     if (!players) return;
 
-    const { playerName, cardName, position, rating } = values;
+    const { playerName, cardName, position, rating, style } = values;
     
     setPlayers(prev => {
       const newPlayers = JSON.parse(JSON.stringify(prev)) as PlayersByPosition;
@@ -93,6 +102,8 @@ export default function Home() {
       
       if (player) {
         // Player exists
+        player.style = style;
+        
         if(player.position !== position) {
           // move player if position changed
           newPlayers[player.position] = newPlayers[player.position].filter(p => p.id !== player!.id);
@@ -114,6 +125,7 @@ export default function Home() {
           id: uuidv4(),
           name: playerName,
           position: position,
+          style: style,
           cards: [{ id: uuidv4(), name: cardName, ratings: [rating] }],
         };
         newPlayers[position].push(newPlayer);
@@ -172,6 +184,8 @@ export default function Home() {
       </div>
     );
   }
+  
+  const allPlayers = Object.values(players).flat();
 
   return (
     <div className="min-h-screen bg-background">
@@ -180,7 +194,7 @@ export default function Home() {
           <h1 className="text-3xl font-bold font-headline text-primary">
             eFootTracker
           </h1>
-          <AddRatingDialog onAddRating={handleAddRating} />
+          <AddRatingDialog onAddRating={handleAddRating} players={allPlayers} />
         </div>
       </header>
 
