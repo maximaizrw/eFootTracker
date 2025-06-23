@@ -21,6 +21,19 @@ export default function Home() {
 
   useEffect(() => {
     setError(null);
+
+    if (!db) {
+      const errorMessage = "La configuración de Firebase no está completa. Revisa que las variables de entorno se hayan añadido correctamente en la configuración de tu proyecto en Vercel y que hayas hecho un 'Redeploy'.";
+      setError(errorMessage);
+      setPlayers([]);
+      toast({
+          variant: "destructive",
+          title: "Error de Configuración",
+          description: errorMessage,
+      });
+      return;
+    }
+    
     const unsubscribe = onSnapshot(collection(db, "players"), (snapshot) => {
       try {
         const playersData = snapshot.docs.map(doc => {
