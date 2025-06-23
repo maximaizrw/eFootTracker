@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { Check, ChevronsUpDown, PlusCircle } from 'lucide-react';
 
 import { Button } from "@/components/ui/button";
 import {
@@ -31,8 +32,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import { Slider } from "@/components/ui/slider";
-import { PlusCircle } from 'lucide-react';
+import { cn } from "@/lib/utils";
 import type { Player, Position } from "@/lib/types";
 import { positions, playerStyles } from "@/lib/types";
 
@@ -54,6 +68,8 @@ type AddRatingDialogProps = {
 
 export function AddRatingDialog({ onAddRating, players, currentPosition }: AddRatingDialogProps) {
   const [open, setOpen] = useState(false);
+  const [playerPopoverOpen, setPlayerPopoverOpen] = useState(false);
+  const [cardPopoverOpen, setCardPopoverOpen] = useState(false);
   const [cardNames, setCardNames] = useState<string[]>([]);
 
   const form = useForm<FormValues>({
@@ -134,12 +150,53 @@ export function AddRatingDialog({ onAddRating, players, currentPosition }: AddRa
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Nombre del Jugador</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g. L. Messi" {...field} list="player-names-list" autoComplete="off" />
-                  </FormControl>
-                  <datalist id="player-names-list">
-                    {playerNames.map(name => <option key={name} value={name} />)}
-                  </datalist>
+                   <Popover open={playerPopoverOpen} onOpenChange={setPlayerPopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={playerPopoverOpen}
+                          className="w-full justify-between"
+                        >
+                          {field.value || "Selecciona o crea un jugador..."}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                      <Command>
+                        <CommandInput 
+                          placeholder="Busca o crea un jugador..."
+                          onValueChange={(search) => form.setValue('playerName', search)}
+                          value={field.value}
+                        />
+                        <CommandEmpty>No se encontró el jugador. Puedes crearlo.</CommandEmpty>
+                        <CommandList>
+                          <CommandGroup>
+                            {playerNames.map((name) => (
+                              <CommandItem
+                                key={name}
+                                value={name}
+                                onSelect={(currentValue) => {
+                                  form.setValue("playerName", currentValue, { shouldValidate: true });
+                                  setPlayerPopoverOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    field.value === name ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {name}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   <FormMessage />
                 </FormItem>
               )}
@@ -148,14 +205,56 @@ export function AddRatingDialog({ onAddRating, players, currentPosition }: AddRa
               control={form.control}
               name="cardName"
               render={({ field }) => (
-                <FormItem>
+                 <FormItem>
                   <FormLabel>Nombre de la Carta</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Selecciona o crea una carta" {...field} list="card-names-list" autoComplete="off" />
-                    </FormControl>
-                    <datalist id="card-names-list">
-                      {cardNames.map(name => <option key={name} value={name} />)}
-                    </datalist>
+                   <Popover open={cardPopoverOpen} onOpenChange={setCardPopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={cardPopoverOpen}
+                          className="w-full justify-between"
+                          disabled={!playerNameValue}
+                        >
+                          {field.value || "Selecciona o crea una carta..."}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                      <Command>
+                        <CommandInput 
+                          placeholder="Busca o crea una carta..."
+                          onValueChange={(search) => form.setValue('cardName', search)}
+                          value={field.value}
+                        />
+                        <CommandEmpty>No se encontró la carta. Puedes crearla.</CommandEmpty>
+                        <CommandList>
+                          <CommandGroup>
+                            {cardNames.map((name) => (
+                              <CommandItem
+                                key={name}
+                                value={name}
+                                onSelect={(currentValue) => {
+                                  form.setValue("cardName", currentValue, { shouldValidate: true });
+                                  setCardPopoverOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    field.value === name ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {name}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   <FormMessage />
                 </FormItem>
               )}
