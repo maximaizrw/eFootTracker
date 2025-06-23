@@ -209,28 +209,35 @@ export default function Home() {
             ))}
           </TabsList>
 
-          {positions.map((pos) => (
-            <TabsContent key={pos} value={pos} className="mt-6">
-              <div className="grid grid-cols-1 gap-4">
-                {players[pos] && players[pos].length > 0 ? (
-                  players[pos].map((player) => (
-                    <PlayerCard 
-                      key={player.id} 
-                      player={player} 
-                      onDeletePlayer={handleDeletePlayer}
-                      onDeleteCard={handleDeleteCard}
-                      onDeleteRating={handleDeleteRating}
-                    />
-                  ))
-                ) : (
-                  <div className="col-span-full flex flex-col items-center justify-center text-center p-10 bg-card rounded-lg shadow-sm">
-                    <p className="text-lg font-medium text-muted-foreground">Todavía no hay jugadores en la posición de {pos}.</p>
-                    <p className="text-sm text-muted-foreground">¡Haz clic en 'Añadir Valoración' para empezar!</p>
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-          ))}
+          {positions.map((pos) => {
+            const playersForPosition = players[pos] || [];
+            const flatPlayerList = playersForPosition.flatMap(player => 
+              player.cards.map(card => ({ player, card }))
+            );
+
+            return (
+              <TabsContent key={pos} value={pos} className="mt-6">
+                <div className="grid grid-cols-1 gap-4">
+                  {flatPlayerList.length > 0 ? (
+                    flatPlayerList.map(({ player, card }) => (
+                      <PlayerCard 
+                        key={`${player.id}-${card.id}`} 
+                        player={player}
+                        card={card}
+                        onDeleteCard={handleDeleteCard}
+                        onDeleteRating={handleDeleteRating}
+                      />
+                    ))
+                  ) : (
+                    <div className="col-span-full flex flex-col items-center justify-center text-center p-10 bg-card rounded-lg shadow-sm">
+                      <p className="text-lg font-medium text-muted-foreground">Todavía no hay jugadores en la posición de {pos}.</p>
+                      <p className="text-sm text-muted-foreground">¡Haz clic en 'Añadir Valoración' para empezar!</p>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+            );
+          })}
         </Tabs>
       </main>
     </div>
