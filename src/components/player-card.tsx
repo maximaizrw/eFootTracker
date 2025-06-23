@@ -35,13 +35,16 @@ export function PlayerCard({
 }: PlayerCardProps) {
   const cardAverage = calculateAverage(card.ratings);
   const cardMatches = card.ratings.length;
-  const isPotw = card.name.toLowerCase().includes("potw");
+  const cardNameLower = card.name.toLowerCase();
+  const isEuroPotw = cardNameLower.includes("potw european club championship");
+  const isGenericPotw = !isEuroPotw && cardNameLower.includes("potw");
 
   return (
     <Card
       className={cn(
         "relative group w-full overflow-hidden transition-all hover:shadow-lg",
-        isPotw && "border-potw-green"
+        isEuroPotw && "border-potw-euro",
+        isGenericPotw && "border-potw-green"
       )}
     >
       <Button
@@ -74,7 +77,11 @@ export function PlayerCard({
           <span
             className={cn(
               "text-3xl font-bold",
-              isPotw ? "text-potw-green" : "text-primary"
+              isEuroPotw
+                ? "text-potw-euro"
+                : isGenericPotw
+                ? "text-potw-green"
+                : "text-primary"
             )}
           >
             {formatAverage(cardAverage)}

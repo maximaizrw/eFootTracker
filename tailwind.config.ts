@@ -16,6 +16,7 @@ export default {
       },
       colors: {
         'potw-green': '#39FF14',
+        'potw-euro': '#9B30FF',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {
