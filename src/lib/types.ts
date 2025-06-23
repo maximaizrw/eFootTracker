@@ -1,6 +1,6 @@
-export type PlayerStyle = 'Cazagoles' | 'Señuelo' | 'Hombre de área' | 'Ninguno';
+export type PlayerStyle = 'Cazagoles' | 'Señuelo' | 'Hombre de área' | 'Portero defensivo' | 'Ninguno';
 
-export const playerStyles: PlayerStyle[] = ['Ninguno', 'Cazagoles', 'Señuelo', 'Hombre de área'];
+export const playerStyles: PlayerStyle[] = ['Ninguno', 'Cazagoles', 'Señuelo', 'Hombre de área', 'Portero defensivo'];
 
 export type Position = 'ARQUERO' | 'DFC' | 'LI' | 'LD' | 'MCD' | 'MC' | 'MDI' | 'MDD' | 'MO' | 'EXI' | 'EXD' | 'SD' | 'DC';
 
