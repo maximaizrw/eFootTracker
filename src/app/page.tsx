@@ -12,26 +12,35 @@ import type { Player, PlayersByPosition, Position } from '@/lib/types';
 import { positions } from '@/lib/types';
 
 const initialPlayers: PlayersByPosition = {
-  Forward: [
-    { id: 'p1', name: 'L. Messi', position: 'Forward', cards: [
-      { id: 'c1', name: 'Base Card', ratings: [8, 9, 7] },
-      { id: 'c2', name: 'POTW 24/05', ratings: [10, 9] },
-    ]},
-    { id: 'p2', name: 'K. Mbappé', position: 'Forward', cards: [
-      { id: 'c3', name: 'France Pack', ratings: [9, 9, 10] },
-    ]},
-  ],
-  Midfielder: [
-    { id: 'p3', name: 'K. De Bruyne', position: 'Midfielder', cards: [
-      { id: 'c4', name: 'Base Card', ratings: [8, 8, 9] },
-    ]},
-  ],
-  Defender: [
-     { id: 'p4', name: 'V. van Dijk', position: 'Defender', cards: [
+  ARQUERO: [],
+  DFC: [
+     { id: 'p4', name: 'V. van Dijk', position: 'DFC', cards: [
       { id: 'c5', name: 'Club Selection', ratings: [9, 8, 9] },
     ]},
   ],
-  Goalkeeper: [],
+  LI: [],
+  LD: [],
+  MCD: [],
+  MC: [
+    { id: 'p3', name: 'K. De Bruyne', position: 'MC', cards: [
+      { id: 'c4', name: 'Base Card', ratings: [8, 8, 9] },
+    ]},
+  ],
+  MDI: [],
+  MDD: [],
+  MO: [],
+  EXI: [],
+  EXD: [],
+  SD: [],
+  DC: [
+    { id: 'p1', name: 'L. Messi', position: 'DC', cards: [
+      { id: 'c1', name: 'Base Card', ratings: [8, 9, 7] },
+      { id: 'c2', name: 'POTW 24/05', ratings: [10, 9] },
+    ]},
+    { id: 'p2', name: 'K. Mbappé', position: 'DC', cards: [
+      { id: 'c3', name: 'France Pack', ratings: [9, 9, 10] },
+    ]},
+  ],
 };
 
 type FormValues = {
@@ -102,7 +111,7 @@ export default function Home() {
         newPlayers[position].push(newPlayer);
       }
       
-      toast({ title: "Success", description: `Rating for ${playerName} has been saved.` });
+      toast({ title: "Éxito", description: `La valoración para ${playerName} ha sido guardada.` });
       return newPlayers;
     });
   };
@@ -114,7 +123,7 @@ export default function Home() {
       for (const pos of positions) {
         newPlayers[pos] = newPlayers[pos].filter(p => p.id !== playerId);
       }
-      toast({ title: "Player Removed", description: "The player has been successfully removed." });
+      toast({ title: "Jugador Eliminado", description: "El jugador ha sido eliminado correctamente." });
       return newPlayers;
     });
   };
@@ -127,7 +136,7 @@ export default function Home() {
         if(player){
             player.cards = player.cards.filter(c => c.id !== cardId);
         }
-        toast({ title: "Card Removed", description: "The player card has been successfully removed." });
+        toast({ title: "Carta Eliminada", description: "La carta del jugador ha sido eliminada correctamente." });
         return newPlayers;
     });
   };
@@ -143,7 +152,7 @@ export default function Home() {
                 card.ratings.splice(ratingIndex, 1);
             }
         }
-        toast({ title: "Rating Removed", description: "The rating has been successfully removed." });
+        toast({ title: "Valoración Eliminada", description: "La valoración ha sido eliminada correctamente." });
         return newPlayers;
     });
   };
@@ -151,7 +160,7 @@ export default function Home() {
   if (!players) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-xl font-semibold">Loading Tracker...</div>
+        <div className="text-xl font-semibold">Cargando Tracker...</div>
       </div>
     );
   }
@@ -168,19 +177,19 @@ export default function Home() {
       </header>
 
       <main className="container mx-auto p-4 md:p-8">
-        <Tabs defaultValue="Forward" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto">
+        <Tabs defaultValue="DC" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-5 md:grid-cols-7 h-auto gap-1">
             {positions.map((pos) => (
               <TabsTrigger key={pos} value={pos} className="py-2">
                 <PositionIcon position={pos} className="mr-2 h-5 w-5"/>
-                {pos}s
+                {pos}
               </TabsTrigger>
             ))}
           </TabsList>
 
           {positions.map((pos) => (
             <TabsContent key={pos} value={pos} className="mt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 gap-4">
                 {players[pos].length > 0 ? (
                   players[pos].map((player) => (
                     <PlayerCard 
@@ -193,8 +202,8 @@ export default function Home() {
                   ))
                 ) : (
                   <div className="col-span-full flex flex-col items-center justify-center text-center p-10 bg-card rounded-lg shadow-sm">
-                    <p className="text-lg font-medium text-muted-foreground">No {pos.toLowerCase()}s yet.</p>
-                    <p className="text-sm text-muted-foreground">Click 'Add Rating' to get started!</p>
+                    <p className="text-lg font-medium text-muted-foreground">Todavía no hay jugadores en la posición de {pos}.</p>
+                    <p className="text-sm text-muted-foreground">¡Haz clic en 'Añadir Valoración' para empezar!</p>
                   </div>
                 )}
               </div>

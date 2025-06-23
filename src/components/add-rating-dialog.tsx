@@ -39,8 +39,8 @@ import type { Position } from "@/lib/types";
 import { positions } from "@/lib/types";
 
 const formSchema = z.object({
-  playerName: z.string().min(2, "Player name must be at least 2 characters."),
-  cardName: z.string().min(2, "Card name must be at least 2 characters."),
+  playerName: z.string().min(2, "El nombre del jugador debe tener al menos 2 caracteres."),
+  cardName: z.string().min(2, "El nombre de la carta debe tener al menos 2 caracteres."),
   position: z.enum(positions),
   rating: z.number().min(1).max(10),
 });
@@ -59,8 +59,8 @@ export function AddRatingDialog({ onAddRating }: AddRatingDialogProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       playerName: "",
-      cardName: "Base",
-      position: "Forward",
+      cardName: "Carta Base",
+      position: "DC",
       rating: 5,
     },
   });
@@ -77,14 +77,14 @@ export function AddRatingDialog({ onAddRating }: AddRatingDialogProps) {
       <DialogTrigger asChild>
         <Button>
           <PlusCircle className="mr-2 h-4 w-4" />
-          Add Rating
+          Añadir Valoración
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add New Rating</DialogTitle>
+          <DialogTitle>Añadir Nueva Valoración</DialogTitle>
           <DialogDescription>
-            Enter the details for a player's match performance.
+            Introduce los detalles del rendimiento de un jugador en el partido.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -94,7 +94,7 @@ export function AddRatingDialog({ onAddRating }: AddRatingDialogProps) {
               name="playerName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Player Name</FormLabel>
+                  <FormLabel>Nombre del Jugador</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g. L. Messi" {...field} />
                   </FormControl>
@@ -107,7 +107,7 @@ export function AddRatingDialog({ onAddRating }: AddRatingDialogProps) {
               name="cardName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Card Name</FormLabel>
+                  <FormLabel>Nombre de la Carta</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g. POTW" {...field} />
                   </FormControl>
@@ -120,11 +120,11 @@ export function AddRatingDialog({ onAddRating }: AddRatingDialogProps) {
               name="position"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Position</FormLabel>
+                  <FormLabel>Posición</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a position" />
+                        <SelectValue placeholder="Selecciona una posición" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -142,7 +142,7 @@ export function AddRatingDialog({ onAddRating }: AddRatingDialogProps) {
               name="rating"
               render={({ field }) => (
                 <FormItem>
-                   <FormLabel>Rating: {field.value}</FormLabel>
+                   <FormLabel>Valoración: {field.value}</FormLabel>
                    <FormControl>
                     <Slider
                       min={1}
@@ -157,7 +157,7 @@ export function AddRatingDialog({ onAddRating }: AddRatingDialogProps) {
               )}
             />
             <DialogFooter>
-              <Button type="submit" variant="accent">Save Rating</Button>
+              <Button type="submit" variant="accent">Guardar Valoración</Button>
             </DialogFooter>
           </form>
         </Form>

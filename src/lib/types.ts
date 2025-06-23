@@ -1,6 +1,6 @@
-export type Position = 'Forward' | 'Midfielder' | 'Defender' | 'Goalkeeper';
+export type Position = 'ARQUERO' | 'DFC' | 'LI' | 'LD' | 'MCD' | 'MC' | 'MDI' | 'MDD' | 'MO' | 'EXI' | 'EXD' | 'SD' | 'DC';
 
-export const positions: Position[] = ['Forward', 'Midfielder', 'Defender', 'Goalkeeper'];
+export const positions: Position[] = ['ARQUERO', 'DFC', 'LI', 'LD', 'MCD', 'MC', 'MDI', 'MDD', 'MO', 'EXI', 'EXD', 'SD', 'DC'];
 
 export type PlayerCard = {
   id: string;

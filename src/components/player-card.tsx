@@ -46,7 +46,7 @@ export function PlayerCard({ player, onDeletePlayer, onDeleteCard, onDeleteRatin
         </div>
         <div className="flex flex-col items-end">
             <span className="text-3xl font-bold text-primary">{formatAverage(overallAverage)}</span>
-            <span className="text-xs text-muted-foreground">Overall Avg.</span>
+            <span className="text-xs text-muted-foreground">Promedio General</span>
         </div>
       </CardHeader>
       <CardContent className="p-4 pt-0">
@@ -64,13 +64,13 @@ export function PlayerCard({ player, onDeletePlayer, onDeleteCard, onDeleteRatin
                     <div className="flex items-center justify-between w-full pr-2">
                         <span className="font-medium">{card.name}</span>
                         <div className="flex items-center gap-2">
-                            <Badge variant="secondary">{formatAverage(cardAverage)} avg</Badge>
+                            <Badge variant="secondary">{formatAverage(cardAverage)} prom.</Badge>
                              <Button
                                 variant="ghost"
                                 size="icon"
                                 className="h-6 w-6 text-muted-foreground hover:text-destructive"
                                 onClick={(e) => { e.stopPropagation(); onDeleteCard(player.id, card.id); }}
-                                aria-label={`Delete ${card.name} card`}
+                                aria-label={`Eliminar la carta ${card.name}`}
                               >
                                 <X className="h-4 w-4" />
                             </Button>
@@ -88,14 +88,14 @@ export function PlayerCard({ player, onDeletePlayer, onDeleteCard, onDeleteRatin
                               variant="destructive"
                               className="absolute -top-3 -right-3 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                               onClick={() => onDeleteRating(player.id, card.id, index)}
-                              aria-label={`Delete rating ${rating}`}
+                              aria-label={`Eliminar valoración ${rating}`}
                             >
                                 <X className="h-3 w-3" />
                             </Button>
                           </div>
                         ))
                       ) : (
-                        <p className="text-sm text-muted-foreground">No ratings for this card yet.</p>
+                        <p className="text-sm text-muted-foreground">Aún no hay valoraciones para esta carta.</p>
                       )}
                     </div>
                   </AccordionContent>
@@ -107,7 +107,7 @@ export function PlayerCard({ player, onDeletePlayer, onDeleteCard, onDeleteRatin
       </CardContent>
       <CardFooter className="p-4 pt-0">
          <Button variant="destructive" size="sm" className="w-full" onClick={() => onDeletePlayer(player.id)}>
-            <X className="mr-2 h-4 w-4"/> Delete Player
+            <X className="mr-2 h-4 w-4"/> Eliminar Jugador
         </Button>
       </CardFooter>
     </Card>
