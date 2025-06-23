@@ -57,13 +57,21 @@ export default function Home() {
   useEffect(() => {
     try {
       const storedPlayers = localStorage.getItem('eFootTrackerPlayers');
-      if (storedPlayers) {
-        setPlayers(JSON.parse(storedPlayers));
-      } else {
-        setPlayers(initialPlayers);
-      }
+      const playersData = storedPlayers ? JSON.parse(storedPlayers) : initialPlayers;
+
+      const sanitizedPlayers = positions.reduce((acc, pos) => {
+        acc[pos] = playersData[pos] || [];
+        return acc;
+      }, {} as PlayersByPosition);
+
+      setPlayers(sanitizedPlayers);
     } catch (error) {
-      setPlayers(initialPlayers);
+      console.error("Failed to load or parse players data, resetting to initial state.", error);
+      const sanitizedInitial = positions.reduce((acc, pos) => {
+        acc[pos] = (initialPlayers as Partial<PlayersByPosition>)[pos] || [];
+        return acc;
+      }, {} as PlayersByPosition);
+      setPlayers(sanitizedInitial);
     }
   }, []);
 
