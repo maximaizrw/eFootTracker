@@ -42,12 +42,15 @@ export function PlayerCard({
   const cardNameLower = card.name.toLowerCase();
   const isEuroPotw = cardNameLower.includes("potw european club championship");
   const isGenericPotw = !isEuroPotw && cardNameLower.includes("potw");
-  const isSpecialCard = isEuroPotw || isGenericPotw;
+  const isTsubasa = cardNameLower.includes("captain tsubasa collaboration campaign");
+  const isSpecialCard = isEuroPotw || isGenericPotw || isTsubasa;
 
-  const scoreGlowStyle = isEuroPotw
-    ? { textShadow: '0 0 10px var(--color-potw-euro)' }
+  const scoreGlowStyle = isTsubasa
+    ? { textShadow: '0 0 10px #0B1F4D' }
+    : isEuroPotw
+    ? { textShadow: '0 0 10px #E020E0' }
     : isGenericPotw
-    ? { textShadow: '0 0 10px var(--color-potw-green)' }
+    ? { textShadow: '0 0 10px #39FF14' }
     : { textShadow: '0 0 8px hsl(var(--primary))' };
 
   return (
@@ -55,6 +58,7 @@ export function PlayerCard({
       className={cn(
         "relative group w-full overflow-hidden transition-all duration-300 bg-card/60 backdrop-blur-sm border",
         "hover:shadow-lg hover:border-primary/50",
+        isTsubasa && "border-tsubasa-blue border-2 shadow-tsubasa-blue/20",
         isEuroPotw && "border-potw-euro border-2 shadow-potw-euro/20",
         isGenericPotw && "border-potw-green border-2 shadow-potw-green/20",
         !isSpecialCard && "border-white/10"
@@ -90,7 +94,9 @@ export function PlayerCard({
           <span
             className={cn(
               "text-4xl font-bold",
-              isEuroPotw
+              isTsubasa
+                ? "text-tsubasa-blue"
+                : isEuroPotw
                 ? "text-potw-euro"
                 : isGenericPotw
                 ? "text-potw-green"
