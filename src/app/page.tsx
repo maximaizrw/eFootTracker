@@ -7,14 +7,17 @@ import { db } from '@/lib/firebase';
 import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AddRatingDialog, type FormValues } from '@/components/add-rating-dialog';
-import { PlayerCard } from '@/components/player-card';
 import { PositionIcon } from '@/components/position-icon';
-import type { Player, PlayersByPosition, Position, PlayerCard as PlayerCardType, PlayerStyle } from '@/lib/types';
+import type { Player, PlayersByPosition, Position, PlayerCard as PlayerCardType } from '@/lib/types';
 import { positions } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
-import { calculateAverage } from '@/lib/utils';
+import { PlusCircle, Trash2, X } from 'lucide-react';
+import { calculateAverage, cn, formatAverage } from '@/lib/utils';
 
 export default function Home() {
   const [players, setPlayers] = useState<Player[] | null>(null);
@@ -307,19 +310,130 @@ export default function Home() {
             return (
               <TabsContent key={pos} value={pos} className="mt-6">
                 {flatPlayerList.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {flatPlayerList.map(({ player, card }) => (
-                      <PlayerCard
-                        key={`${player.id}-${card.id}-${pos}`}
-                        player={player}
-                        card={card}
-                        position={pos}
-                        onDeleteCard={handleDeleteCard}
-                        onDeleteRating={handleDeleteRating}
-                        onAddQuickRating={handleOpenAddRating}
-                      />
-                    ))}
-                  </div>
+                  <Card className="bg-card/60 border-white/10 overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-b-white/10 hover:bg-white/5">
+                          <TableHead className="w-[30%]">Jugador</TableHead>
+                          <TableHead>Estilo</TableHead>
+                          <TableHead>Prom.</TableHead>
+                          <TableHead>Partidos</TableHead>
+                          <TableHead className="w-[35%]">Valoraciones</TableHead>
+                          <TableHead className="text-right">Acciones</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {flatPlayerList.map(({ player, card, ratingsForPos }) => {
+                          const cardAverage = calculateAverage(ratingsForPos);
+                          const cardMatches = ratingsForPos.length;
+                          const cardNameLower = card.name.toLowerCase();
+                          
+                          const isEuroPotw = cardNameLower.includes("potw european club championship");
+                          const isGenericPotw = !isEuroPotw && cardNameLower.includes("potw");
+                          const isTsubasa = cardNameLower.includes("captain tsubasa collaboration campaign");
+                          const isStartup = cardNameLower.includes("startup campaign");
+                          const isSpecialCard = isEuroPotw || isGenericPotw || isTsubasa || isStartup;
+
+                          const rowClasses = cn(
+                            "border-b-white/10 transition-colors",
+                            isStartup && "bg-startup-blue/10 hover:bg-startup-blue/20",
+                            isTsubasa && "bg-tsubasa-blue/10 hover:bg-tsubasa-blue/20",
+                            isEuroPotw && "bg-potw-euro/10 hover:bg-potw-euro/20",
+                            isGenericPotw && "bg-potw-green/10 hover:bg-potw-green/20",
+                            !isSpecialCard && "hover:bg-white/5"
+                          );
+                          
+                          const specialTextClasses = cn({
+                              "text-startup-blue font-semibold": isStartup,
+                              "text-tsubasa-blue font-semibold": isTsubasa,
+                              "text-potw-euro font-semibold": isEuroPotw,
+                              "text-potw-green font-semibold": isGenericPotw,
+                          });
+                          
+                          const scoreGlowStyle = isStartup
+                            ? { textShadow: '0 0 6px #005BBB' }
+                            : isTsubasa
+                            ? { textShadow: '0 0 6px #0B1F4D' }
+                            : isEuroPotw
+                            ? { textShadow: '0 0 6px #E020E0' }
+                            : isGenericPotw
+                            ? { textShadow: '0 0 6px #39FF14' }
+                            : { textShadow: '0 0 8px hsl(var(--primary))' };
+
+                          return (
+                             <TableRow key={`${player.id}-${card.id}-${pos}`} className={rowClasses}>
+                              <TableCell>
+                                <div className="font-medium text-base">{player.name}</div>
+                                <div className={cn("text-sm text-muted-foreground", specialTextClasses)}>{card.name}</div>
+                              </TableCell>
+                              <TableCell>
+                                {player.style && player.style !== "Ninguno" ? (
+                                  <Badge variant="secondary" className="bg-white/10 text-white/80">{player.style}</Badge>
+                                ) : <span className="text-muted-foreground">-</span>}
+                              </TableCell>
+                              <TableCell>
+                                <div className={cn("text-xl font-bold", !isSpecialCard && "text-primary", specialTextClasses)} style={scoreGlowStyle}>
+                                  {formatAverage(cardAverage)}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-center">{cardMatches}</TableCell>
+                              <TableCell>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  {ratingsForPos.map((rating, index) => (
+                                    <div key={index} className="group/rating relative">
+                                      <Badge variant="default" className="text-sm bg-primary/80 text-primary-foreground">
+                                        {rating.toFixed(1)}
+                                      </Badge>
+                                      <Button
+                                        size="icon" variant="destructive"
+                                        className="absolute -top-2 -right-2 h-4 w-4 rounded-full opacity-0 group-hover/rating:opacity-100 transition-opacity z-10"
+                                        onClick={() => handleDeleteRating(player.id, card.id, pos, index)}
+                                        aria-label={`Eliminar valoración ${rating}`}
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8 rounded-full"
+                                          onClick={() => handleOpenAddRating({
+                                              playerName: player.name,
+                                              cardName: card.name,
+                                              position: pos,
+                                              style: player.style
+                                          })}
+                                      >
+                                          <PlusCircle className="h-4 w-4 text-primary/80 hover:text-primary" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent><p>Añadir valoración</p></TooltipContent>
+                                  </Tooltip>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost" size="icon" className="h-8 w-8 rounded-full"
+                                        onClick={() => handleDeleteCard(player.id, card.id)}>
+                                        <Trash2 className="h-4 w-4 text-destructive/80 hover:text-destructive" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent><p>Eliminar carta</p></TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </Card>
                 ) : (
                   <div className="col-span-full flex flex-col items-center justify-center text-center p-10 bg-card/80 rounded-lg shadow-sm border border-dashed border-white/10">
                     <p className="text-lg font-medium text-muted-foreground">Todavía no hay jugadores en la posición de {pos}.</p>
