@@ -7,13 +7,12 @@ export type Position = typeof positions[number];
 export type PlayerCard = {
   id: string;
   name: string; // e.g., "Highlight", "Player of the Week"
-  ratings: number[];
+  ratingsByPosition: { [key in Position]?: number[] };
 };
 
 export type Player = {
   id: string;
   name: string;
-  position: Position;
   style: PlayerStyle;
   cards: PlayerCard[];
 };

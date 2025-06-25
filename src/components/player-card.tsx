@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { X, PlusCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-import type { Player, PlayerCard as PlayerCardType } from "@/lib/types";
+import type { Player, PlayerCard as PlayerCardType, Position } from "@/lib/types";
 import { calculateAverage, formatAverage } from "@/lib/utils";
 import { PositionIcon } from "./position-icon";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -21,10 +21,12 @@ import type { FormValues } from "./add-rating-dialog";
 type PlayerCardProps = {
   player: Player;
   card: PlayerCardType;
+  position: Position;
   onDeleteCard: (playerId: string, cardId: string) => void;
   onDeleteRating: (
     playerId: string,
     cardId: string,
+    position: Position,
     ratingIndex: number
   ) => void;
   onAddQuickRating: (initialData: Partial<FormValues>) => void;
@@ -33,12 +35,14 @@ type PlayerCardProps = {
 export function PlayerCard({
   player,
   card,
+  position,
   onDeleteCard,
   onDeleteRating,
   onAddQuickRating,
 }: PlayerCardProps) {
-  const cardAverage = calculateAverage(card.ratings);
-  const cardMatches = card.ratings.length;
+  const ratingsForPosition = card.ratingsByPosition?.[position] || [];
+  const cardAverage = calculateAverage(ratingsForPosition);
+  const cardMatches = ratingsForPosition.length;
   const cardNameLower = card.name.toLowerCase();
   const isEuroPotw = cardNameLower.includes("potw european club championship");
   const isGenericPotw = !isEuroPotw && cardNameLower.includes("potw");
@@ -82,7 +86,7 @@ export function PlayerCard({
         <div className="flex-grow">
           <CardTitle className="font-headline text-2xl flex items-center gap-3">
             <PositionIcon
-              position={player.position}
+              position={position}
               className="h-6 w-6 text-primary"
             />
             {player.name}
@@ -119,8 +123,8 @@ export function PlayerCard({
       </CardHeader>
       <CardContent className="p-4 pt-0">
         <div className="flex flex-wrap items-center gap-2 p-2 bg-black/20 rounded-md">
-          {card.ratings.length > 0 ? (
-            card.ratings.map((rating, index) => (
+          {ratingsForPosition.length > 0 ? (
+            ratingsForPosition.map((rating, index) => (
               <div key={index} className="group relative">
                 <Badge variant="default" className="text-sm bg-primary/80 text-primary-foreground">
                   {rating}
@@ -129,7 +133,7 @@ export function PlayerCard({
                   size="icon"
                   variant="destructive"
                   className="absolute -top-3 -right-3 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={() => onDeleteRating(player.id, card.id, index)}
+                  onClick={() => onDeleteRating(player.id, card.id, position, index)}
                   aria-label={`Eliminar valoración ${rating}`}
                 >
                   <X className="h-3 w-3" />
@@ -138,7 +142,7 @@ export function PlayerCard({
             ))
           ) : (
             <p className="text-sm text-muted-foreground">
-              Aún no hay valoraciones para esta carta.
+              Aún no hay valoraciones para esta carta en esta posición.
             </p>
           )}
            <TooltipProvider>
@@ -151,7 +155,7 @@ export function PlayerCard({
                           onClick={() => onAddQuickRating({
                               playerName: player.name,
                               cardName: card.name,
-                              position: player.position,
+                              position: position,
                               style: player.style
                           })}
                       >

@@ -44,11 +44,14 @@ export default function Home() {
       try {
         const playersData = snapshot.docs.map(doc => {
             const data = doc.data();
-            const style = data.style || 'Ninguno';
             return {
                 id: doc.id,
-                ...data,
-                style: style
+                name: data.name,
+                style: data.style || 'Ninguno',
+                cards: (data.cards || []).map((card: any) => ({
+                    ...card,
+                    ratingsByPosition: card.ratingsByPosition || {}
+                })),
             } as Player;
         });
         setPlayers(playersData);
@@ -85,9 +88,20 @@ export default function Home() {
       }, {} as PlayersByPosition);
       
       players.forEach(player => {
-        if (grouped[player.position]) {
-          grouped[player.position].push(player);
-        }
+        const playerPositions = new Set<Position>();
+        (player.cards || []).forEach(card => {
+          Object.keys(card.ratingsByPosition || {}).forEach(pos => {
+            if ((card.ratingsByPosition?.[pos as Position] ?? []).length > 0) {
+              playerPositions.add(pos as Position);
+            }
+          });
+        });
+
+        playerPositions.forEach(pos => {
+          if (grouped[pos]) {
+            grouped[pos].push(player);
+          }
+        });
       });
       setPlayersByPosition(grouped);
     }
@@ -111,17 +125,22 @@ export default function Home() {
         if (!playerDoc.exists()) throw new Error("Player not found in DB.");
         
         const playerData = playerDoc.data() as Player;
-        const newCards: PlayerCardType[] = [...playerData.cards];
+        const newCards: PlayerCardType[] = JSON.parse(JSON.stringify(playerData.cards || []));
         let card = newCards.find(c => c.name.toLowerCase() === cardName.toLowerCase());
 
         if (card) {
-          card.ratings.push(rating);
+          if (!card.ratingsByPosition) {
+            card.ratingsByPosition = {};
+          }
+          if (!card.ratingsByPosition[position]) {
+            card.ratingsByPosition[position] = [];
+          }
+          card.ratingsByPosition[position]!.push(rating);
         } else {
-          newCards.push({ id: uuidv4(), name: cardName, ratings: [rating] });
+          newCards.push({ id: uuidv4(), name: cardName, ratingsByPosition: { [position]: [rating] } });
         }
         
         await updateDoc(playerRef, {
-            position,
             style,
             cards: newCards
         });
@@ -129,9 +148,8 @@ export default function Home() {
       } else {
         const newPlayer = {
           name: playerName,
-          position: position,
           style: style,
-          cards: [{ id: uuidv4(), name: cardName, ratings: [rating] }],
+          cards: [{ id: uuidv4(), name: cardName, ratingsByPosition: { [position]: [rating] } }],
         };
         await addDoc(collection(db, 'players'), newPlayer);
       }
@@ -181,15 +199,19 @@ export default function Home() {
      }
   };
 
-  const handleDeleteRating = async (playerId: string, cardId: string, ratingIndex: number) => {
+  const handleDeleteRating = async (playerId: string, cardId: string, position: Position, ratingIndex: number) => {
     if (!players) return;
     const player = players.find(p => p.id === playerId);
     if (!player) return;
 
     const newCards = JSON.parse(JSON.stringify(player.cards)) as PlayerCardType[];
     const card = newCards.find(c => c.id === cardId);
-    if(card) {
-        card.ratings.splice(ratingIndex, 1);
+    
+    if(card && card.ratingsByPosition && card.ratingsByPosition[position]) {
+        card.ratingsByPosition[position]!.splice(ratingIndex, 1);
+        if (card.ratingsByPosition[position]!.length === 0) {
+            delete card.ratingsByPosition[position];
+        }
     } else {
         return;
     }
@@ -264,16 +286,22 @@ export default function Home() {
           {positions.map((pos) => {
             const playersForPosition = playersByPosition[pos] || [];
             const flatPlayerList = playersForPosition.flatMap(player => 
-              player.cards.map(card => ({ player, card }))
+                (player.cards || [])
+                .filter(card => card.ratingsByPosition?.[pos] && card.ratingsByPosition[pos]!.length > 0)
+                .map(card => ({ 
+                    player, 
+                    card,
+                    ratingsForPos: card.ratingsByPosition![pos]!
+                }))
             ).sort((a, b) => {
-              const avgA = calculateAverage(a.card.ratings);
-              const avgB = calculateAverage(b.card.ratings);
+              const avgA = calculateAverage(a.ratingsForPos);
+              const avgB = calculateAverage(b.ratingsForPos);
 
               if (avgB !== avgA) {
                 return avgB - avgA;
               }
 
-              return b.card.ratings.length - a.card.ratings.length;
+              return b.ratingsForPos.length - a.ratingsForPos.length;
             });
 
             return (
@@ -285,6 +313,7 @@ export default function Home() {
                         key={`${player.id}-${card.id}`} 
                         player={player}
                         card={card}
+                        position={pos}
                         onDeleteCard={handleDeleteCard}
                         onDeleteRating={handleDeleteRating}
                         onAddQuickRating={handleOpenAddRating}

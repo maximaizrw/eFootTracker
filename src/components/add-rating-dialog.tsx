@@ -123,7 +123,6 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
 
     const existingPlayer = players.find(p => p.name.toLowerCase() === playerNameValue.toLowerCase());
     if (existingPlayer) {
-        form.setValue('position', existingPlayer.position, { shouldValidate: true });
         form.setValue('style', existingPlayer.style, { shouldValidate: true });
         setCardNames(existingPlayer.cards.map(c => c.name));
         form.setValue('cardName', '');
