@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { X, PlusCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-import type { Player, PlayerCard as PlayerCardType, Position } from "@/lib/types";
+import type { Player, PlayerCard as PlayerCardType, Position, PlayerStyle } from "@/lib/types";
 import { calculateAverage, formatAverage } from "@/lib/utils";
 import { PositionIcon } from "./position-icon";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -44,6 +44,7 @@ export function PlayerCard({
   const cardAverage = calculateAverage(ratingsForPosition);
   const cardMatches = ratingsForPosition.length;
   const cardNameLower = card.name.toLowerCase();
+  
   const isEuroPotw = cardNameLower.includes("potw european club championship");
   const isGenericPotw = !isEuroPotw && cardNameLower.includes("potw");
   const isTsubasa = cardNameLower.includes("captain tsubasa collaboration campaign");
@@ -60,15 +61,30 @@ export function PlayerCard({
     ? { textShadow: '0 0 10px #39FF14' }
     : { textShadow: '0 0 8px hsl(var(--primary))' };
 
+  const cardNameClasses = cn({
+      "text-startup-blue": isStartup,
+      "text-tsubasa-blue": isTsubasa,
+      "text-potw-euro": isEuroPotw,
+      "text-potw-green": isGenericPotw,
+  });
+  
+  const averageClasses = cn("text-4xl font-bold", {
+      "text-startup-blue": isStartup,
+      "text-tsubasa-blue": isTsubasa,
+      "text-potw-euro": isEuroPotw,
+      "text-potw-green": isGenericPotw,
+      "text-primary": !isSpecialCard
+  });
+
   return (
     <Card
       className={cn(
         "relative group w-full overflow-hidden transition-all duration-300 bg-card/60 backdrop-blur-sm border",
         "hover:shadow-lg hover:border-primary/50",
-        isStartup && "border-startup-blue border-2 shadow-startup-blue/20",
-        isTsubasa && "border-tsubasa-blue border-2 shadow-tsubasa-blue/20",
-        isEuroPotw && "border-potw-euro border-2 shadow-potw-euro/20",
-        isGenericPotw && "border-potw-green border-2 shadow-potw-green/20",
+        isStartup && "border-startup-blue shadow-startup-blue/20",
+        isTsubasa && "border-tsubasa-blue shadow-tsubasa-blue/20",
+        isEuroPotw && "border-potw-euro shadow-potw-euro/20",
+        isGenericPotw && "border-potw-green shadow-potw-green/20",
         !isSpecialCard && "border-white/10"
       )}
     >
@@ -91,7 +107,7 @@ export function PlayerCard({
             />
             {player.name}
           </CardTitle>
-          <CardDescription>{card.name}</CardDescription>
+          <CardDescription className={cardNameClasses}>{card.name}</CardDescription>
           {player.style && player.style !== "Ninguno" && (
             <Badge variant="secondary" className="mt-2 font-normal bg-white/10 text-white/80">
               {player.style}
@@ -100,18 +116,7 @@ export function PlayerCard({
         </div>
         <div className="flex flex-col items-end">
           <span
-            className={cn(
-              "text-4xl font-bold",
-              isStartup
-                ? "text-startup-blue"
-                : isTsubasa
-                ? "text-tsubasa-blue"
-                : isEuroPotw
-                ? "text-potw-euro"
-                : isGenericPotw
-                ? "text-potw-green"
-                : "text-primary"
-            )}
+            className={averageClasses}
             style={scoreGlowStyle}
           >
             {formatAverage(cardAverage)}
@@ -125,14 +130,14 @@ export function PlayerCard({
         <div className="flex flex-wrap items-center gap-2 p-2 bg-black/20 rounded-md">
           {ratingsForPosition.length > 0 ? (
             ratingsForPosition.map((rating, index) => (
-              <div key={index} className="group relative">
+              <div key={index} className="group/rating relative">
                 <Badge variant="default" className="text-sm bg-primary/80 text-primary-foreground">
-                  {rating}
+                  {rating.toFixed(1)}
                 </Badge>
                 <Button
                   size="icon"
                   variant="destructive"
-                  className="absolute -top-3 -right-3 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute -top-3 -right-3 h-5 w-5 rounded-full opacity-0 group-hover/rating:opacity-100 transition-opacity z-10"
                   onClick={() => onDeleteRating(player.id, card.id, position, index)}
                   aria-label={`Eliminar valoración ${rating}`}
                 >

@@ -8,23 +8,13 @@ import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDoc } fro
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AddRatingDialog, type FormValues } from '@/components/add-rating-dialog';
+import { PlayerCard } from '@/components/player-card';
 import { PositionIcon } from '@/components/position-icon';
 import type { Player, PlayersByPosition, Position, PlayerCard as PlayerCardType, PlayerStyle } from '@/lib/types';
 import { positions } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, X, Trash2 } from 'lucide-react';
-import { calculateAverage, formatAverage, cn } from '@/lib/utils';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-
+import { PlusCircle } from 'lucide-react';
+import { calculateAverage } from '@/lib/utils';
 
 export default function Home() {
   const [players, setPlayers] = useState<Player[] | null>(null);
@@ -317,143 +307,18 @@ export default function Home() {
             return (
               <TabsContent key={pos} value={pos} className="mt-6">
                 {flatPlayerList.length > 0 ? (
-                  <div className="overflow-hidden rounded-lg border border-border bg-card/80 shadow-sm backdrop-blur-sm">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-[200px]">Jugador</TableHead>
-                          <TableHead>Carta</TableHead>
-                          <TableHead>Estilo</TableHead>
-                          <TableHead className="text-center">Partidos</TableHead>
-                          <TableHead className="text-center">Promedio</TableHead>
-                          <TableHead className="min-w-[250px]">Valoraciones</TableHead>
-                          <TableHead className="text-right">Acciones</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {flatPlayerList.map(({ player, card, ratingsForPos }) => {
-                            const cardAverage = calculateAverage(ratingsForPos);
-                            const cardMatches = ratingsForPos.length;
-                            const cardNameLower = card.name.toLowerCase();
-                            const isEuroPotw = cardNameLower.includes("potw european club championship");
-                            const isGenericPotw = !isEuroPotw && cardNameLower.includes("potw");
-                            const isTsubasa = cardNameLower.includes("captain tsubasa collaboration campaign");
-                            const isStartup = cardNameLower.includes("startup campaign");
-
-                            const scoreGlowStyle = isStartup
-                              ? { textShadow: '0 0 10px #005BBB' }
-                              : isTsubasa
-                              ? { textShadow: '0 0 10px #0B1F4D' }
-                              : isEuroPotw
-                              ? { textShadow: '0 0 10px #E020E0' }
-                              : isGenericPotw
-                              ? { textShadow: '0 0 10px #39FF14' }
-                              : { textShadow: '0 0 8px hsl(var(--primary))' };
-
-                            const cardNameClasses = cn("font-medium", {
-                                "text-startup-blue": isStartup,
-                                "text-tsubasa-blue": isTsubasa,
-                                "text-potw-euro": isEuroPotw,
-                                "text-potw-green": isGenericPotw,
-                            });
-                            
-                            const averageClasses = cn("font-bold text-lg", {
-                                "text-startup-blue": isStartup,
-                                "text-tsubasa-blue": isTsubasa,
-                                "text-potw-euro": isEuroPotw,
-                                "text-potw-green": isGenericPotw,
-                                "text-primary": !(isStartup || isTsubasa || isEuroPotw || isGenericPotw)
-                            });
-
-                            return (
-                                <TableRow key={`${player.id}-${card.id}`} className="group">
-                                    <TableCell>
-                                        <div className="flex items-center gap-3 font-medium">
-                                            <PositionIcon position={pos} className="h-5 w-5 text-primary" />
-                                            {player.name}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className={cardNameClasses}>{card.name}</div>
-                                    </TableCell>
-                                    <TableCell>
-                                        {player.style !== 'Ninguno' && (
-                                            <Badge variant="secondary" className="font-normal bg-white/10 text-white/80">{player.style}</Badge>
-                                        )}
-                                    </TableCell>
-                                    <TableCell className="text-center font-medium">{cardMatches}</TableCell>
-                                    <TableCell className="text-center">
-                                        <span className={averageClasses} style={scoreGlowStyle}>
-                                            {formatAverage(cardAverage)}
-                                        </span>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            {ratingsForPos.map((rating, index) => (
-                                                <div key={index} className="group/rating relative">
-                                                    <Badge variant="default" className="text-sm bg-primary/80 text-primary-foreground">
-                                                        {rating.toFixed(1)}
-                                                    </Badge>
-                                                    <Button
-                                                        size="icon"
-                                                        variant="destructive"
-                                                        className="absolute -top-3 -right-3 h-5 w-5 rounded-full opacity-0 group-hover/rating:opacity-100 transition-opacity z-10"
-                                                        onClick={() => handleDeleteRating(player.id, card.id, pos, index)}
-                                                        aria-label={`Eliminar valoración ${rating}`}
-                                                    >
-                                                        <X className="h-3 w-3" />
-                                                    </Button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <TooltipProvider>
-                                            <div className="flex items-center justify-end gap-1">
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-8 w-8 rounded-full"
-                                                            onClick={() => handleOpenAddRating({
-                                                                playerName: player.name,
-                                                                cardName: card.name,
-                                                                position: pos,
-                                                                style: player.style
-                                                            })}
-                                                        >
-                                                            <PlusCircle className="h-4 w-4 text-primary/80 hover:text-primary transition-colors" />
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>
-                                                        <p>Añadir valoración rápida</p>
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button
-                                                            size="icon"
-                                                            variant="ghost"
-                                                            className="h-8 w-8 rounded-full text-destructive/70 hover:text-destructive hover:bg-destructive/10"
-                                                            onClick={() => handleDeleteCard(player.id, card.id)}
-                                                            aria-label={`Eliminar la carta ${card.name}`}
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>
-                                                        <p>Eliminar carta</p>
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                            </div>
-                                        </TooltipProvider>
-                                    </TableCell>
-                                </TableRow>
-                            )
-                        })}
-                      </TableBody>
-                    </Table>
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {flatPlayerList.map(({ player, card }) => (
+                      <PlayerCard
+                        key={`${player.id}-${card.id}-${pos}`}
+                        player={player}
+                        card={card}
+                        position={pos}
+                        onDeleteCard={handleDeleteCard}
+                        onDeleteRating={handleDeleteRating}
+                        onAddQuickRating={handleOpenAddRating}
+                      />
+                    ))}
                   </div>
                 ) : (
                   <div className="col-span-full flex flex-col items-center justify-center text-center p-10 bg-card/80 rounded-lg shadow-sm border border-dashed border-white/10">
