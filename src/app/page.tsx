@@ -379,21 +379,24 @@ export default function Home() {
                               <TableCell className="text-center">{cardMatches}</TableCell>
                               <TableCell>
                                 <div className="flex flex-wrap items-center gap-2">
-                                  {ratingsForPos.map((rating, index) => (
-                                    <div key={index} className="group/rating relative">
-                                      <Badge variant="default" className="text-sm bg-primary/80 text-primary-foreground">
-                                        {rating.toFixed(1)}
-                                      </Badge>
-                                      <Button
-                                        size="icon" variant="destructive"
-                                        className="absolute -top-2 -right-2 h-4 w-4 rounded-full opacity-0 group-hover/rating:opacity-100 transition-opacity z-10"
-                                        onClick={() => handleDeleteRating(player.id, card.id, pos, index)}
-                                        aria-label={`Eliminar valoración ${rating}`}
-                                      >
-                                        <X className="h-3 w-3" />
-                                      </Button>
-                                    </div>
-                                  ))}
+                                  {ratingsForPos.slice(-5).map((rating, index) => {
+                                      const originalIndex = Math.max(0, ratingsForPos.length - 5) + index;
+                                      return (
+                                        <div key={originalIndex} className="group/rating relative">
+                                          <Badge variant="default" className="text-sm bg-primary/80 text-primary-foreground">
+                                            {rating.toFixed(1)}
+                                          </Badge>
+                                          <Button
+                                            size="icon" variant="destructive"
+                                            className="absolute -top-2 -right-2 h-4 w-4 rounded-full opacity-0 group-hover/rating:opacity-100 transition-opacity z-10"
+                                            onClick={() => handleDeleteRating(player.id, card.id, pos, originalIndex)}
+                                            aria-label={`Eliminar valoración ${rating}`}
+                                          >
+                                            <X className="h-3 w-3" />
+                                          </Button>
+                                        </div>
+                                      );
+                                    })}
                                 </div>
                               </TableCell>
                               <TableCell className="text-right">
