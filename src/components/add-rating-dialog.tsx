@@ -182,6 +182,7 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
                           placeholder="Busca o crea un jugador..."
                           onValueChange={(search) => form.setValue('playerName', search)}
                           value={field.value}
+                          aria-label="Nombre del jugador"
                         />
                         <CommandEmpty>No se encontró el jugador. Puedes crearlo.</CommandEmpty>
                         <CommandList>
@@ -240,6 +241,7 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
                           placeholder="Busca o crea una carta..."
                           onValueChange={(search) => form.setValue('cardName', search)}
                           value={field.value}
+                          aria-label="Nombre de la carta"
                         />
                         <CommandEmpty>No se encontró la carta. Puedes crearla.</CommandEmpty>
                         <CommandList>

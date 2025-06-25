@@ -407,6 +407,7 @@ export default function Home() {
                                           variant="ghost"
                                           size="icon"
                                           className="h-8 w-8 rounded-full"
+                                          aria-label={`Añadir valoración a ${player.name} (${card.name})`}
                                           onClick={() => handleOpenAddRating({
                                               playerName: player.name,
                                               cardName: card.name,
@@ -423,6 +424,7 @@ export default function Home() {
                                     <TooltipTrigger asChild>
                                       <Button
                                         variant="ghost" size="icon" className="h-8 w-8 rounded-full"
+                                        aria-label={`Eliminar carta ${card.name} de ${player.name}`}
                                         onClick={() => handleDeleteCard(player.id, card.id)}>
                                         <Trash2 className="h-4 w-4 text-destructive/80 hover:text-destructive" />
                                       </Button>
