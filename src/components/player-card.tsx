@@ -81,10 +81,10 @@ export function PlayerCard({
       className={cn(
         "relative group w-full overflow-hidden transition-all duration-300 bg-card/60 backdrop-blur-sm border",
         "hover:shadow-lg hover:border-primary/50",
-        isStartup && "border-startup-blue shadow-startup-blue/20",
-        isTsubasa && "border-tsubasa-blue shadow-tsubasa-blue/20",
-        isEuroPotw && "border-potw-euro shadow-potw-euro/20",
-        isGenericPotw && "border-potw-green shadow-potw-green/20",
+        isStartup && "border-startup-blue shadow-startup-blue",
+        isTsubasa && "border-tsubasa-blue shadow-tsubasa-blue",
+        isEuroPotw && "border-potw-euro shadow-potw-euro",
+        isGenericPotw && "border-potw-green shadow-potw-green",
         !isSpecialCard && "border-white/10"
       )}
     >
