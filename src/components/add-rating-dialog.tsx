@@ -143,6 +143,7 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
     const mdiMddStyles: PlayerStyle[] = ['Ninguno', 'Omnipresente', 'Jugador de huecos', 'Especialista en centros', 'Extremo móvil', 'Creador de jugadas'];
     const moStyles: PlayerStyle[] = ['Ninguno', 'Creador de jugadas', 'Diez Clasico', 'Jugador de huecos', 'Señuelo'];
     const sdStyles: PlayerStyle[] = ['Ninguno', 'Segundo delantero', 'Creador de jugadas', 'Diez Clasico', 'Jugador de huecos', 'Señuelo'];
+    const wingerStyles: PlayerStyle[] = ['Ninguno', 'Creador de jugadas', 'Extremo prolífico', 'Extremo móvil', 'Especialista en centros'];
 
     if (positionValue === 'PT') return gkStyles;
     if (positionValue === 'LI' || positionValue === 'LD') return fbStyles;
@@ -152,6 +153,7 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
     if (positionValue === 'MDI' || positionValue === 'MDD') return mdiMddStyles;
     if (positionValue === 'MO') return moStyles;
     if (positionValue === 'SD') return sdStyles;
+    if (positionValue === 'EXI' || positionValue === 'EXD') return wingerStyles;
     
     const exclusiveStyles: PlayerStyle[] = [
         'Portero defensivo', 
@@ -171,6 +173,8 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
         'Creador de jugadas',
         'Diez Clasico',
         'Segundo delantero',
+        'Extremo prolífico',
+        'Señuelo'
     ];
     return playerStyles.filter(style => !exclusiveStyles.includes(style));
   }, [positionValue]);
