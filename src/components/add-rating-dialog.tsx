@@ -140,12 +140,14 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
     const dfcStyles: PlayerStyle[] = ['Ninguno', 'El destructor', 'Creador de juego', 'Atacante extra'];
     const mcdStyles: PlayerStyle[] = ['Ninguno', 'Omnipresente', 'Medio escudo', 'Organizador', 'El destructor'];
     const mcStyles: PlayerStyle[] = ['Ninguno', 'Jugador de huecos', 'Omnipresente', 'Medio escudo', 'El destructor', 'Organizador'];
+    const mdiMddStyles: PlayerStyle[] = ['Ninguno', 'Omnipresente', 'Jugador de huecos', 'Especialista en centros', 'Extremo móvil', 'Creador de jugadas'];
 
     if (positionValue === 'PT') return gkStyles;
     if (positionValue === 'LI' || positionValue === 'LD') return fbStyles;
     if (positionValue === 'DFC') return dfcStyles;
     if (positionValue === 'MCD') return mcdStyles;
     if (positionValue === 'MC') return mcStyles;
+    if (positionValue === 'MDI' || positionValue === 'MDD') return mdiMddStyles;
     
     const exclusiveStyles: PlayerStyle[] = [
         'Portero defensivo', 
@@ -154,8 +156,15 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
         'Lateral Ofensivo', 
         'Lateral finalizador',
         'Atacante extra',
+        'Creador de juego',
         'Medio escudo',
         'Organizador',
+        'El destructor',
+        'Omnipresente',
+        'Jugador de huecos',
+        'Especialista en centros',
+        'Extremo móvil',
+        'Creador de jugadas',
     ];
     return playerStyles.filter(style => !exclusiveStyles.includes(style));
   }, [positionValue]);
