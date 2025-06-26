@@ -144,6 +144,7 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
     const moStyles: PlayerStyle[] = ['Ninguno', 'Creador de jugadas', 'Diez Clasico', 'Jugador de huecos', 'Señuelo'];
     const sdStyles: PlayerStyle[] = ['Ninguno', 'Segundo delantero', 'Creador de jugadas', 'Diez Clasico', 'Jugador de huecos', 'Señuelo'];
     const wingerStyles: PlayerStyle[] = ['Ninguno', 'Creador de jugadas', 'Extremo prolífico', 'Extremo móvil', 'Especialista en centros'];
+    const dcStyles: PlayerStyle[] = ['Ninguno', 'Cazagoles', 'Señuelo', 'Hombre de área', 'Hombre objetivo', 'Segundo delantero'];
 
     if (positionValue === 'PT') return gkStyles;
     if (positionValue === 'LI' || positionValue === 'LD') return fbStyles;
@@ -154,29 +155,9 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
     if (positionValue === 'MO') return moStyles;
     if (positionValue === 'SD') return sdStyles;
     if (positionValue === 'EXI' || positionValue === 'EXD') return wingerStyles;
+    if (positionValue === 'DC') return dcStyles;
     
-    const exclusiveStyles: PlayerStyle[] = [
-        'Portero defensivo', 
-        'Portero ofensivo', 
-        'Lateral defensivo', 
-        'Lateral Ofensivo', 
-        'Lateral finalizador',
-        'Atacante extra',
-        'Creador de juego',
-        'Medio escudo',
-        'Organizador',
-        'El destructor',
-        'Omnipresente',
-        'Jugador de huecos',
-        'Especialista en centros',
-        'Extremo móvil',
-        'Creador de jugadas',
-        'Diez Clasico',
-        'Segundo delantero',
-        'Extremo prolífico',
-        'Señuelo'
-    ];
-    return playerStyles.filter(style => !exclusiveStyles.includes(style));
+    return ['Ninguno'];
   }, [positionValue]);
 
   useEffect(() => {
