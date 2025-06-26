@@ -332,7 +332,8 @@ export default function Home() {
                           const isGenericPotw = !isEuroPotw && cardNameLower.includes("potw");
                           const isTsubasa = cardNameLower.includes("captain tsubasa collaboration campaign");
                           const isStartup = cardNameLower.includes("startup campaign");
-                          const isSpecialCard = isEuroPotw || isGenericPotw || isTsubasa || isStartup;
+                          const isAtalanta = cardNameLower.includes("atalanta bc 96-97");
+                          const isSpecialCard = isEuroPotw || isGenericPotw || isTsubasa || isStartup || isAtalanta;
 
                           const rowClasses = cn(
                             "border-b-white/10 transition-colors",
@@ -340,6 +341,7 @@ export default function Home() {
                             isTsubasa && "bg-tsubasa-blue/10 hover:bg-tsubasa-blue/20",
                             isEuroPotw && "bg-potw-euro/10 hover:bg-potw-euro/20",
                             isGenericPotw && "bg-potw-green/10 hover:bg-potw-green/20",
+                            isAtalanta && "bg-atalanta-green/10 hover:bg-atalanta-green/20",
                             !isSpecialCard && "hover:bg-white/5"
                           );
                           
@@ -348,6 +350,7 @@ export default function Home() {
                               "text-tsubasa-blue font-semibold": isTsubasa,
                               "text-potw-euro font-semibold": isEuroPotw,
                               "text-potw-green font-semibold": isGenericPotw,
+                              "text-atalanta-green font-semibold": isAtalanta,
                           });
                           
                           const scoreGlowStyle = isStartup
@@ -358,6 +361,8 @@ export default function Home() {
                             ? { textShadow: '0 0 6px #E020E0' }
                             : isGenericPotw
                             ? { textShadow: '0 0 6px #39FF14' }
+                            : isAtalanta
+                            ? { textShadow: '0 0 6px #2CFF05' }
                             : { textShadow: '0 0 8px hsl(var(--primary))' };
 
                           return (
