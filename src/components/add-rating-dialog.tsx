@@ -137,11 +137,20 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
   const availableStyles = useMemo(() => {
     const gkStyles: PlayerStyle[] = ['Ninguno', 'Portero defensivo', 'Portero ofensivo'];
     const fbStyles: PlayerStyle[] = ['Ninguno', 'Lateral defensivo', 'Lateral Ofensivo', 'Lateral finalizador'];
+    const dfcStyles: PlayerStyle[] = ['Ninguno', 'El destructor', 'Creador de juego', 'Atacante extra'];
 
     if (positionValue === 'PT') return gkStyles;
     if (positionValue === 'LI' || positionValue === 'LD') return fbStyles;
+    if (positionValue === 'DFC') return dfcStyles;
     
-    return playerStyles.filter(style => !gkStyles.includes(style) || style === 'Ninguno');
+    const exclusiveStyles: PlayerStyle[] = [
+        'Portero defensivo', 
+        'Portero ofensivo', 
+        'Lateral defensivo', 
+        'Lateral Ofensivo', 
+        'Lateral finalizador'
+    ];
+    return playerStyles.filter(style => !exclusiveStyles.includes(style));
   }, [positionValue]);
 
   useEffect(() => {
