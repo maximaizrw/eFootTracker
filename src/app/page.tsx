@@ -182,24 +182,40 @@ export default function Home() {
     }
   };
 
-  const handleDeleteCard = async (playerId: string, cardId: string) => {
-     if (!players) return;
-     const player = players.find(p => p.id === playerId);
-     if (!player) return;
+  const handleDeleteCard = async (playerId: string, cardId: string, position: Position) => {
+    if (!players) return;
+    const player = players.find(p => p.id === playerId);
+    if (!player) return;
 
-     const newCards = player.cards.filter(c => c.id !== cardId);
+    const newCards: PlayerCardType[] = JSON.parse(JSON.stringify(player.cards));
+    const cardToUpdate = newCards.find(c => c.id === cardId);
 
-     try {
-        await updateDoc(doc(db, 'players', playerId), { cards: newCards });
-        toast({ title: "Carta Eliminada", description: "La carta ha sido eliminada." });
-     } catch (error) {
-        console.error("Error deleting card: ", error);
+    if (!cardToUpdate || !cardToUpdate.ratingsByPosition || !cardToUpdate.ratingsByPosition[position]) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "No se encontraron valoraciones para esta posición.",
+        });
+        return;
+    }
+    
+    delete cardToUpdate.ratingsByPosition[position];
+
+    const hasRatingsLeft = Object.keys(cardToUpdate.ratingsByPosition).length > 0;
+
+    const finalCards = hasRatingsLeft ? newCards : newCards.filter(c => c.id !== cardId);
+
+    try {
+        await updateDoc(doc(db, 'players', playerId), { cards: finalCards });
+        toast({ title: "Acción Completada", description: `Se eliminaron las valoraciones de ${player.name} para la posición ${position}.` });
+    } catch (error) {
+        console.error("Error deleting position ratings from card: ", error);
         toast({
             variant: "destructive",
             title: "Error al Eliminar",
-            description: "No se pudo eliminar la carta."
+            description: "No se pudo completar la acción."
         });
-     }
+    }
   };
 
   const handleDeleteRating = async (playerId: string, cardId: string, position: Position, ratingIndex: number) => {
@@ -429,12 +445,12 @@ export default function Home() {
                                     <TooltipTrigger asChild>
                                       <Button
                                         variant="ghost" size="icon" className="h-8 w-8 rounded-full"
-                                        aria-label={`Eliminar carta ${card.name} de ${player.name}`}
-                                        onClick={() => handleDeleteCard(player.id, card.id)}>
+                                        aria-label={`Eliminar valoraciones de ${card.name} (${player.name}) para la posición ${pos}`}
+                                        onClick={() => handleDeleteCard(player.id, card.id, pos)}>
                                         <Trash2 className="h-4 w-4 text-destructive/80 hover:text-destructive" />
                                       </Button>
                                     </TooltipTrigger>
-                                    <TooltipContent><p>Eliminar carta</p></TooltipContent>
+                                    <TooltipContent><p>Eliminar todas las valoraciones para esta posición</p></TooltipContent>
                                   </Tooltip>
                                 </TooltipProvider>
                               </TableCell>
