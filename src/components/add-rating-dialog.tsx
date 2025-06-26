@@ -83,6 +83,7 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
   });
   
   const playerNameValue = form.watch('playerName');
+  const positionValue = form.watch('position');
 
   useEffect(() => {
     if (open) {
@@ -132,6 +133,19 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
         form.setValue('cardName', 'Carta Base');
     }
   }, [playerNameValue, players, form, initialData]);
+
+  const gkStyles: PlayerStyle[] = ['Ninguno', 'Portero defensivo', 'Portero ofensivo'];
+  const availableStyles = positionValue === 'PT' ? gkStyles : playerStyles;
+
+  useEffect(() => {
+    if (positionValue === 'PT') {
+      const currentStyle = form.getValues('style');
+      if (!gkStyles.includes(currentStyle)) {
+        form.setValue('style', 'Ninguno', { shouldValidate: true });
+      }
+    }
+  }, [positionValue, form]);
+
 
   function onSubmit(values: FormValues) {
     onAddRating(values);
@@ -308,7 +322,7 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
                     </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {playerStyles.map((style) => (
+                      {availableStyles.map((style) => (
                         <SelectItem key={style} value={style}>{style}</SelectItem>
                       ))}
                     </SelectContent>
