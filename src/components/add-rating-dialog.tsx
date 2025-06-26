@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -134,17 +134,22 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
     }
   }, [playerNameValue, players, form, initialData]);
 
-  const gkStyles: PlayerStyle[] = ['Ninguno', 'Portero defensivo', 'Portero ofensivo'];
-  const availableStyles = positionValue === 'PT' ? gkStyles : playerStyles;
+  const availableStyles = useMemo(() => {
+    const gkStyles: PlayerStyle[] = ['Ninguno', 'Portero defensivo', 'Portero ofensivo'];
+    const fbStyles: PlayerStyle[] = ['Ninguno', 'Lateral defensivo', 'Lateral Ofensivo', 'Lateral finalizador'];
+
+    if (positionValue === 'PT') return gkStyles;
+    if (positionValue === 'LI' || positionValue === 'LD') return fbStyles;
+    
+    return playerStyles.filter(style => !gkStyles.includes(style) || style === 'Ninguno');
+  }, [positionValue]);
 
   useEffect(() => {
-    if (positionValue === 'PT') {
-      const currentStyle = form.getValues('style');
-      if (!gkStyles.includes(currentStyle)) {
-        form.setValue('style', 'Ninguno', { shouldValidate: true });
-      }
+    const currentStyle = form.getValues('style');
+    if (!availableStyles.includes(currentStyle)) {
+      form.setValue('style', 'Ninguno', { shouldValidate: true });
     }
-  }, [positionValue, form]);
+  }, [positionValue, form, availableStyles]);
 
 
   function onSubmit(values: FormValues) {
@@ -184,6 +189,7 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
                           aria-expanded={playerPopoverOpen}
                           className={cn("w-full justify-between", isQuickAdd && "text-muted-foreground")}
                           disabled={isQuickAdd}
+                          aria-label="Nombre del jugador"
                         >
                           {field.value || "Selecciona o crea un jugador..."}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -243,6 +249,7 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
                           aria-expanded={cardPopoverOpen}
                           className={cn("w-full justify-between", isQuickAdd && "text-muted-foreground")}
                           disabled={!playerNameValue || isQuickAdd}
+                          aria-label="Nombre de la carta"
                         >
                           {field.value || "Selecciona o crea una carta..."}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
