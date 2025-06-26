@@ -139,11 +139,13 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
     const fbStyles: PlayerStyle[] = ['Ninguno', 'Lateral defensivo', 'Lateral Ofensivo', 'Lateral finalizador'];
     const dfcStyles: PlayerStyle[] = ['Ninguno', 'El destructor', 'Creador de juego', 'Atacante extra'];
     const mcdStyles: PlayerStyle[] = ['Ninguno', 'Omnipresente', 'Medio escudo', 'Organizador', 'El destructor'];
+    const mcStyles: PlayerStyle[] = ['Ninguno', 'Jugador de huecos', 'Omnipresente', 'Medio escudo', 'El destructor', 'Organizador'];
 
     if (positionValue === 'PT') return gkStyles;
     if (positionValue === 'LI' || positionValue === 'LD') return fbStyles;
     if (positionValue === 'DFC') return dfcStyles;
     if (positionValue === 'MCD') return mcdStyles;
+    if (positionValue === 'MC') return mcStyles;
     
     const exclusiveStyles: PlayerStyle[] = [
         'Portero defensivo', 
