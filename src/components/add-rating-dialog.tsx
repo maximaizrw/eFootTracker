@@ -139,7 +139,7 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
     const fbStyles: PlayerStyle[] = ['Ninguno', 'Lateral defensivo', 'Lateral Ofensivo', 'Lateral finalizador'];
     const dfcStyles: PlayerStyle[] = ['Ninguno', 'El destructor', 'Creador de juego', 'Atacante extra'];
     const mcdStyles: PlayerStyle[] = ['Ninguno', 'Omnipresente', 'Medio escudo', 'Organizador', 'El destructor'];
-    const mcStyles: PlayerStyle[] = ['Ninguno', 'Jugador de huecos', 'Omnipresente', 'Medio escudo', 'El destructor', 'Organizador'];
+    const mcStyles: PlayerStyle[] = ['Ninguno', 'Jugador de huecos', 'Omnipresente', 'Medio escudo', 'El destructor', 'Organizador', 'Creador de jugadas'];
     const mdiMddStyles: PlayerStyle[] = ['Ninguno', 'Omnipresente', 'Jugador de huecos', 'Especialista en centros', 'Extremo móvil', 'Creador de jugadas'];
     const moStyles: PlayerStyle[] = ['Ninguno', 'Creador de jugadas', 'Diez Clasico', 'Jugador de huecos', 'Señuelo'];
     const sdStyles: PlayerStyle[] = ['Ninguno', 'Segundo delantero', 'Creador de jugadas', 'Diez Clasico', 'Jugador de huecos', 'Señuelo'];
@@ -366,7 +366,7 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
                       max={10}
                       step={0.5}
                       defaultValue={[field.value]}
-                      onValueChange={(value) => field.onChange(value[0])}
+                      onValueValueChange={(value) => field.onChange(value[0])}
                     />
                   </FormControl>
                   <FormMessage />
