@@ -366,7 +366,7 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
                       max={10}
                       step={0.5}
                       defaultValue={[field.value]}
-                      onValueValueChange={(value) => field.onChange(value[0])}
+                      onValueChange={(value) => field.onChange(value[0])}
                     />
                   </FormControl>
                   <FormMessage />
