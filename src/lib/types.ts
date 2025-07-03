@@ -20,3 +20,14 @@ export type Player = {
 export type PlayersByPosition = {
   [key in Position]: Player[];
 };
+
+export type Formation = {
+  [key in Position]?: number;
+};
+
+export type IdealTeamPlayer = {
+  player: Player;
+  card: PlayerCard;
+  position: Position;
+  average: number;
+};

@@ -8,24 +8,30 @@ import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDoc } fro
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AddRatingDialog, type FormValues } from '@/components/add-rating-dialog';
 import { PositionIcon } from '@/components/position-icon';
-import type { Player, PlayersByPosition, Position, PlayerCard as PlayerCardType } from '@/lib/types';
+import type { Player, PlayersByPosition, Position, PlayerCard as PlayerCardType, Formation, IdealTeamPlayer } from '@/lib/types';
 import { positions } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Trash2, X } from 'lucide-react';
+import { PlusCircle, Trash2, X, Star, Bot } from 'lucide-react';
 import { calculateAverage, cn, formatAverage } from '@/lib/utils';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { IdealTeamDisplay } from '@/components/ideal-team-display';
 
 export default function Home() {
   const [players, setPlayers] = useState<Player[] | null>(null);
   const [playersByPosition, setPlayersByPosition] = useState<PlayersByPosition | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<Position>('DC');
+  const [activeTab, setActiveTab] = useState<Position | 'ideal-11'>('DC');
   const [isAddRatingDialogOpen, setAddRatingDialogOpen] = useState(false);
   const [dialogInitialData, setDialogInitialData] = useState<Partial<FormValues> | undefined>(undefined);
+  const [formation, setFormation] = useState<Formation>({
+    PT: 1, DFC: 3, LI: 0, LD: 1, MCD: 1, MC: 1, MDI: 0, MDD: 0, MO: 3, EXI: 0, EXD: 0, SD: 0, DC: 1
+  });
+  const [idealTeam, setIdealTeam] = useState<(IdealTeamPlayer | null)[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -247,6 +253,76 @@ export default function Home() {
         });
     }
   };
+
+  const handleGenerateTeam = () => {
+    if (!players) return;
+
+    const allRatedPlayers: IdealTeamPlayer[] = players.flatMap(player =>
+        (player.cards || []).flatMap(card =>
+            Object.keys(card.ratingsByPosition || {}).map(posStr => {
+                const position = posStr as Position;
+                const ratings = card.ratingsByPosition![position];
+                if (!ratings || ratings.length === 0) return null;
+                return {
+                    player,
+                    card,
+                    position,
+                    average: calculateAverage(ratings),
+                };
+            }).filter((p): p is IdealTeamPlayer => p !== null)
+        )
+    ).sort((a, b) => b.average - a.average);
+
+    const usedCardIds = new Set<string>();
+    const requiredSlots: Position[] = [];
+    let totalPlayers = 0;
+
+    (Object.keys(formation) as Position[]).forEach(pos => {
+      const count = formation[pos] ?? 0;
+      totalPlayers += count;
+      for (let i = 0; i < count; i++) {
+        requiredSlots.push(pos);
+      }
+    });
+
+    if (totalPlayers === 0) {
+      toast({
+        variant: "destructive",
+        title: "Formación Vacía",
+        description: "Por favor, selecciona al menos un jugador en la formación.",
+      });
+      return;
+    }
+
+    const newTeam: (IdealTeamPlayer | null)[] = requiredSlots.map(position => {
+      const bestPlayerForSlot = allRatedPlayers.find(
+        p => p.position === position && !usedCardIds.has(p.card.id)
+      );
+
+      if (bestPlayerForSlot) {
+        usedCardIds.add(bestPlayerForSlot.card.id);
+        return bestPlayerForSlot;
+      }
+      // Return a placeholder if no player is found for the slot
+      return {
+        player: { id: `placeholder-${position}-${Math.random()}`, name: `Vacante (${position})`, style: 'Ninguno', cards: [] },
+        card: { id: `placeholder-card-${position}-${Math.random()}`, name: 'N/A', ratingsByPosition: {} },
+        position: position,
+        average: 0,
+      };
+    });
+
+    setIdealTeam(newTeam);
+    toast({
+      title: "11 Ideal Generado",
+      description: `Se ha generado un equipo con ${newTeam.filter(p => p && !p.player.id.startsWith('placeholder')).length} de ${totalPlayers} jugadores.`,
+    });
+  };
+
+  const handleFormationChange = (position: Position, value: string) => {
+    const count = parseInt(value, 10);
+    setFormation(prev => ({ ...prev, [position]: count }));
+  };
   
   if (error) {
     return (
@@ -284,7 +360,7 @@ export default function Home() {
           <h1 className="text-3xl font-bold font-headline text-primary" style={{ textShadow: '0 0 8px hsl(var(--primary))' }}>
             eFootTracker
           </h1>
-          <Button onClick={() => handleOpenAddRating({ position: activeTab })}>
+          <Button onClick={() => handleOpenAddRating(activeTab !== 'ideal-11' ? { position: activeTab } : undefined)}>
             <PlusCircle className="mr-2 h-4 w-4" />
             Añadir Valoración
           </Button>
@@ -292,7 +368,7 @@ export default function Home() {
       </header>
 
       <main className="container mx-auto p-4 md:p-8">
-        <Tabs defaultValue="DC" className="w-full" onValueChange={(value) => setActiveTab(value as Position)}>
+        <Tabs defaultValue="DC" className="w-full" onValueChange={(value) => setActiveTab(value as Position | 'ideal-11')}>
           <TabsList className="grid w-full grid-cols-4 sm:grid-cols-5 md:grid-cols-7 h-auto gap-1 bg-white/5">
             {positions.map((pos) => (
               <TabsTrigger key={pos} value={pos} className="py-2">
@@ -300,6 +376,10 @@ export default function Home() {
                 {pos}
               </TabsTrigger>
             ))}
+            <TabsTrigger value="ideal-11" className="py-2 data-[state=active]:bg-accent/20 data-[state=active]:text-accent">
+                <Star className="mr-2 h-5 w-5"/>
+                11 Ideal
+            </TabsTrigger>
           </TabsList>
 
           {positions.map((pos) => {
@@ -469,6 +549,49 @@ export default function Home() {
               </TabsContent>
             );
           })}
+          
+          <TabsContent value="ideal-11" className="mt-6">
+            <Card className="bg-card/60 border-white/10">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bot className="text-accent"/>
+                  Generador de 11 Ideal
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="mb-4 text-muted-foreground">Define tu formación táctica y generaremos el mejor equipo posible basado en el promedio de tus jugadores.</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-6 p-4 border border-dashed border-white/10 rounded-lg">
+                  {positions.map(pos => (
+                    <div key={pos} className="flex flex-col gap-2">
+                       <label className="text-sm font-medium flex items-center gap-2">
+                          <PositionIcon position={pos} className="h-4 w-4 text-primary"/>
+                          {pos}
+                        </label>
+                      <Select
+                        value={(formation[pos] ?? 0).toString()}
+                        onValueChange={(value) => handleFormationChange(pos, value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[0, 1, 2, 3, 4, 5].map(num => (
+                            <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ))}
+                </div>
+                <Button onClick={handleGenerateTeam}>
+                  <Star className="mr-2 h-4 w-4" />
+                  Generar 11 Ideal
+                </Button>
+              </CardContent>
+            </Card>
+            <IdealTeamDisplay team={idealTeam} />
+          </TabsContent>
+
         </Tabs>
       </main>
     </div>
