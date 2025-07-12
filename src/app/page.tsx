@@ -11,7 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { AddRatingDialog, type FormValues } from '@/components/add-rating-dialog';
+import { AddRatingDialog, type FormValues as AddRatingFormValues } from '@/components/add-rating-dialog';
+import { EditCardDialog, type FormValues as EditCardFormValues } from '@/components/edit-card-dialog';
 import { PositionIcon } from '@/components/position-icon';
 import type { Player, PlayersByPosition, Position, PlayerCard as PlayerCardType, Formation, IdealTeamPlayer } from '@/lib/types';
 import { positions } from '@/lib/types';
@@ -27,7 +28,9 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Position | 'ideal-11'>('DC');
   const [isAddRatingDialogOpen, setAddRatingDialogOpen] = useState(false);
-  const [dialogInitialData, setDialogInitialData] = useState<Partial<FormValues> | undefined>(undefined);
+  const [isEditCardDialogOpen, setEditCardDialogOpen] = useState(false);
+  const [addDialogInitialData, setAddDialogInitialData] = useState<Partial<AddRatingFormValues> | undefined>(undefined);
+  const [editDialogInitialData, setEditDialogInitialData] = useState<EditCardFormValues | undefined>(undefined);
   const [formation, setFormation] = useState<Formation>({
     PT: 1, DFC: 3, LI: 0, LD: 1, MCD: 1, MC: 1, MDI: 0, MDD: 0, MO: 3, EXI: 0, EXD: 0, SD: 0, DC: 1
   });
@@ -116,12 +119,23 @@ export default function Home() {
     }
   }, [players]);
   
-  const handleOpenAddRating = (initialData?: Partial<FormValues>) => {
-    setDialogInitialData(initialData);
+  const handleOpenAddRating = (initialData?: Partial<AddRatingFormValues>) => {
+    setAddDialogInitialData(initialData);
     setAddRatingDialogOpen(true);
   };
+  
+  const handleOpenEditCard = (player: Player, card: PlayerCardType, position: Position) => {
+    setEditDialogInitialData({
+        playerId: player.id,
+        cardId: card.id,
+        currentCardName: card.name,
+        currentStyle: card.style,
+        position: position,
+    });
+    setEditCardDialogOpen(true);
+  };
 
-  const handleAddRating = async (values: FormValues) => {
+  const handleAddRating = async (values: AddRatingFormValues) => {
     if (players === null) return;
     const { playerName, cardName, position, rating, style } = values;
     
@@ -170,6 +184,34 @@ export default function Home() {
         title: "Error al Guardar",
         description: "No se pudo guardar la valoración.",
       });
+    }
+  };
+
+  const handleEditCard = async (values: EditCardFormValues) => {
+    if (!players) return;
+    const { playerId, cardId, currentCardName, currentStyle } = values;
+
+    const player = players.find(p => p.id === playerId);
+    if (!player) return;
+
+    const newCards = JSON.parse(JSON.stringify(player.cards)) as PlayerCardType[];
+    const cardToUpdate = newCards.find(c => c.id === cardId);
+
+    if (cardToUpdate) {
+        cardToUpdate.name = currentCardName;
+        cardToUpdate.style = currentStyle;
+
+        try {
+            await updateDoc(doc(db, 'players', playerId), { cards: newCards });
+            toast({ title: "Carta Actualizada", description: "Los datos de la carta se han actualizado." });
+        } catch (error) {
+            console.error("Error updating card: ", error);
+            toast({
+                variant: "destructive",
+                title: "Error al Actualizar",
+                description: "No se pudieron guardar los cambios de la carta."
+            });
+        }
     }
   };
 
@@ -395,7 +437,13 @@ export default function Home() {
         onOpenChange={setAddRatingDialogOpen}
         onAddRating={handleAddRating}
         players={allPlayers}
-        initialData={dialogInitialData}
+        initialData={addDialogInitialData}
+      />
+      <EditCardDialog
+        open={isEditCardDialogOpen}
+        onOpenChange={setEditCardDialogOpen}
+        onEditCard={handleEditCard}
+        initialData={editDialogInitialData}
       />
 
       <header className="sticky top-0 z-10 bg-background/70 backdrop-blur-lg border-b border-white/10">
@@ -575,12 +623,12 @@ export default function Home() {
                                       <Button
                                         variant="ghost" size="icon" className="h-8 w-8 rounded-full"
                                         aria-label={`Editar valoraciones de ${card.name} (${player.name}) para la posición ${pos}`}
-                                        disabled
+                                        onClick={() => handleOpenEditCard(player, card, pos)}
                                         >
-                                        <Wrench className="h-4 w-4 text-muted-foreground" />
+                                        <Wrench className="h-4 w-4 text-muted-foreground/80 hover:text-muted-foreground" />
                                       </Button>
                                     </TooltipTrigger>
-                                    <TooltipContent><p>Editar (Próximamente)</p></TooltipContent>
+                                    <TooltipContent><p>Editar carta (nombre y estilo)</p></TooltipContent>
                                   </Tooltip>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
