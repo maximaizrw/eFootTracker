@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from "@/hooks/use-toast";
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDoc, getDocs } from 'firebase/firestore';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -16,7 +16,7 @@ import { PositionIcon } from '@/components/position-icon';
 import type { Player, PlayersByPosition, Position, PlayerCard as PlayerCardType, Formation, IdealTeamPlayer } from '@/lib/types';
 import { positions } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Trash2, X, Star, Bot } from 'lucide-react';
+import { PlusCircle, Trash2, X, Star, Bot, Download } from 'lucide-react';
 import { calculateAverage, cn, formatAverage } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { IdealTeamDisplay } from '@/components/ideal-team-display';
@@ -324,6 +324,50 @@ export default function Home() {
     setFormation(prev => ({ ...prev, [position]: count }));
   };
   
+    const handleDownloadBackup = async () => {
+    if (!db) {
+      toast({
+        variant: "destructive",
+        title: "Error de Conexión",
+        description: "No se pudo conectar a la base de datos.",
+      });
+      return;
+    }
+
+    try {
+      const playersCollection = collection(db, 'players');
+      const playerSnapshot = await getDocs(playersCollection);
+      const playersData = playerSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      const jsonData = JSON.stringify(playersData, null, 2);
+      const blob = new Blob([jsonData], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'eFootTracker_backup.json';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Descarga Iniciada",
+        description: "El backup de la base de datos se está descargando.",
+      });
+
+    } catch (error) {
+      console.error("Error downloading backup: ", error);
+      toast({
+        variant: "destructive",
+        title: "Error en la Descarga",
+        description: "No se pudo generar el archivo de backup.",
+      });
+    }
+  };
+  
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-screen text-center p-4">
@@ -360,10 +404,16 @@ export default function Home() {
           <h1 className="text-3xl font-bold font-headline text-primary" style={{ textShadow: '0 0 8px hsl(var(--primary))' }}>
             eFootTracker
           </h1>
-          <Button onClick={() => handleOpenAddRating(activeTab !== 'ideal-11' ? { position: activeTab } : undefined)}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Añadir Valoración
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={handleDownloadBackup} variant="outline">
+                <Download className="mr-2 h-4 w-4" />
+                Descargar Backup
+            </Button>
+            <Button onClick={() => handleOpenAddRating(activeTab !== 'ideal-11' ? { position: activeTab } : undefined)}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Añadir Valoración
+            </Button>
+          </div>
         </div>
       </header>
 
