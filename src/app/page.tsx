@@ -574,6 +574,18 @@ export default function Home() {
                                     <TooltipTrigger asChild>
                                       <Button
                                         variant="ghost" size="icon" className="h-8 w-8 rounded-full"
+                                        aria-label={`Editar valoraciones de ${card.name} (${player.name}) para la posición ${pos}`}
+                                        disabled
+                                        >
+                                        <Wrench className="h-4 w-4 text-muted-foreground" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent><p>Editar (Próximamente)</p></TooltipContent>
+                                  </Tooltip>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost" size="icon" className="h-8 w-8 rounded-full"
                                         aria-label={`Eliminar valoraciones de ${card.name} (${player.name}) para la posición ${pos}`}
                                         onClick={() => handleDeleteCard(player.id, card.id, pos)}>
                                         <Trash2 className="h-4 w-4 text-destructive/80 hover:text-destructive" />
@@ -646,5 +658,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
