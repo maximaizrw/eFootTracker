@@ -70,6 +70,8 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
   const [playerPopoverOpen, setPlayerPopoverOpen] = useState(false);
   const [cardPopoverOpen, setCardPopoverOpen] = useState(false);
   const [cardNames, setCardNames] = useState<string[]>([]);
+  const [isStyleDisabled, setIsStyleDisabled] = useState(false);
+
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -83,6 +85,7 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
   });
   
   const playerNameValue = form.watch('playerName');
+  const cardNameValue = form.watch('cardName');
   const positionValue = form.watch('position');
 
   useEffect(() => {
@@ -100,39 +103,76 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
       if (resetValues.playerName) {
         const existingPlayer = players.find(p => p.name.toLowerCase() === resetValues.playerName!.toLowerCase());
         if (existingPlayer) {
-            setCardNames(existingPlayer.cards.map(c => c.name));
+          const cards = existingPlayer.cards.map(c => c.name);
+          setCardNames(cards);
+          
+          if(resetValues.cardName) {
+            const existingCard = existingPlayer.cards.find(c => c.name.toLowerCase() === resetValues.cardName!.toLowerCase());
+            if (existingCard) {
+                form.setValue('style', existingCard.style);
+                setIsStyleDisabled(true);
+            } else {
+                setIsStyleDisabled(false);
+            }
+          }
         }
       } else {
         setCardNames([]);
+        setIsStyleDisabled(false);
       }
     }
   }, [open, initialData, form, players]);
 
 
   useEffect(() => {
-    // Don't run this logic if we are pre-filling the form from initialData
     if (initialData?.playerName && form.getValues('playerName') === initialData.playerName) {
       return;
     }
 
     if (!playerNameValue) {
       setCardNames([]);
-      form.setValue('style', 'Ninguno');
       form.setValue('cardName', 'Carta Base');
+      form.setValue('style', 'Ninguno');
+      setIsStyleDisabled(false);
       return;
     }
 
     const existingPlayer = players.find(p => p.name.toLowerCase() === playerNameValue.toLowerCase());
     if (existingPlayer) {
-        form.setValue('style', existingPlayer.style, { shouldValidate: true });
         setCardNames(existingPlayer.cards.map(c => c.name));
-        form.setValue('cardName', '');
+        form.setValue('cardName', ''); // Force user to select a card
     } else {
         setCardNames([]);
-        form.setValue('style', 'Ninguno');
         form.setValue('cardName', 'Carta Base');
+        form.setValue('style', 'Ninguno');
+        setIsStyleDisabled(false);
     }
   }, [playerNameValue, players, form, initialData]);
+
+  useEffect(() => {
+     if (initialData?.cardName && form.getValues('cardName') === initialData.cardName) {
+        return;
+     }
+
+     if (!playerNameValue || !cardNameValue) {
+        setIsStyleDisabled(false);
+        return;
+     }
+     
+     const existingPlayer = players.find(p => p.name.toLowerCase() === playerNameValue.toLowerCase());
+     if(existingPlayer) {
+        const existingCard = existingPlayer.cards.find(c => c.name.toLowerCase() === cardNameValue.toLowerCase());
+        if(existingCard) {
+            form.setValue('style', existingCard.style);
+            setIsStyleDisabled(true);
+        } else {
+            form.setValue('style', 'Ninguno');
+            setIsStyleDisabled(false);
+        }
+     } else {
+        setIsStyleDisabled(false);
+     }
+  }, [playerNameValue, cardNameValue, players, form, initialData]);
 
   const availableStyles = useMemo(() => {
     const gkStyles: PlayerStyle[] = ['Ninguno', 'Portero defensivo', 'Portero ofensivo'];
@@ -338,9 +378,9 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Estilo de Juego</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} disabled={isQuickAdd}>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={isQuickAdd || isStyleDisabled}>
                     <FormControl>
-                    <SelectTrigger className={cn(isQuickAdd && "text-muted-foreground")}>
+                    <SelectTrigger className={cn((isQuickAdd || isStyleDisabled) && "text-muted-foreground")}>
                         <SelectValue placeholder="Selecciona un estilo" />
                     </SelectTrigger>
                     </FormControl>

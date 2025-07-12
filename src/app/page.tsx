@@ -56,9 +56,9 @@ export default function Home() {
             return {
                 id: doc.id,
                 name: data.name,
-                style: data.style || 'Ninguno',
                 cards: (data.cards || []).map((card: any) => ({
                     ...card,
+                    style: card.style || 'Ninguno',
                     ratingsByPosition: card.ratingsByPosition || {}
                 })),
             } as Player;
@@ -146,19 +146,18 @@ export default function Home() {
           }
           card.ratingsByPosition[position]!.push(rating);
         } else {
-          newCards.push({ id: uuidv4(), name: cardName, ratingsByPosition: { [position]: [rating] } });
+          card = { id: uuidv4(), name: cardName, style: style, ratingsByPosition: { [position]: [rating] } };
+          newCards.push(card);
         }
         
         await updateDoc(playerRef, {
-            style,
             cards: newCards
         });
 
       } else {
         const newPlayer = {
           name: playerName,
-          style: style,
-          cards: [{ id: uuidv4(), name: cardName, ratingsByPosition: { [position]: [rating] } }],
+          cards: [{ id: uuidv4(), name: cardName, style: style, ratingsByPosition: { [position]: [rating] } }],
         };
         await addDoc(collection(db, 'players'), newPlayer);
       }
@@ -305,8 +304,8 @@ export default function Home() {
       }
       // Return a placeholder if no player is found for the slot
       return {
-        player: { id: `placeholder-${position}-${Math.random()}`, name: `Vacante (${position})`, style: 'Ninguno', cards: [] },
-        card: { id: `placeholder-card-${position}-${Math.random()}`, name: 'N/A', ratingsByPosition: {} },
+        player: { id: `placeholder-${position}-${Math.random()}`, name: `Vacante (${position})`, cards: [] },
+        card: { id: `placeholder-card-${position}-${Math.random()}`, name: 'N/A', style: 'Ninguno', ratingsByPosition: {} },
         position: position,
         average: 0,
       };
@@ -518,8 +517,8 @@ export default function Home() {
                                 <div className={cn("text-sm text-muted-foreground", specialTextClasses)}>{card.name}</div>
                               </TableCell>
                               <TableCell>
-                                {player.style && player.style !== "Ninguno" ? (
-                                  <Badge variant="secondary" className="bg-white/10 text-white/80">{player.style}</Badge>
+                                {card.style && card.style !== "Ninguno" ? (
+                                  <Badge variant="secondary" className="bg-white/10 text-white/80">{card.style}</Badge>
                                 ) : <span className="text-muted-foreground">-</span>}
                               </TableCell>
                               <TableCell>
@@ -563,7 +562,7 @@ export default function Home() {
                                               playerName: player.name,
                                               cardName: card.name,
                                               position: pos,
-                                              style: player.style
+                                              style: card.style
                                           })}
                                       >
                                           <PlusCircle className="h-4 w-4 text-primary/80 hover:text-primary" />
