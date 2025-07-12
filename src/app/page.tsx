@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from "@/hooks/use-toast";
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDoc, getDocs, writeBatch } from 'firebase/firestore';
+import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDoc, getDocs, writeBatch, deleteField } from 'firebase/firestore';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -400,7 +400,7 @@ export default function Home() {
                 });
                 
                 // Update the document in the batch
-                batch.update(playerRef, { cards: newCards, style: deleteDoc() }); // Deletes the old style field
+                batch.update(playerRef, { cards: newCards, style: deleteField() }); // Deletes the old style field
                 migratedCount++;
             }
         }
