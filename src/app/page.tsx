@@ -557,7 +557,7 @@ export default function Home() {
                                           variant="ghost"
                                           size="icon"
                                           className="h-8 w-8 rounded-full"
-                                          aria-label={`Editar ${player.name} (${card.name})`}
+                                          aria-label={`Añadir valoración a ${player.name} (${card.name})`}
                                           onClick={() => handleOpenAddRating({
                                               playerName: player.name,
                                               cardName: card.name,
@@ -565,10 +565,10 @@ export default function Home() {
                                               style: card.style
                                           })}
                                       >
-                                          <Wrench className="h-4 w-4 text-primary/80 hover:text-primary" />
+                                          <PlusCircle className="h-4 w-4 text-primary/80 hover:text-primary" />
                                       </Button>
                                     </TooltipTrigger>
-                                    <TooltipContent><p>Editar / Añadir valoración</p></TooltipContent>
+                                    <TooltipContent><p>Añadir valoración</p></TooltipContent>
                                   </Tooltip>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
@@ -646,3 +646,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
