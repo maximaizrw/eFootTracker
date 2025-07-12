@@ -366,68 +366,6 @@ export default function Home() {
       });
     }
   };
-
-  const handleMigrateStyles = async () => {
-    if (!db) {
-      toast({
-        variant: "destructive",
-        title: "Error de Conexión",
-        description: "No se pudo conectar a la base de datos.",
-      });
-      return;
-    }
-    
-    toast({ title: "Iniciando Migración", description: "Por favor, espera..." });
-
-    try {
-        const playersCollection = collection(db, 'players');
-        const playerSnapshot = await getDocs(playersCollection);
-        const batch = writeBatch(db);
-        let migratedCount = 0;
-
-        for (const playerDoc of playerSnapshot.docs) {
-            const playerData = playerDoc.data();
-            const playerRef = doc(db, 'players', playerDoc.id);
-
-            // Check if player has the old 'style' field and cards exist
-            if (playerData.style && playerData.cards && playerData.cards.length > 0) {
-                const newCards = playerData.cards.map((card: any) => {
-                    // Only add style if it doesn't already exist on the card
-                    if (!card.style || card.style === 'Ninguno') {
-                        return { ...card, style: playerData.style };
-                    }
-                    return card;
-                });
-                
-                // Update the document in the batch
-                batch.update(playerRef, { cards: newCards, style: deleteField() }); // Deletes the old style field
-                migratedCount++;
-            }
-        }
-        
-        if (migratedCount > 0) {
-            await batch.commit();
-            toast({
-                title: "Migración Completada",
-                description: `${migratedCount} jugadores han sido actualizados exitosamente.`,
-            });
-        } else {
-            toast({
-                title: "Nada que Migrar",
-                description: "Todos los jugadores ya parecen estar actualizados.",
-            });
-        }
-
-    } catch (error) {
-        console.error("Error during style migration: ", error);
-        toast({
-            variant: "destructive",
-            title: "Error en la Migración",
-            description: "No se pudo completar la migración de estilos.",
-        });
-    }
-};
-
   
   if (error) {
     return (
@@ -466,10 +404,6 @@ export default function Home() {
             eFootTracker
           </h1>
           <div className="flex items-center gap-2">
-             <Button onClick={handleMigrateStyles} variant="outline">
-                <Wrench className="mr-2 h-4 w-4" />
-                Migrar Estilos
-            </Button>
             <Button onClick={handleDownloadBackup} variant="outline">
                 <Download className="mr-2 h-4 w-4" />
                 Descargar Backup
@@ -623,7 +557,7 @@ export default function Home() {
                                           variant="ghost"
                                           size="icon"
                                           className="h-8 w-8 rounded-full"
-                                          aria-label={`Añadir valoración a ${player.name} (${card.name})`}
+                                          aria-label={`Editar ${player.name} (${card.name})`}
                                           onClick={() => handleOpenAddRating({
                                               playerName: player.name,
                                               cardName: card.name,
@@ -631,10 +565,10 @@ export default function Home() {
                                               style: card.style
                                           })}
                                       >
-                                          <PlusCircle className="h-4 w-4 text-primary/80 hover:text-primary" />
+                                          <Wrench className="h-4 w-4 text-primary/80 hover:text-primary" />
                                       </Button>
                                     </TooltipTrigger>
-                                    <TooltipContent><p>Añadir valoración</p></TooltipContent>
+                                    <TooltipContent><p>Editar / Añadir valoración</p></TooltipContent>
                                   </Tooltip>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
