@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from "@/hooks/use-toast";
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDoc, getDocs } from 'firebase/firestore';
+import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDoc, getDocs, writeBatch } from 'firebase/firestore';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -16,7 +16,7 @@ import { PositionIcon } from '@/components/position-icon';
 import type { Player, PlayersByPosition, Position, PlayerCard as PlayerCardType, Formation, IdealTeamPlayer } from '@/lib/types';
 import { positions } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Trash2, X, Star, Bot, Download } from 'lucide-react';
+import { PlusCircle, Trash2, X, Star, Bot, Download, Wrench } from 'lucide-react';
 import { calculateAverage, cn, formatAverage } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { IdealTeamDisplay } from '@/components/ideal-team-display';
@@ -366,6 +366,68 @@ export default function Home() {
       });
     }
   };
+
+  const handleMigrateStyles = async () => {
+    if (!db) {
+      toast({
+        variant: "destructive",
+        title: "Error de Conexión",
+        description: "No se pudo conectar a la base de datos.",
+      });
+      return;
+    }
+    
+    toast({ title: "Iniciando Migración", description: "Por favor, espera..." });
+
+    try {
+        const playersCollection = collection(db, 'players');
+        const playerSnapshot = await getDocs(playersCollection);
+        const batch = writeBatch(db);
+        let migratedCount = 0;
+
+        for (const playerDoc of playerSnapshot.docs) {
+            const playerData = playerDoc.data();
+            const playerRef = doc(db, 'players', playerDoc.id);
+
+            // Check if player has the old 'style' field and cards exist
+            if (playerData.style && playerData.cards && playerData.cards.length > 0) {
+                const newCards = playerData.cards.map((card: any) => {
+                    // Only add style if it doesn't already exist on the card
+                    if (!card.style || card.style === 'Ninguno') {
+                        return { ...card, style: playerData.style };
+                    }
+                    return card;
+                });
+                
+                // Update the document in the batch
+                batch.update(playerRef, { cards: newCards, style: deleteDoc() }); // Deletes the old style field
+                migratedCount++;
+            }
+        }
+        
+        if (migratedCount > 0) {
+            await batch.commit();
+            toast({
+                title: "Migración Completada",
+                description: `${migratedCount} jugadores han sido actualizados exitosamente.`,
+            });
+        } else {
+            toast({
+                title: "Nada que Migrar",
+                description: "Todos los jugadores ya parecen estar actualizados.",
+            });
+        }
+
+    } catch (error) {
+        console.error("Error during style migration: ", error);
+        toast({
+            variant: "destructive",
+            title: "Error en la Migración",
+            description: "No se pudo completar la migración de estilos.",
+        });
+    }
+};
+
   
   if (error) {
     return (
@@ -404,6 +466,10 @@ export default function Home() {
             eFootTracker
           </h1>
           <div className="flex items-center gap-2">
+             <Button onClick={handleMigrateStyles} variant="outline">
+                <Wrench className="mr-2 h-4 w-4" />
+                Migrar Estilos
+            </Button>
             <Button onClick={handleDownloadBackup} variant="outline">
                 <Download className="mr-2 h-4 w-4" />
                 Descargar Backup
