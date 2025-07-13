@@ -27,7 +27,6 @@ import { Input } from "@/components/ui/input";
 const formSchema = z.object({
   playerId: z.string().min(1, "Se requiere el ID del jugador."),
   currentPlayerName: z.string().min(2, "El nombre del jugador debe tener al menos 2 caracteres."),
-  imageUrl: z.string().url("Debe ser una URL válida.").optional().or(z.literal('')),
 });
 
 export type FormValues = z.infer<typeof formSchema>;
@@ -45,7 +44,6 @@ export function EditPlayerDialog({ open, onOpenChange, onEditPlayer, initialData
     defaultValues: {
         playerId: '',
         currentPlayerName: '',
-        imageUrl: '',
     }
   });
 
@@ -64,9 +62,9 @@ export function EditPlayerDialog({ open, onOpenChange, onEditPlayer, initialData
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Editar Jugador</DialogTitle>
+          <DialogTitle>Editar Nombre del Jugador</DialogTitle>
           <DialogDescription>
-            Modifica el nombre y la imagen del jugador.
+            Modifica el nombre del jugador. Este nombre se aplicará a todas sus cartas.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -79,19 +77,6 @@ export function EditPlayerDialog({ open, onOpenChange, onEditPlayer, initialData
                   <FormLabel>Nombre del Jugador</FormLabel>
                   <FormControl>
                     <Input placeholder="Ej: L. Messi" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="imageUrl"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>URL de la Imagen (Opcional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://ejemplo.com/imagen.png" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

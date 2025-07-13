@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from "@/hooks/use-toast";
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDoc, getDocs, writeBatch, deleteField, where, query } from 'firebase/firestore';
+import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDoc, getDocs, writeBatch, deleteField } from 'firebase/firestore';
 import Image from 'next/image';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -29,7 +29,7 @@ import { PositionIcon } from '@/components/position-icon';
 import type { Player, PlayersByPosition, Position, PlayerCard as PlayerCardType, Formation, IdealTeamPlayer } from '@/lib/types';
 import { positions } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Trash2, X, Star, Bot, Download, Wrench, Pencil } from 'lucide-react';
+import { PlusCircle, Trash2, X, Star, Bot, Download, Wrench, Pencil, Wand2 } from 'lucide-react';
 import { calculateAverage, cn, formatAverage } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { IdealTeamDisplay } from '@/components/ideal-team-display';
@@ -76,10 +76,10 @@ export default function Home() {
             return {
                 id: doc.id,
                 name: data.name,
-                imageUrl: data.imageUrl,
                 cards: (data.cards || []).map((card: any) => ({
                     ...card,
                     style: card.style || 'Ninguno',
+                    imageUrl: card.imageUrl || '',
                     ratingsByPosition: card.ratingsByPosition || {}
                 })),
             } as Player;
@@ -148,6 +148,7 @@ export default function Home() {
         cardId: card.id,
         currentCardName: card.name,
         currentStyle: card.style,
+        imageUrl: card.imageUrl || '',
         position: position,
     });
     setEditCardDialogOpen(true);
@@ -157,7 +158,6 @@ export default function Home() {
     setEditPlayerDialogInitialData({
       playerId: player.id,
       currentPlayerName: player.name,
-      imageUrl: player.imageUrl || '',
     });
     setEditPlayerDialogOpen(true);
   };
@@ -193,7 +193,7 @@ export default function Home() {
           }
           card.ratingsByPosition[position]!.push(rating);
         } else {
-          card = { id: uuidv4(), name: cardName, style: style, ratingsByPosition: { [position]: [rating] } };
+          card = { id: uuidv4(), name: cardName, style: style, imageUrl: '', ratingsByPosition: { [position]: [rating] } };
           newCards.push(card);
         }
         
@@ -204,8 +204,7 @@ export default function Home() {
       } else {
         const newPlayer = {
           name: playerName,
-          cards: [{ id: uuidv4(), name: cardName, style: style, ratingsByPosition: { [position]: [rating] } }],
-          imageUrl: '',
+          cards: [{ id: uuidv4(), name: cardName, style: style, imageUrl: '', ratingsByPosition: { [position]: [rating] } }],
         };
         await addDoc(collection(db, 'players'), newPlayer);
       }
@@ -223,7 +222,7 @@ export default function Home() {
 
   const handleEditCard = async (values: EditCardFormValues) => {
     if (!players) return;
-    const { playerId, cardId, currentCardName, currentStyle } = values;
+    const { playerId, cardId, currentCardName, currentStyle, imageUrl } = values;
 
     const player = players.find(p => p.id === playerId);
     if (!player) return;
@@ -234,6 +233,7 @@ export default function Home() {
     if (cardToUpdate) {
         cardToUpdate.name = currentCardName;
         cardToUpdate.style = currentStyle;
+        cardToUpdate.imageUrl = imageUrl || '';
 
         try {
             await updateDoc(doc(db, 'players', playerId), { cards: newCards });
@@ -250,20 +250,19 @@ export default function Home() {
   };
 
   const handleEditPlayer = async (values: EditPlayerFormValues) => {
-    const { playerId, currentPlayerName, imageUrl } = values;
+    const { playerId, currentPlayerName } = values;
     try {
       const playerRef = doc(db, 'players', playerId);
       await updateDoc(playerRef, {
         name: currentPlayerName,
-        imageUrl: imageUrl || '',
       });
-      toast({ title: "Jugador Actualizado", description: "Los datos del jugador se han actualizado." });
+      toast({ title: "Jugador Actualizado", description: "El nombre del jugador se ha actualizado." });
     } catch (error) {
       console.error("Error updating player: ", error);
       toast({
         variant: "destructive",
         title: "Error al Actualizar",
-        description: "No se pudieron guardar los cambios del jugador."
+        description: "No se pudo guardar el cambio de nombre."
       });
     }
   };
@@ -460,6 +459,47 @@ export default function Home() {
       });
     }
   };
+
+  const handleMigrateImages = async () => {
+    if (!db || !players) {
+      toast({ variant: "destructive", title: "Error", description: "La base de datos o los jugadores no están cargados." });
+      return;
+    }
+
+    const batch = writeBatch(db);
+    let migratedCount = 0;
+
+    for (const player of players) {
+      const playerRef = doc(db, 'players', player.id);
+      // This is a bit unsafe, we assume the old `imageUrl` field exists.
+      const oldImageUrl = (player as any).imageUrl;
+
+      if (oldImageUrl) {
+        const newCards = player.cards.map(card => ({
+          ...card,
+          imageUrl: card.imageUrl || oldImageUrl, // Set image on card if it doesn't have one
+        }));
+
+        batch.update(playerRef, { cards: newCards, imageUrl: deleteField() });
+        migratedCount++;
+      }
+    }
+
+    try {
+      await batch.commit();
+      toast({
+        title: "Migración Completada",
+        description: `Se han migrado las imágenes de ${migratedCount} jugadores a sus cartas.`,
+      });
+    } catch (error) {
+      console.error("Error migrating images:", error);
+      toast({
+        variant: "destructive",
+        title: "Error en la Migración",
+        description: "No se pudieron migrar las imágenes.",
+      });
+    }
+  };
   
   if (error) {
     return (
@@ -532,6 +572,10 @@ export default function Home() {
             eFootTracker
           </h1>
           <div className="flex items-center gap-2">
+            <Button onClick={handleMigrateImages} variant="outline" size="sm">
+                <Wand2 className="mr-2 h-4 w-4" />
+                Migrar Imágenes
+            </Button>
             <Button onClick={handleDownloadBackup} variant="outline">
                 <Download className="mr-2 h-4 w-4" />
                 Descargar Backup
@@ -642,11 +686,11 @@ export default function Home() {
                              <TableRow key={`${player.id}-${card.id}-${pos}`} className={rowClasses}>
                               <TableCell>
                                 <div className="flex items-center gap-3">
-                                  {player.imageUrl ? (
-                                    <button onClick={() => handleViewImage(player.imageUrl!, player.name)} className="focus:outline-none focus:ring-2 focus:ring-ring rounded">
+                                  {card.imageUrl ? (
+                                    <button onClick={() => handleViewImage(card.imageUrl!, `${player.name} - ${card.name}`)} className="focus:outline-none focus:ring-2 focus:ring-ring rounded">
                                       <Image
-                                        src={player.imageUrl}
-                                        alt={player.name}
+                                        src={card.imageUrl}
+                                        alt={card.name}
                                         width={40}
                                         height={40}
                                         className="bg-transparent object-contain"
@@ -735,7 +779,7 @@ export default function Home() {
                                         <Wrench className="h-4 w-4 text-muted-foreground/80 hover:text-muted-foreground" />
                                       </Button>
                                     </TooltipTrigger>
-                                    <TooltipContent><p>Editar carta (nombre y estilo)</p></TooltipContent>
+                                    <TooltipContent><p>Editar carta (nombre, estilo e imagen)</p></TooltipContent>
                                   </Tooltip>
                                   <Tooltip>
                                     <TooltipTrigger asChild>

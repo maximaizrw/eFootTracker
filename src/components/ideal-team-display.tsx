@@ -25,10 +25,10 @@ const PlayerDisplayCard = ({ player }: { player: IdealTeamPlayer | null }) => {
   return (
     <Card className="bg-card/80 w-full h-full flex flex-col min-h-[140px] justify-between">
        <div className="relative aspect-square w-full">
-         {player.player.imageUrl ? (
+         {player.card.imageUrl ? (
             <Image 
-                src={player.player.imageUrl}
-                alt={player.player.name}
+                src={player.card.imageUrl}
+                alt={player.card.name}
                 fill
                 sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw"
                 className="rounded-t-lg object-cover bg-white/5"

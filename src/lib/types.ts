@@ -8,13 +8,13 @@ export type PlayerCard = {
   id: string;
   name: string; // e.g., "Highlight", "Player of the Week"
   style: PlayerStyle;
+  imageUrl?: string;
   ratingsByPosition: { [key in Position]?: number[] };
 };
 
 export type Player = {
   id: string;
   name: string;
-  imageUrl?: string;
   cards: PlayerCard[];
 };
 

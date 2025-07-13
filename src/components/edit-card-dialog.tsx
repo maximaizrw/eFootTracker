@@ -39,6 +39,7 @@ const formSchema = z.object({
   position: z.enum(['PT', 'DFC', 'LI', 'LD', 'MCD', 'MC', 'MDI', 'MDD', 'MO', 'EXI', 'EXD', 'SD', 'DC']),
   currentCardName: z.string().min(2, "El nombre de la carta debe tener al menos 2 caracteres."),
   currentStyle: z.enum(playerStyles),
+  imageUrl: z.string().url("Debe ser una URL válida.").optional().or(z.literal('')),
 });
 
 export type FormValues = z.infer<typeof formSchema>;
@@ -109,7 +110,7 @@ export function EditCardDialog({ open, onOpenChange, onEditCard, initialData }: 
         <DialogHeader>
           <DialogTitle>Editar Carta</DialogTitle>
           <DialogDescription>
-            Modifica el nombre y el estilo de juego de la carta.
+            Modifica los detalles de la carta. La imagen es específica para esta carta.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -145,6 +146,19 @@ export function EditCardDialog({ open, onOpenChange, onEditCard, initialData }: 
                       ))}
                     </SelectContent>
                   </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="imageUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>URL de la Imagen de la Carta (Opcional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="https://ejemplo.com/imagen_carta.png" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
