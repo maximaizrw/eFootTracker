@@ -25,7 +25,7 @@ import {
 import { Input } from "@/components/ui/input";
 
 const formSchema = z.object({
-  playerId: z.string(),
+  playerId: z.string().min(1, "Se requiere el ID del jugador."),
   currentPlayerName: z.string().min(2, "El nombre del jugador debe tener al menos 2 caracteres."),
   imageUrl: z.string().url("Debe ser una URL válida.").optional().or(z.literal('')),
 });
@@ -42,6 +42,11 @@ type EditPlayerDialogProps = {
 export function EditPlayerDialog({ open, onOpenChange, onEditPlayer, initialData }: EditPlayerDialogProps) {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+        playerId: '',
+        currentPlayerName: '',
+        imageUrl: '',
+    }
   });
 
   useEffect(() => {
