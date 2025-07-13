@@ -12,6 +12,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel
+} from "@/components/ui/alert-dialog";
+
 import { AddRatingDialog, type FormValues as AddRatingFormValues } from '@/components/add-rating-dialog';
 import { EditCardDialog, type FormValues as EditCardFormValues } from '@/components/edit-card-dialog';
 import { EditPlayerDialog, type FormValues as EditPlayerFormValues } from '@/components/edit-player-dialog';
@@ -32,6 +42,9 @@ export default function Home() {
   const [isAddRatingDialogOpen, setAddRatingDialogOpen] = useState(false);
   const [isEditCardDialogOpen, setEditCardDialogOpen] = useState(false);
   const [isEditPlayerDialogOpen, setEditPlayerDialogOpen] = useState(false);
+  const [isImageViewerOpen, setImageViewerOpen] = useState(false);
+  const [viewingImageUrl, setViewingImageUrl] = useState<string | null>(null);
+  const [viewingImageName, setViewingImageName] = useState<string | null>(null);
   const [addDialogInitialData, setAddDialogInitialData] = useState<Partial<AddRatingFormValues> | undefined>(undefined);
   const [editCardDialogInitialData, setEditCardDialogInitialData] = useState<EditCardFormValues | undefined>(undefined);
   const [editPlayerDialogInitialData, setEditPlayerDialogInitialData] = useState<EditPlayerFormValues | undefined>(undefined);
@@ -147,6 +160,12 @@ export default function Home() {
       imageUrl: player.imageUrl || '',
     });
     setEditPlayerDialogOpen(true);
+  };
+
+  const handleViewImage = (url: string, name: string) => {
+    setViewingImageUrl(url);
+    setViewingImageName(name);
+    setImageViewerOpen(true);
   };
 
   const handleAddRating = async (values: AddRatingFormValues) => {
@@ -482,6 +501,28 @@ export default function Home() {
         onEditPlayer={handleEditPlayer}
         initialData={editPlayerDialogInitialData}
       />
+      <AlertDialog open={isImageViewerOpen} onOpenChange={setImageViewerOpen}>
+        <AlertDialogContent className="max-w-md p-0">
+          <AlertDialogHeader className="p-4 border-b">
+            <AlertDialogTitle>{viewingImageName}</AlertDialogTitle>
+          </AlertDialogHeader>
+          <div className="p-4 flex justify-center items-center">
+            {viewingImageUrl && (
+              <Image
+                src={viewingImageUrl}
+                alt={viewingImageName || 'Player Image'}
+                width={300}
+                height={300}
+                className="object-contain"
+              />
+            )}
+          </div>
+          <AlertDialogFooter className="p-4 border-t">
+            <AlertDialogCancel>Cerrar</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
 
       <header className="sticky top-0 z-10 bg-background/70 backdrop-blur-lg border-b border-white/10">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
@@ -599,14 +640,18 @@ export default function Home() {
                              <TableRow key={`${player.id}-${card.id}-${pos}`} className={rowClasses}>
                               <TableCell>
                                 <div className="flex items-center gap-3">
-                                  {player.imageUrl && (
-                                    <Image
-                                      src={player.imageUrl}
-                                      alt={player.name}
-                                      width={40}
-                                      height={40}
-                                      className="rounded-full bg-white/10 object-cover"
-                                    />
+                                  {player.imageUrl ? (
+                                    <button onClick={() => handleViewImage(player.imageUrl!, player.name)} className="focus:outline-none focus:ring-2 focus:ring-ring rounded">
+                                      <Image
+                                        src={player.imageUrl}
+                                        alt={player.name}
+                                        width={40}
+                                        height={40}
+                                        className="bg-transparent object-contain"
+                                      />
+                                    </button>
+                                  ) : (
+                                    <div className="w-[40px] h-[40px] flex-shrink-0" /> // Placeholder for alignment
                                   )}
                                   <div className="flex-1">
                                     <div className="flex items-center gap-2">
