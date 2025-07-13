@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from "@/hooks/use-toast";
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDoc, getDocs, writeBatch, deleteField } from 'firebase/firestore';
+import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDoc, getDocs, writeBatch, deleteField, where, query } from 'firebase/firestore';
 import Image from 'next/image';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -172,7 +172,6 @@ export default function Home() {
     const { playerId, playerName, cardName, position, rating, style } = values;
     
     try {
-      // If a playerId is provided, we are updating an existing player.
       if (playerId) {
         const playerRef = doc(db, 'players', playerId);
         const playerDoc = await getDoc(playerRef);
@@ -203,8 +202,6 @@ export default function Home() {
         });
 
       } else {
-        // If no playerId, we are creating a new player.
-        // The playerName from the form is used as the name for the new player.
         const newPlayer = {
           name: playerName,
           cards: [{ id: uuidv4(), name: cardName, style: style, ratingsByPosition: { [position]: [rating] } }],
@@ -255,7 +252,8 @@ export default function Home() {
   const handleEditPlayer = async (values: EditPlayerFormValues) => {
     const { playerId, currentPlayerName, imageUrl } = values;
     try {
-      await updateDoc(doc(db, 'players', playerId), {
+      const playerRef = doc(db, 'players', playerId);
+      await updateDoc(playerRef, {
         name: currentPlayerName,
         imageUrl: imageUrl || '',
       });
@@ -655,7 +653,7 @@ export default function Home() {
                                       />
                                     </button>
                                   ) : (
-                                    <div className="w-[40px] h-[40px] flex-shrink-0" /> // Placeholder for alignment
+                                    <div className="w-[40px] h-[40px] flex-shrink-0" />
                                   )}
                                   <div className="flex-1">
                                     <div className="flex items-center gap-2">
