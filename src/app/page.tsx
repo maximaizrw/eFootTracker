@@ -169,16 +169,17 @@ export default function Home() {
   };
 
   const handleAddRating = async (values: AddRatingFormValues) => {
-    if (players === null) return;
-    const { playerName, cardName, position, rating, style } = values;
+    const { playerId, playerName, cardName, position, rating, style } = values;
     
     try {
-      const existingPlayer = players.find(p => p.name.toLowerCase() === playerName.toLowerCase());
-      
-      if (existingPlayer) {
-        const playerRef = doc(db, 'players', existingPlayer.id);
+      // If a playerId is provided, we are updating an existing player.
+      if (playerId) {
+        const playerRef = doc(db, 'players', playerId);
         const playerDoc = await getDoc(playerRef);
-        if (!playerDoc.exists()) throw new Error("Player not found in DB.");
+        
+        if (!playerDoc.exists()) {
+            throw new Error("Player with given ID not found in DB.");
+        }
         
         const playerData = playerDoc.data() as Player;
         const newCards: PlayerCardType[] = JSON.parse(JSON.stringify(playerData.cards || []));
@@ -202,9 +203,12 @@ export default function Home() {
         });
 
       } else {
+        // If no playerId, we are creating a new player.
+        // The playerName from the form is used as the name for the new player.
         const newPlayer = {
           name: playerName,
           cards: [{ id: uuidv4(), name: cardName, style: style, ratingsByPosition: { [position]: [rating] } }],
+          imageUrl: '',
         };
         await addDoc(collection(db, 'players'), newPlayer);
       }
@@ -711,6 +715,7 @@ export default function Home() {
                                           className="h-8 w-8 rounded-full"
                                           aria-label={`Añadir valoración a ${player.name} (${card.name})`}
                                           onClick={() => handleOpenAddRating({
+                                              playerId: player.id,
                                               playerName: player.name,
                                               cardName: card.name,
                                               position: pos,

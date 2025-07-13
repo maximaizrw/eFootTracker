@@ -18,6 +18,15 @@ export type Player = {
   cards: PlayerCard[];
 };
 
+export type AddRatingFormValues = {
+    playerId?: string;
+    playerName: string;
+    cardName: string;
+    position: Position;
+    style: PlayerStyle;
+    rating: number;
+}
+
 export type PlayersByPosition = {
   [key in Position]: Player[];
 };

@@ -49,6 +49,7 @@ import type { Player, Position, PlayerStyle } from "@/lib/types";
 import { positions, playerStyles } from "@/lib/types";
 
 const formSchema = z.object({
+  playerId: z.string().optional(),
   playerName: z.string().min(2, "El nombre del jugador debe tener al menos 2 caracteres."),
   cardName: z.string().min(2, "El nombre de la carta debe tener al menos 2 caracteres."),
   position: z.enum(positions),
@@ -76,6 +77,7 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      playerId: undefined,
       playerName: "",
       cardName: "Carta Base",
       position: "DC",
@@ -84,6 +86,7 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
     },
   });
   
+  const playerIdValue = form.watch('playerId');
   const playerNameValue = form.watch('playerName');
   const cardNameValue = form.watch('cardName');
   const positionValue = form.watch('position');
@@ -91,88 +94,96 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
   useEffect(() => {
     if (open) {
       const defaultValues = {
+        playerId: undefined,
         playerName: '',
         cardName: 'Carta Base',
         position: 'DC' as Position,
         style: 'Ninguno' as PlayerStyle,
         rating: 5,
       };
-      const resetValues = { ...defaultValues, ...initialData };
-      form.reset(resetValues);
+      
+      form.reset({ ...defaultValues, ...initialData });
 
-      if (resetValues.playerName) {
-        const existingPlayer = players.find(p => p.name.toLowerCase() === resetValues.playerName!.toLowerCase());
+      if (initialData?.playerId) {
+        const existingPlayer = players.find(p => p.id === initialData.playerId);
         if (existingPlayer) {
-          const cards = existingPlayer.cards.map(c => c.name);
-          setCardNames(cards);
-          
-          if(resetValues.cardName) {
-            const existingCard = existingPlayer.cards.find(c => c.name.toLowerCase() === resetValues.cardName!.toLowerCase());
-            if (existingCard) {
-                form.setValue('style', existingCard.style);
-                setIsStyleDisabled(true);
-            } else {
-                setIsStyleDisabled(false);
-            }
-          }
+          setCardNames(existingPlayer.cards.map(c => c.name));
         }
       } else {
         setCardNames([]);
+      }
+
+      if (initialData?.cardName && initialData?.playerId) {
+          const player = players.find(p => p.id === initialData.playerId);
+          const card = player?.cards.find(c => c.name.toLowerCase() === initialData.cardName!.toLowerCase());
+          if (card) {
+            form.setValue('style', card.style);
+            setIsStyleDisabled(true);
+          } else {
+            setIsStyleDisabled(false);
+          }
+      } else {
         setIsStyleDisabled(false);
       }
     }
   }, [open, initialData, form, players]);
 
-
+  
   useEffect(() => {
-    if (initialData?.playerName && form.getValues('playerName') === initialData.playerName) {
-      return;
-    }
+    const selectedPlayer = players.find(p => p.id === playerIdValue);
 
-    if (!playerNameValue) {
-      setCardNames([]);
-      form.setValue('cardName', 'Carta Base');
-      form.setValue('style', 'Ninguno');
-      setIsStyleDisabled(false);
-      return;
-    }
-
-    const existingPlayer = players.find(p => p.name.toLowerCase() === playerNameValue.toLowerCase());
-    if (existingPlayer) {
-        setCardNames(existingPlayer.cards.map(c => c.name));
-        form.setValue('cardName', ''); // Force user to select a card
-    } else {
-        setCardNames([]);
+    if (selectedPlayer) {
+      if(form.getValues('playerName') !== selectedPlayer.name) {
+          form.setValue('playerName', selectedPlayer.name);
+      }
+      const cards = selectedPlayer.cards.map(c => c.name);
+      setCardNames(cards);
+      
+      const currentCardName = form.getValues('cardName');
+      if (currentCardName && !cards.map(c => c.toLowerCase()).includes(currentCardName.toLowerCase())) {
         form.setValue('cardName', 'Carta Base');
         form.setValue('style', 'Ninguno');
         setIsStyleDisabled(false);
+      }
+
+    } else {
+      setCardNames([]);
+      if (initialData?.playerName && form.getValues('playerName') !== initialData.playerName) {
+        // do nothing, we are in a quick add flow for a new player
+      } else if (!playerIdValue) {
+        form.setValue('cardName', 'Carta Base');
+        form.setValue('style', 'Ninguno');
+        setIsStyleDisabled(false);
+      }
     }
-  }, [playerNameValue, players, form, initialData]);
+  }, [playerIdValue, players, form, initialData]);
+
 
   useEffect(() => {
-     if (initialData?.cardName && form.getValues('cardName') === initialData.cardName) {
-        return;
-     }
+    if (initialData?.cardName && form.getValues('cardName') === initialData.cardName) {
+       return;
+    }
 
-     if (!playerNameValue || !cardNameValue) {
-        setIsStyleDisabled(false);
-        return;
-     }
-     
-     const existingPlayer = players.find(p => p.name.toLowerCase() === playerNameValue.toLowerCase());
-     if(existingPlayer) {
-        const existingCard = existingPlayer.cards.find(c => c.name.toLowerCase() === cardNameValue.toLowerCase());
-        if(existingCard) {
-            form.setValue('style', existingCard.style);
-            setIsStyleDisabled(true);
-        } else {
-            form.setValue('style', 'Ninguno');
-            setIsStyleDisabled(false);
-        }
-     } else {
-        setIsStyleDisabled(false);
-     }
-  }, [playerNameValue, cardNameValue, players, form, initialData]);
+    if (!playerIdValue || !cardNameValue) {
+       setIsStyleDisabled(false);
+       form.setValue('style', 'Ninguno');
+       return;
+    }
+    
+    const existingPlayer = players.find(p => p.id === playerIdValue);
+    if(existingPlayer) {
+       const existingCard = existingPlayer.cards.find(c => c.name.toLowerCase() === cardNameValue.toLowerCase());
+       if(existingCard) {
+           form.setValue('style', existingCard.style);
+           setIsStyleDisabled(true);
+       } else {
+           form.setValue('style', 'Ninguno');
+           setIsStyleDisabled(false);
+       }
+    } else {
+       setIsStyleDisabled(false);
+    }
+  }, [playerIdValue, cardNameValue, players, form, initialData]);
 
   const availableStyles = useMemo(() => {
     const gkStyles: PlayerStyle[] = ['Ninguno', 'Portero defensivo', 'Portero ofensivo'];
@@ -213,8 +224,7 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
     onOpenChange(false);
   }
   
-  const playerNames = [...new Set(players.map(p => p.name))];
-  const isQuickAdd = !!initialData?.playerName;
+  const isQuickAdd = !!initialData?.playerId;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -256,29 +266,33 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
                       <Command>
                         <CommandInput 
                           placeholder="Busca o crea un jugador..."
-                          onValueChange={(search) => form.setValue('playerName', search)}
+                          onValueChange={(search) => {
+                            form.setValue('playerName', search)
+                            form.setValue('playerId', undefined)
+                          }}
                           value={field.value}
                           aria-label="Nombre del jugador"
                         />
                         <CommandEmpty>No se encontró el jugador. Puedes crearlo.</CommandEmpty>
                         <CommandList>
                           <CommandGroup>
-                            {playerNames.map((name) => (
+                            {players.map((player) => (
                               <CommandItem
-                                key={name}
-                                value={name}
-                                onSelect={(currentValue) => {
-                                  form.setValue("playerName", currentValue === field.value ? "" : currentValue, { shouldValidate: true });
+                                key={player.id}
+                                value={player.name}
+                                onSelect={() => {
+                                  form.setValue("playerId", player.id);
+                                  form.setValue("playerName", player.name, { shouldValidate: true });
                                   setPlayerPopoverOpen(false);
                                 }}
                               >
                                 <Check
                                   className={cn(
                                     "mr-2 h-4 w-4",
-                                    field.value.toLowerCase() === name.toLowerCase() ? "opacity-100" : "opacity-0"
+                                    playerIdValue === player.id ? "opacity-100" : "opacity-0"
                                   )}
                                 />
-                                {name}
+                                {player.name}
                               </CommandItem>
                             ))}
                           </CommandGroup>
