@@ -1,6 +1,7 @@
 "use client";
 
 import type { IdealTeamPlayer, Position } from '@/lib/types';
+import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatAverage } from '@/lib/utils';
@@ -14,7 +15,7 @@ const PlayerDisplayCard = ({ player }: { player: IdealTeamPlayer | null }) => {
   if (!player || player.player.id.startsWith('placeholder')) {
     const position = player?.position;
     return (
-      <Card className="bg-muted/30 border-dashed w-full h-full flex items-center justify-center min-h-[120px]">
+      <Card className="bg-muted/30 border-dashed w-full h-full flex items-center justify-center min-h-[140px]">
         <CardContent className="p-4 text-center">
           <p className="text-sm text-muted-foreground">{position ? `Vacante (${position})` : 'Vacante'}</p>
         </CardContent>
@@ -22,14 +23,32 @@ const PlayerDisplayCard = ({ player }: { player: IdealTeamPlayer | null }) => {
     );
   }
   return (
-    <Card className="bg-card/80 w-full h-full flex flex-col min-h-[120px]">
-      <CardContent className="p-3 text-center flex flex-col items-center justify-center h-full">
-        <div className="text-2xl font-bold text-primary" style={{ textShadow: '0 0 6px hsl(var(--primary))' }}>
+    <Card className="bg-card/80 w-full h-full flex flex-col min-h-[140px] justify-between">
+       <div className="relative aspect-square w-full">
+         {player.player.imageUrl ? (
+            <Image 
+                src={player.player.imageUrl}
+                alt={player.player.name}
+                fill
+                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw"
+                className="rounded-t-lg object-cover bg-white/5"
+            />
+         ) : (
+            <div className="w-full h-full bg-muted/40 rounded-t-lg flex items-center justify-center">
+                <Users className="w-1/2 h-1/2 text-muted-foreground/40" />
+            </div>
+         )}
+        <div 
+          className="absolute top-1 right-1 text-lg font-bold text-white rounded-full bg-primary/80 backdrop-blur-sm h-8 w-8 flex items-center justify-center border-2 border-white/50"
+          style={{ textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
+        >
           {formatAverage(player.average)}
         </div>
-        <p className="font-semibold leading-tight mt-1 text-base">{player.player.name}</p>
+      </div>
+      <CardContent className="p-2 text-center flex flex-col items-center justify-center flex-grow">
+        <p className="font-semibold leading-tight mt-1 text-sm">{player.player.name}</p>
         <p className="text-xs text-muted-foreground truncate w-full px-1">{player.card.name}</p>
-        <Badge variant="secondary" className="mt-2 bg-white/10">{player.position}</Badge>
+        <Badge variant="secondary" className="mt-1 bg-white/10">{player.position}</Badge>
       </CardContent>
     </Card>
   );

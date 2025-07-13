@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useToast } from "@/hooks/use-toast";
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDoc, getDocs, writeBatch, deleteField } from 'firebase/firestore';
+import Image from 'next/image';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -13,11 +14,12 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AddRatingDialog, type FormValues as AddRatingFormValues } from '@/components/add-rating-dialog';
 import { EditCardDialog, type FormValues as EditCardFormValues } from '@/components/edit-card-dialog';
+import { EditPlayerDialog, type FormValues as EditPlayerFormValues } from '@/components/edit-player-dialog';
 import { PositionIcon } from '@/components/position-icon';
 import type { Player, PlayersByPosition, Position, PlayerCard as PlayerCardType, Formation, IdealTeamPlayer } from '@/lib/types';
 import { positions } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Trash2, X, Star, Bot, Download, Wrench } from 'lucide-react';
+import { PlusCircle, Trash2, X, Star, Bot, Download, Wrench, Pencil } from 'lucide-react';
 import { calculateAverage, cn, formatAverage } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { IdealTeamDisplay } from '@/components/ideal-team-display';
@@ -29,8 +31,10 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<Position | 'ideal-11'>('DC');
   const [isAddRatingDialogOpen, setAddRatingDialogOpen] = useState(false);
   const [isEditCardDialogOpen, setEditCardDialogOpen] = useState(false);
+  const [isEditPlayerDialogOpen, setEditPlayerDialogOpen] = useState(false);
   const [addDialogInitialData, setAddDialogInitialData] = useState<Partial<AddRatingFormValues> | undefined>(undefined);
-  const [editDialogInitialData, setEditDialogInitialData] = useState<EditCardFormValues | undefined>(undefined);
+  const [editCardDialogInitialData, setEditCardDialogInitialData] = useState<EditCardFormValues | undefined>(undefined);
+  const [editPlayerDialogInitialData, setEditPlayerDialogInitialData] = useState<EditPlayerFormValues | undefined>(undefined);
   const [formation, setFormation] = useState<Formation>({
     PT: 1, DFC: 3, LI: 0, LD: 1, MCD: 1, MC: 1, MDI: 0, MDD: 0, MO: 3, EXI: 0, EXD: 0, SD: 0, DC: 1
   });
@@ -59,6 +63,7 @@ export default function Home() {
             return {
                 id: doc.id,
                 name: data.name,
+                imageUrl: data.imageUrl,
                 cards: (data.cards || []).map((card: any) => ({
                     ...card,
                     style: card.style || 'Ninguno',
@@ -125,7 +130,7 @@ export default function Home() {
   };
   
   const handleOpenEditCard = (player: Player, card: PlayerCardType, position: Position) => {
-    setEditDialogInitialData({
+    setEditCardDialogInitialData({
         playerId: player.id,
         cardId: card.id,
         currentCardName: card.name,
@@ -133,6 +138,15 @@ export default function Home() {
         position: position,
     });
     setEditCardDialogOpen(true);
+  };
+
+  const handleOpenEditPlayer = (player: Player) => {
+    setEditPlayerDialogInitialData({
+      playerId: player.id,
+      currentPlayerName: player.name,
+      imageUrl: player.imageUrl || '',
+    });
+    setEditPlayerDialogOpen(true);
   };
 
   const handleAddRating = async (values: AddRatingFormValues) => {
@@ -215,6 +229,24 @@ export default function Home() {
     }
   };
 
+  const handleEditPlayer = async (values: EditPlayerFormValues) => {
+    const { playerId, currentPlayerName, imageUrl } = values;
+    try {
+      await updateDoc(doc(db, 'players', playerId), {
+        name: currentPlayerName,
+        imageUrl: imageUrl || '',
+      });
+      toast({ title: "Jugador Actualizado", description: "Los datos del jugador se han actualizado." });
+    } catch (error) {
+      console.error("Error updating player: ", error);
+      toast({
+        variant: "destructive",
+        title: "Error al Actualizar",
+        description: "No se pudieron guardar los cambios del jugador."
+      });
+    }
+  };
+
   const handleDeletePlayer = async (playerId: string) => {
     try {
         await deleteDoc(doc(db, 'players', playerId));
@@ -250,7 +282,7 @@ export default function Home() {
 
     const hasRatingsLeft = Object.keys(cardToUpdate.ratingsByPosition).length > 0;
 
-    const finalCards = hasRatingsLeft ? newCards : newCards.filter(c => c.id !== cardId);
+    const finalCards = hasRatingsLeft ? newCards.map(c => c.id === cardId ? cardToUpdate : c) : newCards.filter(c => c.id !== cardId);
 
     try {
         await updateDoc(doc(db, 'players', playerId), { cards: finalCards });
@@ -344,7 +376,6 @@ export default function Home() {
         usedCardIds.add(bestPlayerForSlot.card.id);
         return bestPlayerForSlot;
       }
-      // Return a placeholder if no player is found for the slot
       return {
         player: { id: `placeholder-${position}-${Math.random()}`, name: `Vacante (${position})`, cards: [] },
         card: { id: `placeholder-card-${position}-${Math.random()}`, name: 'N/A', style: 'Ninguno', ratingsByPosition: {} },
@@ -443,7 +474,13 @@ export default function Home() {
         open={isEditCardDialogOpen}
         onOpenChange={setEditCardDialogOpen}
         onEditCard={handleEditCard}
-        initialData={editDialogInitialData}
+        initialData={editCardDialogInitialData}
+      />
+      <EditPlayerDialog
+        open={isEditPlayerDialogOpen}
+        onOpenChange={setEditPlayerDialogOpen}
+        onEditPlayer={handleEditPlayer}
+        initialData={editPlayerDialogInitialData}
       />
 
       <header className="sticky top-0 z-10 bg-background/70 backdrop-blur-lg border-b border-white/10">
@@ -561,8 +598,30 @@ export default function Home() {
                           return (
                              <TableRow key={`${player.id}-${card.id}-${pos}`} className={rowClasses}>
                               <TableCell>
-                                <div className="font-medium text-base">{player.name}</div>
-                                <div className={cn("text-sm text-muted-foreground", specialTextClasses)}>{card.name}</div>
+                                <div className="flex items-center gap-3">
+                                  {player.imageUrl && (
+                                    <Image
+                                      src={player.imageUrl}
+                                      alt={player.name}
+                                      width={40}
+                                      height={40}
+                                      className="rounded-full bg-white/10 object-cover"
+                                    />
+                                  )}
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                        <div className="font-medium text-base">{player.name}</div>
+                                        <Button
+                                            variant="ghost" size="icon" className="h-6 w-6 rounded-full"
+                                            aria-label={`Editar jugador ${player.name}`}
+                                            onClick={() => handleOpenEditPlayer(player)}
+                                            >
+                                            <Pencil className="h-3 w-3 text-muted-foreground/60 hover:text-muted-foreground" />
+                                        </Button>
+                                    </div>
+                                    <div className={cn("text-sm text-muted-foreground", specialTextClasses)}>{card.name}</div>
+                                  </div>
+                                </div>
                               </TableCell>
                               <TableCell>
                                 {card.style && card.style !== "Ninguno" ? (
@@ -622,7 +681,7 @@ export default function Home() {
                                     <TooltipTrigger asChild>
                                       <Button
                                         variant="ghost" size="icon" className="h-8 w-8 rounded-full"
-                                        aria-label={`Editar valoraciones de ${card.name} (${player.name}) para la posición ${pos}`}
+                                        aria-label={`Editar carta ${card.name}`}
                                         onClick={() => handleOpenEditCard(player, card, pos)}
                                         >
                                         <Wrench className="h-4 w-4 text-muted-foreground/80 hover:text-muted-foreground" />

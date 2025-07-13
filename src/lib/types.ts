@@ -14,6 +14,7 @@ export type PlayerCard = {
 export type Player = {
   id: string;
   name: string;
+  imageUrl?: string;
   cards: PlayerCard[];
 };
 
