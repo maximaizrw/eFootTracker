@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from "@/hooks/use-toast";
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDoc, getDocs, writeBatch, deleteField } from 'firebase/firestore';
+import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDoc, getDocs, writeBatch } from 'firebase/firestore';
 import Image from 'next/image';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -29,7 +29,7 @@ import { PositionIcon } from '@/components/position-icon';
 import type { Player, PlayersByPosition, Position, PlayerCard as PlayerCardType, Formation, IdealTeamPlayer } from '@/lib/types';
 import { positions } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Trash2, X, Star, Bot, Download, Wrench, Pencil, Wand2 } from 'lucide-react';
+import { PlusCircle, Trash2, X, Star, Bot, Download, Wrench, Pencil } from 'lucide-react';
 import { calculateAverage, cn, formatAverage } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { IdealTeamDisplay } from '@/components/ideal-team-display';
@@ -459,47 +459,6 @@ export default function Home() {
       });
     }
   };
-
-  const handleMigrateImages = async () => {
-    if (!db || !players) {
-      toast({ variant: "destructive", title: "Error", description: "La base de datos o los jugadores no están cargados." });
-      return;
-    }
-
-    const batch = writeBatch(db);
-    let migratedCount = 0;
-
-    for (const player of players) {
-      const playerRef = doc(db, 'players', player.id);
-      // This is a bit unsafe, we assume the old `imageUrl` field exists.
-      const oldImageUrl = (player as any).imageUrl;
-
-      if (oldImageUrl) {
-        const newCards = player.cards.map(card => ({
-          ...card,
-          imageUrl: card.imageUrl || oldImageUrl, // Set image on card if it doesn't have one
-        }));
-
-        batch.update(playerRef, { cards: newCards, imageUrl: deleteField() });
-        migratedCount++;
-      }
-    }
-
-    try {
-      await batch.commit();
-      toast({
-        title: "Migración Completada",
-        description: `Se han migrado las imágenes de ${migratedCount} jugadores a sus cartas.`,
-      });
-    } catch (error) {
-      console.error("Error migrating images:", error);
-      toast({
-        variant: "destructive",
-        title: "Error en la Migración",
-        description: "No se pudieron migrar las imágenes.",
-      });
-    }
-  };
   
   if (error) {
     return (
@@ -572,10 +531,6 @@ export default function Home() {
             eFootTracker
           </h1>
           <div className="flex items-center gap-2">
-            <Button onClick={handleMigrateImages} variant="outline" size="sm">
-                <Wand2 className="mr-2 h-4 w-4" />
-                Migrar Imágenes
-            </Button>
             <Button onClick={handleDownloadBackup} variant="outline">
                 <Download className="mr-2 h-4 w-4" />
                 Descargar Backup
