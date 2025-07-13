@@ -148,15 +148,13 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
 
     } else {
       setCardNames([]);
-      if (initialData?.playerName && form.getValues('playerName') !== initialData.playerName) {
-        // do nothing, we are in a quick add flow for a new player
-      } else if (!playerIdValue) {
+      if (!playerIdValue) { // Only reset card details if it's a truly new player
         form.setValue('cardName', 'Carta Base');
         form.setValue('style', 'Ninguno');
         setIsStyleDisabled(false);
       }
     }
-  }, [playerIdValue, players, form, initialData]);
+  }, [playerIdValue, players, form]);
 
 
   useEffect(() => {
@@ -267,8 +265,10 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
                         <CommandInput 
                           placeholder="Busca o crea un jugador..."
                           onValueChange={(search) => {
-                            form.setValue('playerName', search)
-                            form.setValue('playerId', undefined)
+                            // This is the key change: only set the name, but clear the ID
+                            // so the app knows it might be a new player.
+                            form.setValue('playerName', search);
+                            form.setValue('playerId', undefined);
                           }}
                           value={field.value}
                           aria-label="Nombre del jugador"
@@ -281,7 +281,8 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
                                 key={player.id}
                                 value={player.name}
                                 onSelect={() => {
-                                  form.setValue("playerId", player.id);
+                                  // When selecting from the list, we set BOTH id and name
+                                  form.setValue("playerId", player.id, { shouldValidate: true });
                                   form.setValue("playerName", player.name, { shouldValidate: true });
                                   setPlayerPopoverOpen(false);
                                 }}
