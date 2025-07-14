@@ -8,10 +8,7 @@ import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDoc, getD
 import Image from 'next/image';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -28,15 +25,15 @@ import { AddFormationDialog, type AddFormationFormValues } from '@/components/ad
 import { AddMatchDialog, type AddMatchFormValues } from '@/components/add-match-dialog';
 import { FormationsDisplay } from '@/components/formations-display';
 import { PositionIcon } from '@/components/position-icon';
-import type { Player, PlayersByPosition, Position, PlayerCard as PlayerCardType, Formation, IdealTeamPlayer, FormationStats, MatchResult } from '@/lib/types';
+import type { Player, PlayersByPosition, Position, PlayerCard as PlayerCardType, Formation, IdealTeamPlayer, FormationStats, MatchResult, FlatPlayer } from '@/lib/types';
 import { positions } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Trash2, X, Star, Bot, Download, Wrench, Pencil, Search, Trophy } from 'lucide-react';
-import { calculateAverage, cn, formatAverage } from '@/lib/utils';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { PlusCircle, Trash2, X, Star, Bot, Download, Search, Trophy } from 'lucide-react';
+import { calculateAverage } from '@/lib/utils';
 import { IdealTeamDisplay } from '@/components/ideal-team-display';
-import { getCardStyle } from '@/lib/card-styles';
 import { Input } from '@/components/ui/input';
+import { PlayerTable } from '@/components/player-table';
+import { IdealTeamSetup } from '@/components/ideal-team-setup';
 
 
 export default function Home() {
@@ -711,9 +708,9 @@ export default function Home() {
           </TabsContent>
 
           {positions.map((pos) => {
-            const playersForPosition = playersByPosition[pos] || [];
+            const playersForPosition = playersByPosition?.[pos] || [];
             
-            const flatPlayerList = playersForPosition.flatMap(player => 
+            const flatPlayerList: FlatPlayer[] = playersForPosition.flatMap(player => 
                 (player.cards || [])
                 .filter(card => card.ratingsByPosition?.[pos] && card.ratingsByPosition[pos]!.length > 0)
                 .map(card => ({ 
@@ -748,216 +745,44 @@ export default function Home() {
                             />
                         </div>
                     </CardHeader>
-                    {flatPlayerList.length > 0 ? (
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="border-b-white/10 hover:bg-white/5">
-                          <TableHead className="w-[30%]">Jugador</TableHead>
-                          <TableHead>Estilo</TableHead>
-                          <TableHead>Prom.</TableHead>
-                          <TableHead>Partidos</TableHead>
-                          <TableHead className="w-[35%]">Valoraciones</TableHead>
-                          <TableHead className="text-right">Acciones</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {flatPlayerList.map(({ player, card, ratingsForPos }) => {
-                          const cardAverage = calculateAverage(ratingsForPos);
-                          const cardMatches = ratingsForPos.length;
-                          const cardStyle = getCardStyle(card.name);
-
-                           const rowStyle = cardStyle
-                            ? ({ '--card-color': `hsl(var(--tw-${cardStyle.tailwindClass}))` } as React.CSSProperties)
-                            : {};
-
-                          const rowClasses = cn(
-                            "border-b-white/10 transition-colors",
-                             cardStyle ? `bg-[--card-color]/10 hover:bg-[--card-color]/20` : "hover:bg-white/5"
-                          );
-                          
-                          const specialTextClasses = cn(
-                              "font-semibold",
-                              cardStyle ? `text-[--card-color]` : ""
-                          );
-                          
-                          const scoreGlowStyle = cardStyle
-                            ? { textShadow: `0 0 6px var(--card-color)` }
-                            : { textShadow: '0 0 8px hsl(var(--primary))' };
-
-
-                          return (
-                             <TableRow key={`${player.id}-${card.id}-${pos}`} className={rowClasses} style={rowStyle}>
-                              <TableCell>
-                                <div className="flex items-center gap-3">
-                                  {card.imageUrl ? (
-                                    <button onClick={() => handleViewImage(card.imageUrl!, `${player.name} - ${card.name}`)} className="focus:outline-none focus:ring-2 focus:ring-ring rounded">
-                                      <Image
-                                        src={card.imageUrl}
-                                        alt={card.name}
-                                        width={40}
-                                        height={40}
-                                        className="bg-transparent object-contain"
-                                      />
-                                    </button>
-                                  ) : (
-                                    <div className="w-[40px] h-[40px] flex-shrink-0" />
-                                  )}
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2">
-                                        <div className="font-medium text-base">{player.name}</div>
-                                        <Button
-                                            variant="ghost" size="icon" className="h-6 w-6 rounded-full"
-                                            aria-label={`Editar jugador ${player.name}`}
-                                            onClick={() => handleOpenEditPlayer(player)}
-                                            >
-                                            <Pencil className="h-3 w-3 text-muted-foreground/60 hover:text-muted-foreground" />
-                                        </Button>
-                                    </div>
-                                    <div className={cn("text-sm", cardStyle ? specialTextClasses : 'text-muted-foreground')}>{card.name}</div>
-                                  </div>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                {card.style && card.style !== "Ninguno" ? (
-                                  <Badge variant="secondary" className="bg-white/10 text-white/80">{card.style}</Badge>
-                                ) : <span className="text-muted-foreground">-</span>}
-                              </TableCell>
-                              <TableCell>
-                                <div className={cn("text-xl font-bold", cardStyle ? specialTextClasses : "text-primary")} style={scoreGlowStyle}>
-                                  {formatAverage(cardAverage)}
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-center">{cardMatches}</TableCell>
-                              <TableCell>
-                                <div className="flex flex-wrap items-center gap-2">
-                                  {ratingsForPos.slice(-5).map((rating, index) => {
-                                      const originalIndex = Math.max(0, ratingsForPos.length - 5) + index;
-                                      return (
-                                        <div key={originalIndex} className="group/rating relative">
-                                          <Badge variant="default" className="text-sm bg-primary/80 text-primary-foreground">
-                                            {rating.toFixed(1)}
-                                          </Badge>
-                                          <Button
-                                            size="icon" variant="destructive"
-                                            className="absolute -top-2 -right-2 h-4 w-4 rounded-full opacity-0 group-hover/rating:opacity-100 transition-opacity z-10"
-                                            onClick={() => handleDeleteRating(player.id, card.id, pos, originalIndex)}
-                                            aria-label={`Eliminar valoración ${rating}`}
-                                          >
-                                            <X className="h-3 w-3" />
-                                          </Button>
-                                        </div>
-                                      );
-                                    })}
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          className="h-8 w-8 rounded-full"
-                                          aria-label={`Añadir valoración a ${player.name} (${card.name})`}
-                                          onClick={() => handleOpenAddRating({
-                                              playerId: player.id,
-                                              playerName: player.name,
-                                              cardName: card.name,
-                                              position: pos,
-                                              style: card.style
-                                          })}
-                                      >
-                                          <PlusCircle className="h-4 w-4 text-primary/80 hover:text-primary" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent><p>Añadir valoración</p></TooltipContent>
-                                  </Tooltip>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button
-                                        variant="ghost" size="icon" className="h-8 w-8 rounded-full"
-                                        aria-label={`Editar carta ${card.name}`}
-                                        onClick={() => handleOpenEditCard(player, card)}
-                                        >
-                                        <Wrench className="h-4 w-4 text-muted-foreground/80 hover:text-muted-foreground" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent><p>Editar carta (nombre, estilo e imagen)</p></TooltipContent>
-                                  </Tooltip>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button
-                                        variant="ghost" size="icon" className="h-8 w-8 rounded-full"
-                                        aria-label={`Eliminar valoraciones de ${card.name} (${player.name}) para la posición ${pos}`}
-                                        onClick={() => handleDeleteCard(player.id, card.id, pos)}>
-                                        <Trash2 className="h-4 w-4 text-destructive/80 hover:text-destructive" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent><p>Eliminar todas las valoraciones para esta posición</p></TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                    ) : (
-                    <div className="col-span-full flex flex-col items-center justify-center text-center p-10">
-                        <p className="text-lg font-medium text-muted-foreground">
-                        {searchTerm ? `No se encontraron jugadores para "${searchTerm}" en ${pos}.` : `Todavía no hay jugadores en la posición de ${pos}.`}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                        {searchTerm ? "Intenta con otro nombre o borra la búsqueda." : "¡Haz clic en 'Añadir Valoración' para empezar!"}
-                        </p>
-                    </div>
-                    )}
+                    <PlayerTable
+                      players={flatPlayerList}
+                      position={pos}
+                      searchTerm={searchTerm}
+                      onOpenAddRating={handleOpenAddRating}
+                      onOpenEditCard={handleOpenEditCard}
+                      onOpenEditPlayer={handleOpenEditPlayer}
+                      onViewImage={handleViewImage}
+                      onDeleteCard={handleDeleteCard}
+                      onDeleteRating={handleDeleteRating}
+                    />
                   </Card>
               </TabsContent>
             );
           })}
           
           <TabsContent value="ideal-11" className="mt-6">
-            <Card className="bg-card/60 border-white/10">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bot className="text-accent"/>
-                  Generador de 11 Ideal
-                </CardTitle>
-                <CardDescription>
-                  Define tu formación táctica y generaremos el mejor equipo posible basado en el promedio de tus jugadores.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-6 p-4 border border-dashed border-white/10 rounded-lg">
-                  {positions.map(pos => (
-                    <div key={pos} className="flex flex-col gap-2">
-                       <label className="text-sm font-medium flex items-center gap-2">
-                          <PositionIcon position={pos} className="h-4 w-4 text-primary"/>
-                          {pos}
-                        </label>
-                      <Select
-                        value={(formation[pos] ?? 0).toString()}
-                        onValueChange={(value) => handleFormationChange(pos, value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {[0, 1, 2, 3, 4, 5].map(num => (
-                            <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  ))}
-                </div>
-                <Button onClick={handleGenerateTeam}>
-                  <Star className="mr-2 h-4 w-4" />
-                  Generar 11 Ideal
-                </Button>
-              </CardContent>
-            </Card>
+             <Card className="bg-card/60 border-white/10">
+               <CardHeader>
+                 <CardTitle className="flex items-center gap-2">
+                   <Bot className="text-accent"/>
+                   Generador de 11 Ideal
+                 </CardTitle>
+                 <CardDescription>
+                   Define tu formación táctica y generaremos el mejor equipo posible basado en el promedio de tus jugadores.
+                 </CardDescription>
+               </CardHeader>
+               <CardContent>
+                  <IdealTeamSetup 
+                    formation={formation} 
+                    onFormationChange={handleFormationChange} 
+                  />
+                  <Button onClick={handleGenerateTeam} className="mt-6">
+                    <Star className="mr-2 h-4 w-4" />
+                    Generar 11 Ideal
+                  </Button>
+               </CardContent>
+             </Card>
             <IdealTeamDisplay team={idealTeam} />
           </TabsContent>
 
