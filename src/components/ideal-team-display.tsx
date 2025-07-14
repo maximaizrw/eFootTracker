@@ -16,7 +16,7 @@ const PlayerDisplayCard = ({ player }: { player: IdealTeamPlayer | null }) => {
   if (!player || player.player.id.startsWith('placeholder')) {
     const position = player?.position;
     return (
-      <div className="flex-1 min-w-[120px] max-w-[200px] h-32 flex flex-col items-center justify-center bg-black/20 backdrop-blur-sm rounded-lg border-2 border-dashed border-white/30 text-center p-2">
+      <div className="flex-1 min-w-[150px] max-w-[200px] h-32 flex flex-col items-center justify-center bg-black/20 backdrop-blur-sm rounded-lg border-2 border-dashed border-white/30 text-center p-2">
         <Shirt className="w-8 h-8 text-white/40 mb-2" />
         <p className="text-sm font-semibold text-white/70">{position}</p>
         <p className="text-xs text-white/50 mt-1">Vacante</p>
@@ -36,18 +36,18 @@ const PlayerDisplayCard = ({ player }: { player: IdealTeamPlayer | null }) => {
   return (
     <div 
       className={cn(
-        "flex-1 min-w-[120px] max-w-[200px] h-32 bg-card/60 border border-white/10 rounded-lg p-3 flex flex-col items-center justify-center text-center transition-all duration-300 hover:border-white/30 hover:bg-card",
+        "flex-1 min-w-[150px] max-w-[200px] bg-card/60 border border-white/10 rounded-lg p-3 flex flex-col items-center text-center transition-all duration-300 hover:border-white/30 hover:bg-card",
         cardStyle && "bg-[--card-color]/10 border-[--card-color]/30 hover:border-[--card-color]/70"
       )}
       style={rowStyle}
     >
-      <div className="relative w-14 h-14 mb-2">
+      <div className="relative w-16 h-16 mb-2">
         {player.card.imageUrl ? (
           <Image
             src={player.card.imageUrl}
             alt={player.card.name}
             fill
-            sizes="56px"
+            sizes="64px"
             className="object-contain"
           />
         ) : (
@@ -56,12 +56,16 @@ const PlayerDisplayCard = ({ player }: { player: IdealTeamPlayer | null }) => {
           </div>
         )}
         <div 
-          className={cn("absolute -top-1 -right-1 text-sm font-bold text-white rounded-full bg-background h-6 w-6 flex items-center justify-center border-2", cardStyle ? "border-[--card-color]" : "border-primary")}
+          className={cn("absolute -top-1 -right-1 text-sm font-bold text-white rounded-full bg-background h-7 w-7 flex items-center justify-center border-2", cardStyle ? "border-[--card-color]" : "border-primary")}
           style={scoreGlowStyle}
         >
           {formatAverage(player.average)}
         </div>
       </div>
+      <Badge variant="secondary" className="mb-2 bg-white/5 border-white/10">
+        <PositionIcon position={player.position} className="h-4 w-4 mr-1.5"/>
+        {player.position}
+      </Badge>
       <p className="font-semibold text-sm text-foreground truncate w-full" title={player.player.name}>
         {player.player.name}
       </p>
