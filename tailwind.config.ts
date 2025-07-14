@@ -18,7 +18,7 @@ export default {
         'potw-green': '#39FF14',
         'potw-euro': '#E020E0',
         'potw-euro-mar24': '#5603f2',
-        'tsubasa-blue': '#0B1F4D',
+        'tsubasa-pink': '#ec798f',
         'startup-blue': '#005BBB',
         'atalanta-green': '#2CFF05',
         background: 'hsl(var(--background))',
@@ -103,7 +103,7 @@ export default {
         'potw-green': '0 0 15px 0px #39FF14',
         'potw-euro': '0 0 15px 0px #E020E0',
         'potw-euro-mar24': '0 0 15px 0px #5603f2',
-        'tsubasa-blue': '0 0 15px 0px #0B1F4D',
+        'tsubasa-pink': '0 0 15px 0px #ec798f',
         'startup-blue': '0 0 15px 0px #005BBB',
         'atalanta-green': '0 0 15px 0px #2CFF05',
       }

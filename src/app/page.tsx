@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from "@/hooks/use-toast";
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDoc, writeBatch } from 'firebase/firestore';
+import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDoc, writeBatch, getDocs } from 'firebase/firestore';
 import Image from 'next/image';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -141,14 +141,13 @@ export default function Home() {
     setAddRatingDialogOpen(true);
   };
   
-  const handleOpenEditCard = (player: Player, card: PlayerCardType, position: Position) => {
+  const handleOpenEditCard = (player: Player, card: PlayerCardType) => {
     setEditCardDialogInitialData({
         playerId: player.id,
         cardId: card.id,
         currentCardName: card.name,
         currentStyle: card.style,
         imageUrl: card.imageUrl || '',
-        position: position,
     });
     setEditCardDialogOpen(true);
   };
@@ -610,7 +609,7 @@ export default function Home() {
                           const rowClasses = cn(
                             "border-b-white/10 transition-colors",
                             isStartup && "bg-startup-blue/10 hover:bg-startup-blue/20",
-                            isTsubasa && "bg-tsubasa-blue/10 hover:bg-tsubasa-blue/20",
+                            isTsubasa && "bg-tsubasa-pink/10 hover:bg-tsubasa-pink/20",
                             isPotwEuroMar24 && "bg-potw-euro-mar24/10 hover:bg-potw-euro-mar24/20",
                             isEuroPotw && "bg-potw-euro/10 hover:bg-potw-euro/20",
                             isGenericPotw && "bg-potw-green/10 hover:bg-potw-green/20",
@@ -620,7 +619,7 @@ export default function Home() {
                           
                           const specialTextClasses = cn({
                               "text-startup-blue font-semibold": isStartup,
-                              "text-tsubasa-blue font-semibold": isTsubasa,
+                              "text-tsubasa-pink font-semibold": isTsubasa,
                               "text-potw-euro-mar24 font-semibold": isPotwEuroMar24,
                               "text-potw-euro font-semibold": isEuroPotw,
                               "text-potw-green font-semibold": isGenericPotw,
@@ -630,7 +629,7 @@ export default function Home() {
                           const scoreGlowStyle = isStartup
                             ? { textShadow: '0 0 6px #005BBB' }
                             : isTsubasa
-                            ? { textShadow: '0 0 6px #0B1F4D' }
+                            ? { textShadow: '0 0 6px #ec798f' }
                             : isPotwEuroMar24
                             ? { textShadow: '0 0 6px #5603f2' }
                             : isEuroPotw
@@ -733,7 +732,7 @@ export default function Home() {
                                       <Button
                                         variant="ghost" size="icon" className="h-8 w-8 rounded-full"
                                         aria-label={`Editar carta ${card.name}`}
-                                        onClick={() => handleOpenEditCard(player, card, pos)}
+                                        onClick={() => handleOpenEditCard(player, card)}
                                         >
                                         <Wrench className="h-4 w-4 text-muted-foreground/80 hover:text-muted-foreground" />
                                       </Button>

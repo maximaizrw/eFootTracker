@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -30,13 +30,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { PlayerStyle, Position } from "@/lib/types";
+import type { PlayerStyle } from "@/lib/types";
 import { playerStyles } from "@/lib/types";
 
 const formSchema = z.object({
   playerId: z.string(),
   cardId: z.string(),
-  position: z.enum(['PT', 'DFC', 'LI', 'LD', 'MCD', 'MC', 'MDI', 'MDD', 'MO', 'EXI', 'EXD', 'SD', 'DC']),
   currentCardName: z.string().min(2, "El nombre de la carta debe tener al menos 2 caracteres."),
   currentStyle: z.enum(playerStyles),
   imageUrl: z.string().url("Debe ser una URL válida.").optional().or(z.literal('')),
@@ -56,49 +55,12 @@ export function EditCardDialog({ open, onOpenChange, onEditCard, initialData }: 
     resolver: zodResolver(formSchema),
   });
 
-  const positionValue = form.watch('position');
-
   useEffect(() => {
     if (open && initialData) {
       form.reset(initialData);
     }
   }, [open, initialData, form]);
   
-  const availableStyles = useMemo(() => {
-    if (!positionValue) return playerStyles as unknown as PlayerStyle[];
-
-    const gkStyles: PlayerStyle[] = ['Ninguno', 'Portero defensivo', 'Portero ofensivo'];
-    const fbStyles: PlayerStyle[] = ['Ninguno', 'Lateral defensivo', 'Lateral Ofensivo', 'Lateral finalizador'];
-    const dfcStyles: PlayerStyle[] = ['Ninguno', 'El destructor', 'Creador de juego', 'Atacante extra'];
-    const mcdStyles: PlayerStyle[] = ['Ninguno', 'Omnipresente', 'Medio escudo', 'Organizador', 'El destructor'];
-    const mcStyles: PlayerStyle[] = ['Ninguno', 'Jugador de huecos', 'Omnipresente', 'Medio escudo', 'El destructor', 'Organizador', 'Creador de jugadas'];
-    const mdiMddStyles: PlayerStyle[] = ['Ninguno', 'Omnipresente', 'Jugador de huecos', 'Especialista en centros', 'Extremo móvil', 'Creador de jugadas'];
-    const moStyles: PlayerStyle[] = ['Ninguno', 'Creador de jugadas', 'Diez Clasico', 'Jugador de huecos', 'Señuelo'];
-    const sdStyles: PlayerStyle[] = ['Ninguno', 'Segundo delantero', 'Creador de jugadas', 'Diez Clasico', 'Jugador de huecos', 'Señuelo'];
-    const wingerStyles: PlayerStyle[] = ['Ninguno', 'Creador de jugadas', 'Extremo prolífico', 'Extremo móvil', 'Especialista en centros'];
-    const dcStyles: PlayerStyle[] = ['Ninguno', 'Cazagoles', 'Señuelo', 'Hombre de área', 'Hombre objetivo', 'Segundo delantero'];
-
-    if (positionValue === 'PT') return gkStyles;
-    if (positionValue === 'LI' || positionValue === 'LD') return fbStyles;
-    if (positionValue === 'DFC') return dfcStyles;
-    if (positionValue === 'MCD') return mcdStyles;
-    if (positionValue === 'MC') return mcStyles;
-    if (positionValue === 'MDI' || positionValue === 'MDD') return mdiMddStyles;
-    if (positionValue === 'MO') return moStyles;
-    if (positionValue === 'SD') return sdStyles;
-    if (positionValue === 'EXI' || positionValue === 'EXD') return wingerStyles;
-    if (positionValue === 'DC') return dcStyles;
-    
-    return playerStyles as unknown as PlayerStyle[];
-  }, [positionValue]);
-
-  useEffect(() => {
-    const currentStyle = form.getValues('currentStyle');
-    if (!availableStyles.includes(currentStyle)) {
-      form.setValue('currentStyle', 'Ninguno', { shouldValidate: true });
-    }
-  }, [positionValue, form, availableStyles]);
-
   function onSubmit(values: FormValues) {
     onEditCard(values);
     onOpenChange(false);
@@ -110,7 +72,7 @@ export function EditCardDialog({ open, onOpenChange, onEditCard, initialData }: 
         <DialogHeader>
           <DialogTitle>Editar Carta</DialogTitle>
           <DialogDescription>
-            Modifica los detalles de la carta. La imagen es específica para esta carta.
+            Modifica los detalles de la carta, incluyendo su nombre, estilo e imagen.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -141,7 +103,7 @@ export function EditCardDialog({ open, onOpenChange, onEditCard, initialData }: 
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {availableStyles.map((style) => (
+                      {playerStyles.map((style) => (
                         <SelectItem key={style} value={style}>{style}</SelectItem>
                       ))}
                     </SelectContent>
