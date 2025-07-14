@@ -180,5 +180,3 @@ export function AddFormationDialog({ open, onOpenChange, onAddFormation }: AddFo
     </Dialog>
   );
 }
-
-    
