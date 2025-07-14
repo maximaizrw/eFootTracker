@@ -257,7 +257,7 @@ export default function Home() {
 
   const uploadImage = async (file: File): Promise<{ url: string, path: string }> => {
     const filePath = `formations/${uuidv4()}-${file.name}`;
-    const storageRef = ref(storage, filePath);
+    const storageRef = ref(storage!, filePath);
     await uploadBytes(storageRef, file);
     const url = await getDownloadURL(storageRef);
     return { url, path: filePath };
