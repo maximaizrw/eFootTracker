@@ -1,20 +1,15 @@
 import type {Config} from 'tailwindcss';
 
 const tailwindColors = {
-  'potw-green': '#39FF14',
-  'potw-euro': '#E020E0',
-  'potw-euro-mar24': '#5603f2',
-  'potw-club-intl': '#b7a25b',
-  'tsubasa-pink': '#ec798f',
-  'startup-blue': '#005BBB',
-  'atalanta-green': '#2CFF05',
-  'spain-2010': '#be0100',
+  '--tw-potw-green': '#39FF14',
+  '--tw-potw-euro': '#E020E0',
+  '--tw-potw-euro-mar24': '#5603f2',
+  '--tw-potw-club-intl': '#b7a25b',
+  '--tw-tsubasa-pink': '#ec798f',
+  '--tw-startup-blue': '#005BBB',
+  '--tw-atalanta-green': '#2CFF05',
+  '--tw-spain-2010': '#be0100',
 };
-
-// Generate CSS variables for glow styles
-const colorVariables = Object.fromEntries(
-  Object.entries(tailwindColors).map(([name, color]) => [`--color-${name}`, color])
-);
 
 export default {
   darkMode: ['class'],
@@ -31,7 +26,6 @@ export default {
         code: ['monospace'],
       },
       colors: {
-        ...tailwindColors,
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {
@@ -110,23 +104,13 @@ export default {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
       },
-      boxShadow: {
-        'potw-green': '0 0 15px 0px #39FF14',
-        'potw-euro': '0 0 15px 0px #E020E0',
-        'potw-euro-mar24': '0 0 15px 0px #5603f2',
-        'potw-club-intl': '0 0 15px 0px #b7a25b',
-        'tsubasa-pink': '0 0 15px 0px #ec798f',
-        'startup-blue': '0 0 15px 0px #005BBB',
-        'atalanta-green': '0 0 15px 0px #2CFF05',
-        'spain-2010': '0 0 15px 0px #be0100',
-      }
     },
   },
   plugins: [
     require('tailwindcss-animate'),
     function({ addBase }: { addBase: (o: object) => void }) {
       addBase({
-        ':root': colorVariables,
+        ':root': tailwindColors,
       });
     },
   ],

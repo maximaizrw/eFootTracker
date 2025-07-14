@@ -1,11 +1,11 @@
 export type CardStyleInfo = {
   id: string;
   nameFragment: string;
-  tailwindClass: string;
+  tailwindClass: string; // This will now correspond to a CSS variable name
 };
 
 export const specialCardStyles: CardStyleInfo[] = [
-  // Reglas más específicas primero para evitar conflictos
+  // Rules should be ordered from most specific to least specific
   {
     id: 'potwEuroMar24',
     nameFragment: "potw european club championship 21 mar '24",
@@ -36,7 +36,6 @@ export const specialCardStyles: CardStyleInfo[] = [
     nameFragment: 'atalanta bc 96-97',
     tailwindClass: 'atalanta-green',
   },
-  // Reglas más genéricas al final
   {
     id: 'genericPotw',
     nameFragment: 'potw',
@@ -53,7 +52,7 @@ export const getCardStyle = (cardName: string): CardStyleInfo | null => {
   if (!cardName) return null;
   const cardNameLower = cardName.toLowerCase();
   
-  // El bucle asegura que las reglas más específicas (al principio del array) se encuentren primero.
+  // The loop ensures more specific rules (earlier in the array) are matched first.
   for (const style of specialCardStyles) {
     if (cardNameLower.includes(style.nameFragment)) {
       return style;

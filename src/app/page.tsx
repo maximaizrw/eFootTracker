@@ -600,23 +600,27 @@ export default function Home() {
                           const cardMatches = ratingsForPos.length;
                           const cardStyle = getCardStyle(card.name);
 
+                           const rowStyle = cardStyle
+                            ? ({ '--card-color': `var(--tw-${cardStyle.tailwindClass})` } as React.CSSProperties)
+                            : {};
+
                           const rowClasses = cn(
                             "border-b-white/10 transition-colors",
-                             cardStyle ? `bg-${cardStyle.tailwindClass}/10 hover:bg-${cardStyle.tailwindClass}/20` : "hover:bg-white/5"
+                             cardStyle ? `bg-[--card-color]/10 hover:bg-[--card-color]/20` : "hover:bg-white/5"
                           );
                           
                           const specialTextClasses = cn(
                               "font-semibold",
-                              cardStyle ? `text-${cardStyle.tailwindClass}` : ""
+                              cardStyle ? `text-[--card-color]` : ""
                           );
                           
                           const scoreGlowStyle = cardStyle
-                            ? { textShadow: `0 0 6px var(--color-${cardStyle.tailwindClass})` }
+                            ? { textShadow: `0 0 6px var(--card-color)` }
                             : { textShadow: '0 0 8px hsl(var(--primary))' };
 
 
                           return (
-                             <TableRow key={`${player.id}-${card.id}-${pos}`} className={rowClasses}>
+                             <TableRow key={`${player.id}-${card.id}-${pos}`} className={rowClasses} style={rowStyle}>
                               <TableCell>
                                 <div className="flex items-center gap-3">
                                   {card.imageUrl ? (
