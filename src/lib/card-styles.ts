@@ -5,22 +5,24 @@ export type CardStyleInfo = {
 };
 
 export const specialCardStyles: CardStyleInfo[] = [
+  // Most specific first
   {
     id: 'potwEuroMar24',
     nameFragment: "potw european club championship 21 mar '24",
     tailwindClass: 'potw-euro-mar24',
   },
   {
+    id: 'potwClubIntl',
+    nameFragment: "potw club international cup",
+    tailwindClass: 'potw-club-intl',
+  },
+  // Less specific
+  {
     id: 'euroPotw',
     nameFragment: "potw european club championship",
     tailwindClass: 'potw-euro',
   },
   {
-    id: 'potwClubIntl',
-    nameFragment: "potw club international cup",
-    tailwindClass: 'potw-club-intl',
-  },
-   {
     id: 'genericPotw',
     nameFragment: 'potw',
     tailwindClass: 'potw-green',
@@ -51,6 +53,7 @@ export const getCardStyle = (cardName: string): CardStyleInfo | null => {
   if (!cardName) return null;
   const cardNameLower = cardName.toLowerCase();
   
+  // The loop ensures more specific name fragments are matched first if they are ordered correctly in the array.
   for (const style of specialCardStyles) {
     if (cardNameLower.includes(style.nameFragment)) {
       return style;
