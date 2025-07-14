@@ -25,6 +25,7 @@ import { AddRatingDialog, type FormValues as AddRatingFormValues } from '@/compo
 import { EditCardDialog, type FormValues as EditCardFormValues } from '@/components/edit-card-dialog';
 import { EditPlayerDialog, type FormValues as EditPlayerFormValues } from '@/components/edit-player-dialog';
 import { AddFormationDialog, type AddFormationFormValues } from '@/components/add-formation-dialog';
+import { AddMatchDialog, type AddMatchFormValues } from '@/components/add-match-dialog';
 import { FormationsDisplay } from '@/components/formations-display';
 import { PositionIcon } from '@/components/position-icon';
 import type { Player, PlayersByPosition, Position, PlayerCard as PlayerCardType, Formation, IdealTeamPlayer, FormationStats, MatchResult } from '@/lib/types';
@@ -47,12 +48,14 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddRatingDialogOpen, setAddRatingDialogOpen] = useState(false);
   const [isAddFormationDialogOpen, setAddFormationDialogOpen] = useState(false);
+  const [isAddMatchDialogOpen, setAddMatchDialogOpen] = useState(false);
   const [isEditCardDialogOpen, setEditCardDialogOpen] = useState(false);
   const [isEditPlayerDialogOpen, setEditPlayerDialogOpen] = useState(false);
   const [isImageViewerOpen, setImageViewerOpen] = useState(false);
   const [viewingImageUrl, setViewingImageUrl] = useState<string | null>(null);
   const [viewingImageName, setViewingImageName] = useState<string | null>(null);
   const [addDialogInitialData, setAddDialogInitialData] = useState<Partial<AddRatingFormValues> | undefined>(undefined);
+  const [addMatchInitialData, setAddMatchInitialData] = useState<{ formationId: string; formationName: string } | undefined>(undefined);
   const [editCardDialogInitialData, setEditCardDialogInitialData] = useState<EditCardFormValues | undefined>(undefined);
   const [editPlayerDialogInitialData, setEditPlayerDialogInitialData] = useState<EditPlayerFormValues | undefined>(undefined);
   const [formation, setFormation] = useState<Formation>({
@@ -271,18 +274,24 @@ export default function Home() {
     }
   };
   
-  const handleAddMatchResult = async (formationId: string, outcome: 'win' | 'draw' | 'loss') => {
+  const handleOpenAddMatch = (formationId: string, formationName: string) => {
+    setAddMatchInitialData({ formationId, formationName });
+    setAddMatchDialogOpen(true);
+  };
+
+  const handleAddMatchResult = async (values: AddMatchFormValues) => {
     try {
-      const formationRef = doc(db, 'formations', formationId);
+      const formationRef = doc(db, 'formations', values.formationId);
       const newResult: MatchResult = {
         id: uuidv4(),
-        outcome,
+        goalsFor: values.goalsFor,
+        goalsAgainst: values.goalsAgainst,
         date: new Date().toISOString(),
       };
       await updateDoc(formationRef, {
         matches: arrayUnion(newResult)
       });
-      toast({ title: "Resultado Añadido", description: `Se ha registrado un nuevo partido como ${outcome === 'win' ? 'victoria' : outcome === 'draw' ? 'empate' : 'derrota'}.` });
+      toast({ title: "Resultado Añadido", description: `Marcador ${values.goalsFor} - ${values.goalsAgainst} guardado.` });
     } catch (error) {
       console.error("Error adding match result:", error);
       toast({
@@ -618,6 +627,12 @@ export default function Home() {
         onOpenChange={setAddFormationDialogOpen}
         onAddFormation={handleAddFormation}
       />
+      <AddMatchDialog
+        open={isAddMatchDialogOpen}
+        onOpenChange={setAddMatchDialogOpen}
+        onAddMatch={handleAddMatchResult}
+        initialData={addMatchInitialData}
+      />
       <EditCardDialog
         open={isEditCardDialogOpen}
         onOpenChange={setEditCardDialogOpen}
@@ -690,7 +705,7 @@ export default function Home() {
           <TabsContent value="formations" className="mt-6">
             <FormationsDisplay
               formations={formations}
-              onAddResult={handleAddMatchResult}
+              onAddMatch={handleOpenAddMatch}
               onDelete={handleDeleteFormation}
             />
           </TabsContent>

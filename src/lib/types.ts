@@ -55,7 +55,8 @@ export type FormationPlayStyle = typeof formationPlayStyles[number];
 
 export type MatchResult = {
   id: string;
-  outcome: 'win' | 'draw' | 'loss';
+  goalsFor: number;
+  goalsAgainst: number;
   date: string; // ISO 8601 string
 };
 
@@ -74,3 +75,9 @@ export type AddFormationFormValues = {
   imageUrl: string;
   sourceUrl?: string;
 };
+
+export type AddMatchFormValues = {
+  formationId: string;
+  goalsFor: number;
+  goalsAgainst: number;
+}
