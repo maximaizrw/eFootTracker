@@ -37,15 +37,17 @@ import { formationPlayStyles } from "@/lib/types";
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
+const fileListSchema = typeof window !== 'undefined' ? z.instanceof(FileList) : z.any();
+
+
 const formSchema = z.object({
   name: z.string().min(2, "El nombre debe tener al menos 2 caracteres."),
   playStyle: z.enum(formationPlayStyles),
-  image: z.custom<FileList>()
+  image: fileListSchema
     .refine(files => files && files.length === 1, "La imagen principal es obligatoria.")
     .refine(files => files?.[0]?.size <= MAX_FILE_SIZE, `El tamaño máximo es de 2MB.`)
     .refine(files => files?.[0]?.type && ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type), "Solo se aceptan .jpg, .jpeg, .png y .webp."),
-  secondaryImage: z.custom<FileList>()
-    .refine(files => !files || files.length === 0 || files.length === 1, "Solo puedes subir una imagen.")
+  secondaryImage: fileListSchema
     .refine(files => !files || files.length === 0 || files[0].size <= MAX_FILE_SIZE, `El tamaño máximo es de 2MB.`)
     .refine(files => !files || files.length === 0 || ACCEPTED_IMAGE_TYPES.includes(files[0].type), "Solo se aceptan .jpg, .jpeg, .png y .webp.")
     .optional(),
@@ -68,8 +70,6 @@ export function AddFormationDialog({ open, onOpenChange, onAddFormation }: AddFo
       sourceUrl: "",
     },
   });
-
-  const secondaryImageRef = form.register("secondaryImage");
 
   function onSubmit(values: AddFormationFormValues) {
     onAddFormation(values);
@@ -126,7 +126,7 @@ export function AddFormationDialog({ open, onOpenChange, onAddFormation }: AddFo
              <FormField
               control={form.control}
               name="image"
-              render={({ field: { onChange, value, ...rest } }) => (
+              render={({ field: { value, onChange, ...fieldProps } }) => (
                 <FormItem>
                   <FormLabel>Imagen Principal</FormLabel>
                   <FormControl>
@@ -134,7 +134,7 @@ export function AddFormationDialog({ open, onOpenChange, onAddFormation }: AddFo
                       type="file" 
                       accept="image/png, image/jpeg, image/webp"
                       onChange={(e) => onChange(e.target.files)}
-                      {...rest}
+                      {...fieldProps}
                     />
                   </FormControl>
                    <FormDescription>Sube la táctica principal.</FormDescription>
@@ -142,18 +142,25 @@ export function AddFormationDialog({ open, onOpenChange, onAddFormation }: AddFo
                 </FormItem>
               )}
             />
-            <FormItem>
-              <FormLabel>Imagen Secundaria (Opcional)</FormLabel>
-              <FormControl>
-                <Input 
-                  type="file" 
-                  accept="image/png, image/jpeg, image/webp"
-                  {...secondaryImageRef}
-                />
-              </FormControl>
-              <FormDescription>Sube la táctica defensiva u ofensiva.</FormDescription>
-              <FormMessage />
-            </FormItem>
+            <FormField
+              control={form.control}
+              name="secondaryImage"
+              render={({ field: { value, onChange, ...fieldProps } }) => (
+                <FormItem>
+                    <FormLabel>Imagen Secundaria (Opcional)</FormLabel>
+                    <FormControl>
+                        <Input 
+                            type="file" 
+                            accept="image/png, image/jpeg, image/webp"
+                            onChange={(e) => onChange(e.target.files)}
+                            {...fieldProps}
+                        />
+                    </FormControl>
+                    <FormDescription>Sube la táctica defensiva u ofensiva.</FormDescription>
+                    <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="sourceUrl"
@@ -176,3 +183,4 @@ export function AddFormationDialog({ open, onOpenChange, onAddFormation }: AddFo
     </Dialog>
   );
 }
+
