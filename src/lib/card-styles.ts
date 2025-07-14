@@ -21,7 +21,7 @@ export const specialCardStyles: CardStyleInfo[] = [
     nameFragment: 'captain tsubasa collaboration campaign',
     tailwindClass: 'tsubasa-pink',
   },
-   {
+  {
     id: 'spain2010',
     nameFragment: 'spain 2010',
     tailwindClass: 'spain-2010',
@@ -36,7 +36,7 @@ export const specialCardStyles: CardStyleInfo[] = [
     nameFragment: 'atalanta bc 96-97',
     tailwindClass: 'atalanta-green',
   },
-   // Reglas más genéricas al final
+  // Reglas más genéricas al final
   {
     id: 'genericPotw',
     nameFragment: 'potw',
