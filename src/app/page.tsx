@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from "@/hooks/use-toast";
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDoc, getDocs, writeBatch } from 'firebase/firestore';
+import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDoc, writeBatch } from 'firebase/firestore';
 import Image from 'next/image';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,7 +17,6 @@ import {
   AlertDialogContent,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogCancel
 } from "@/components/ui/alert-dialog";
@@ -600,17 +599,19 @@ export default function Home() {
                           const cardMatches = ratingsForPos.length;
                           const cardNameLower = card.name.toLowerCase();
                           
-                          const isEuroPotw = cardNameLower.includes("potw european club championship");
-                          const isGenericPotw = !isEuroPotw && cardNameLower.includes("potw");
+                          const isPotwEuroMar24 = cardNameLower.includes("potw european club championship 21 mar '24");
+                          const isEuroPotw = !isPotwEuroMar24 && cardNameLower.includes("potw european club championship");
+                          const isGenericPotw = !isEuroPotw && !isPotwEuroMar24 && cardNameLower.includes("potw");
                           const isTsubasa = cardNameLower.includes("captain tsubasa collaboration campaign");
                           const isStartup = cardNameLower.includes("startup campaign");
                           const isAtalanta = cardNameLower.includes("atalanta bc 96-97");
-                          const isSpecialCard = isEuroPotw || isGenericPotw || isTsubasa || isStartup || isAtalanta;
+                          const isSpecialCard = isPotwEuroMar24 || isEuroPotw || isGenericPotw || isTsubasa || isStartup || isAtalanta;
 
                           const rowClasses = cn(
                             "border-b-white/10 transition-colors",
                             isStartup && "bg-startup-blue/10 hover:bg-startup-blue/20",
                             isTsubasa && "bg-tsubasa-blue/10 hover:bg-tsubasa-blue/20",
+                            isPotwEuroMar24 && "bg-potw-euro-mar24/10 hover:bg-potw-euro-mar24/20",
                             isEuroPotw && "bg-potw-euro/10 hover:bg-potw-euro/20",
                             isGenericPotw && "bg-potw-green/10 hover:bg-potw-green/20",
                             isAtalanta && "bg-atalanta-green/10 hover:bg-atalanta-green/20",
@@ -620,6 +621,7 @@ export default function Home() {
                           const specialTextClasses = cn({
                               "text-startup-blue font-semibold": isStartup,
                               "text-tsubasa-blue font-semibold": isTsubasa,
+                              "text-potw-euro-mar24 font-semibold": isPotwEuroMar24,
                               "text-potw-euro font-semibold": isEuroPotw,
                               "text-potw-green font-semibold": isGenericPotw,
                               "text-atalanta-green font-semibold": isAtalanta,
@@ -629,6 +631,8 @@ export default function Home() {
                             ? { textShadow: '0 0 6px #005BBB' }
                             : isTsubasa
                             ? { textShadow: '0 0 6px #0B1F4D' }
+                            : isPotwEuroMar24
+                            ? { textShadow: '0 0 6px #5603f2' }
                             : isEuroPotw
                             ? { textShadow: '0 0 6px #E020E0' }
                             : isGenericPotw
