@@ -256,19 +256,17 @@ export default function Home() {
   };
 
   const uploadImage = async (file: File): Promise<{ url: string, path: string }> => {
+    if (!storage) {
+      throw new Error("Firebase Storage no está configurado.");
+    }
     const filePath = `formations/${uuidv4()}-${file.name}`;
-    const storageRef = ref(storage!, filePath);
+    const storageRef = ref(storage, filePath);
     await uploadBytes(storageRef, file);
     const url = await getDownloadURL(storageRef);
     return { url, path: filePath };
   };
 
   const handleAddFormation = async (values: AddFormationFormValues) => {
-    if (!storage) {
-        toast({ variant: "destructive", title: "Error", description: "Firebase Storage no está configurado."});
-        return;
-    }
-
     try {
       let imageUrl = '';
       let imagePath = '';
@@ -303,7 +301,7 @@ export default function Home() {
       toast({
         variant: "destructive",
         title: "Error al Guardar",
-        description: "No se pudo guardar la formación. Revisa la consola para más detalles.",
+        description: `No se pudo guardar la formación. ${error instanceof Error ? error.message : ''}`,
       });
     }
   };

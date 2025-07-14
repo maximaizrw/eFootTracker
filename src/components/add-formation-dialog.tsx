@@ -41,16 +41,17 @@ const formSchema = z.object({
   name: z.string().min(2, "El nombre debe tener al menos 2 caracteres."),
   playStyle: z.enum(formationPlayStyles),
   image: z.custom<FileList>()
-    .refine(files => files?.length === 1, "La imagen principal es obligatoria.")
+    .refine(files => files && files.length === 1, "La imagen principal es obligatoria.")
     .refine(files => files?.[0]?.size <= MAX_FILE_SIZE, `El tamaño máximo es de 2MB.`)
-    .refine(files => ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type), "Solo se aceptan .jpg, .jpeg, .png y .webp."),
+    .refine(files => files?.[0]?.type && ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type), "Solo se aceptan .jpg, .jpeg, .png y .webp."),
   secondaryImage: z.custom<FileList>()
-    .refine(files => files?.length <= 1, "Solo puedes subir una imagen.")
-    .refine(files => !files || files.length === 0 || files?.[0]?.size <= MAX_FILE_SIZE, `El tamaño máximo es de 2MB.`)
-    .refine(files => !files || files.length === 0 || ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type), "Solo se aceptan .jpg, .jpeg, .png y .webp.")
+    .refine(files => !files || files.length === 0 || files.length === 1, "Solo puedes subir una imagen.")
+    .refine(files => !files || files.length === 0 || files[0].size <= MAX_FILE_SIZE, `El tamaño máximo es de 2MB.`)
+    .refine(files => !files || files.length === 0 || ACCEPTED_IMAGE_TYPES.includes(files[0].type), "Solo se aceptan .jpg, .jpeg, .png y .webp.")
     .optional(),
   sourceUrl: z.string().url("Debe ser una URL válida.").optional().or(z.literal('')),
 });
+
 
 type AddFormationDialogProps = {
   open: boolean;
@@ -67,6 +68,8 @@ export function AddFormationDialog({ open, onOpenChange, onAddFormation }: AddFo
       sourceUrl: "",
     },
   });
+
+  const secondaryImageRef = form.register("secondaryImage");
 
   function onSubmit(values: AddFormationFormValues) {
     onAddFormation(values);
@@ -139,25 +142,18 @@ export function AddFormationDialog({ open, onOpenChange, onAddFormation }: AddFo
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="secondaryImage"
-              render={({ field: { onChange, value, ...rest } }) => (
-                <FormItem>
-                  <FormLabel>Imagen Secundaria (Opcional)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="file" 
-                      accept="image/png, image/jpeg, image/webp"
-                      onChange={(e) => onChange(e.target.files)}
-                      {...rest}
-                    />
-                  </FormControl>
-                  <FormDescription>Sube la táctica defensiva u ofensiva.</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <FormItem>
+              <FormLabel>Imagen Secundaria (Opcional)</FormLabel>
+              <FormControl>
+                <Input 
+                  type="file" 
+                  accept="image/png, image/jpeg, image/webp"
+                  {...secondaryImageRef}
+                />
+              </FormControl>
+              <FormDescription>Sube la táctica defensiva u ofensiva.</FormDescription>
+              <FormMessage />
+            </FormItem>
             <FormField
               control={form.control}
               name="sourceUrl"
