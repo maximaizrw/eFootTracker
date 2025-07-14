@@ -9,7 +9,7 @@ import Image from 'next/image';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -28,11 +28,12 @@ import { PositionIcon } from '@/components/position-icon';
 import type { Player, PlayersByPosition, Position, PlayerCard as PlayerCardType, Formation, IdealTeamPlayer } from '@/lib/types';
 import { positions } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Trash2, X, Star, Bot, Download, Wrench, Pencil } from 'lucide-react';
+import { PlusCircle, Trash2, X, Star, Bot, Download, Wrench, Pencil, Search } from 'lucide-react';
 import { calculateAverage, cn, formatAverage } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { IdealTeamDisplay } from '@/components/ideal-team-display';
 import { getCardStyle, type CardStyleInfo } from '@/lib/card-styles';
+import { Input } from '@/components/ui/input';
 
 
 export default function Home() {
@@ -40,6 +41,7 @@ export default function Home() {
   const [playersByPosition, setPlayersByPosition] = useState<PlayersByPosition | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Position | 'ideal-11'>('DC');
+  const [searchTerm, setSearchTerm] = useState('');
   const [isAddRatingDialogOpen, setAddRatingDialogOpen] = useState(false);
   const [isEditCardDialogOpen, setEditCardDialogOpen] = useState(false);
   const [isEditPlayerDialogOpen, setEditPlayerDialogOpen] = useState(false);
@@ -459,6 +461,11 @@ export default function Home() {
       });
     }
   };
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value as Position | 'ideal-11');
+    setSearchTerm('');
+  };
   
   if (error) {
     return (
@@ -544,7 +551,7 @@ export default function Home() {
       </header>
 
       <main className="container mx-auto p-4 md:p-8">
-        <Tabs defaultValue="DC" className="w-full" onValueChange={(value) => setActiveTab(value as Position | 'ideal-11')}>
+        <Tabs defaultValue="DC" className="w-full" onValueChange={handleTabChange}>
           <TabsList className="grid w-full grid-cols-4 sm:grid-cols-5 md:grid-cols-7 h-auto gap-1 bg-white/5">
             {positions.map((pos) => (
               <TabsTrigger key={pos} value={pos} className="py-2">
@@ -560,6 +567,7 @@ export default function Home() {
 
           {positions.map((pos) => {
             const playersForPosition = playersByPosition[pos] || [];
+            
             const flatPlayerList = playersForPosition.flatMap(player => 
                 (player.cards || [])
                 .filter(card => card.ratingsByPosition?.[pos] && card.ratingsByPosition[pos]!.length > 0)
@@ -568,7 +576,9 @@ export default function Home() {
                     card,
                     ratingsForPos: card.ratingsByPosition![pos]!
                 }))
-            ).sort((a, b) => {
+            )
+            .filter(({ player }) => player.name.toLowerCase().includes(searchTerm.toLowerCase()))
+            .sort((a, b) => {
               const avgA = calculateAverage(a.ratingsForPos);
               const avgB = calculateAverage(b.ratingsForPos);
 
@@ -581,8 +591,19 @@ export default function Home() {
 
             return (
               <TabsContent key={pos} value={pos} className="mt-6">
-                {flatPlayerList.length > 0 ? (
-                  <Card className="bg-card/60 border-white/10 overflow-hidden">
+                <Card className="bg-card/60 border-white/10 overflow-hidden">
+                    <CardHeader className="p-4 border-b border-white/10">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder={`Buscar en ${pos}...`}
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-10 w-full md:w-1/3"
+                            />
+                        </div>
+                    </CardHeader>
+                    {flatPlayerList.length > 0 ? (
                     <Table>
                       <TableHeader>
                         <TableRow className="border-b-white/10 hover:bg-white/5">
@@ -601,7 +622,7 @@ export default function Home() {
                           const cardStyle = getCardStyle(card.name);
 
                            const rowStyle = cardStyle
-                            ? ({ '--card-color': `var(--tw-${cardStyle.tailwindClass})` } as React.CSSProperties)
+                            ? ({ '--card-color': `hsl(var(--tw-${cardStyle.tailwindClass}))` } as React.CSSProperties)
                             : {};
 
                           const rowClasses = cn(
@@ -736,13 +757,17 @@ export default function Home() {
                         })}
                       </TableBody>
                     </Table>
+                    ) : (
+                    <div className="col-span-full flex flex-col items-center justify-center text-center p-10">
+                        <p className="text-lg font-medium text-muted-foreground">
+                        {searchTerm ? `No se encontraron jugadores para "${searchTerm}" en ${pos}.` : `Todavía no hay jugadores en la posición de ${pos}.`}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                        {searchTerm ? "Intenta con otro nombre o borra la búsqueda." : "¡Haz clic en 'Añadir Valoración' para empezar!"}
+                        </p>
+                    </div>
+                    )}
                   </Card>
-                ) : (
-                  <div className="col-span-full flex flex-col items-center justify-center text-center p-10 bg-card/80 rounded-lg shadow-sm border border-dashed border-white/10">
-                    <p className="text-lg font-medium text-muted-foreground">Todavía no hay jugadores en la posición de {pos}.</p>
-                    <p className="text-sm text-muted-foreground">¡Haz clic en 'Añadir Valoración' para empezar!</p>
-                  </div>
-                )}
               </TabsContent>
             );
           })}
@@ -754,9 +779,11 @@ export default function Home() {
                   <Bot className="text-accent"/>
                   Generador de 11 Ideal
                 </CardTitle>
+                <CardDescription>
+                  Define tu formación táctica y generaremos el mejor equipo posible basado en el promedio de tus jugadores.
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="mb-4 text-muted-foreground">Define tu formación táctica y generaremos el mejor equipo posible basado en el promedio de tus jugadores.</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-6 p-4 border border-dashed border-white/10 rounded-lg">
                   {positions.map(pos => (
                     <div key={pos} className="flex flex-col gap-2">
