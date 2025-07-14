@@ -32,6 +32,8 @@ import { PlusCircle, Trash2, X, Star, Bot, Download, Wrench, Pencil } from 'luci
 import { calculateAverage, cn, formatAverage } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { IdealTeamDisplay } from '@/components/ideal-team-display';
+import { getCardStyle, type CardStyleInfo } from '@/lib/card-styles';
+
 
 export default function Home() {
   const [players, setPlayers] = useState<Player[] | null>(null);
@@ -596,59 +598,22 @@ export default function Home() {
                         {flatPlayerList.map(({ player, card, ratingsForPos }) => {
                           const cardAverage = calculateAverage(ratingsForPos);
                           const cardMatches = ratingsForPos.length;
-                          const cardNameLower = card.name.toLowerCase();
-                          
-                          const isPotwEuroMar24 = cardNameLower.includes("potw european club championship 21 mar '24");
-                          const isEuroPotw = !isPotwEuroMar24 && cardNameLower.includes("potw european club championship");
-                          const isPotwClubIntl = cardNameLower.includes("potw club international cup");
-                          const isGenericPotw = !isEuroPotw && !isPotwEuroMar24 && !isPotwClubIntl && cardNameLower.includes("potw");
-                          const isTsubasa = cardNameLower.includes("captain tsubasa collaboration campaign");
-                          const isStartup = cardNameLower.includes("startup campaign");
-                          const isAtalanta = cardNameLower.includes("atalanta bc 96-97");
-                          const isSpain2010 = cardNameLower.includes("spain 2010");
-                          const isSpecialCard = isPotwEuroMar24 || isEuroPotw || isGenericPotw || isTsubasa || isStartup || isAtalanta || isSpain2010 || isPotwClubIntl;
+                          const cardStyle = getCardStyle(card.name);
 
                           const rowClasses = cn(
                             "border-b-white/10 transition-colors",
-                            isStartup && "bg-startup-blue/10 hover:bg-startup-blue/20",
-                            isTsubasa && "bg-tsubasa-pink/10 hover:bg-tsubasa-pink/20",
-                            isPotwEuroMar24 && "bg-potw-euro-mar24/10 hover:bg-potw-euro-mar24/20",
-                            isEuroPotw && "bg-potw-euro/10 hover:bg-potw-euro/20",
-                            isPotwClubIntl && "bg-potw-club-intl/10 hover:bg-potw-club-intl/20",
-                            isGenericPotw && "bg-potw-green/10 hover:bg-potw-green/20",
-                            isAtalanta && "bg-atalanta-green/10 hover:bg-atalanta-green/20",
-                            isSpain2010 && "bg-spain-2010/10 hover:bg-spain-2010/20",
-                            !isSpecialCard && "hover:bg-white/5"
+                             cardStyle ? `bg-${cardStyle.tailwindClass}/10 hover:bg-${cardStyle.tailwindClass}/20` : "hover:bg-white/5"
                           );
                           
-                          const specialTextClasses = cn({
-                              "text-startup-blue font-semibold": isStartup,
-                              "text-tsubasa-pink font-semibold": isTsubasa,
-                              "text-potw-euro-mar24 font-semibold": isPotwEuroMar24,
-                              "text-potw-euro font-semibold": isEuroPotw,
-                              "text-potw-club-intl font-semibold": isPotwClubIntl,
-                              "text-potw-green font-semibold": isGenericPotw,
-                              "text-atalanta-green font-semibold": isAtalanta,
-                              "text-spain-2010 font-semibold": isSpain2010,
-                          });
+                          const specialTextClasses = cn(
+                              "font-semibold",
+                              cardStyle ? `text-${cardStyle.tailwindClass}` : ""
+                          );
                           
-                          const scoreGlowStyle = isSpain2010
-                            ? { textShadow: '0 0 6px #be0100' }
-                            : isStartup
-                            ? { textShadow: '0 0 6px #005BBB' }
-                            : isTsubasa
-                            ? { textShadow: '0 0 6px #ec798f' }
-                            : isPotwEuroMar24
-                            ? { textShadow: '0 0 6px #5603f2' }
-                            : isEuroPotw
-                            ? { textShadow: '0 0 6px #E020E0' }
-                            : isPotwClubIntl
-                            ? { textShadow: '0 0 6px #b7a25b' }
-                            : isGenericPotw
-                            ? { textShadow: '0 0 6px #39FF14' }
-                            : isAtalanta
-                            ? { textShadow: '0 0 6px #2CFF05' }
+                          const scoreGlowStyle = cardStyle
+                            ? { textShadow: `0 0 6px var(--color-${cardStyle.tailwindClass})` }
                             : { textShadow: '0 0 8px hsl(var(--primary))' };
+
 
                           return (
                              <TableRow key={`${player.id}-${card.id}-${pos}`} className={rowClasses}>
@@ -678,7 +643,7 @@ export default function Home() {
                                             <Pencil className="h-3 w-3 text-muted-foreground/60 hover:text-muted-foreground" />
                                         </Button>
                                     </div>
-                                    <div className={cn("text-sm text-muted-foreground", specialTextClasses)}>{card.name}</div>
+                                    <div className={cn("text-sm", cardStyle ? specialTextClasses : 'text-muted-foreground')}>{card.name}</div>
                                   </div>
                                 </div>
                               </TableCell>
@@ -688,7 +653,7 @@ export default function Home() {
                                 ) : <span className="text-muted-foreground">-</span>}
                               </TableCell>
                               <TableCell>
-                                <div className={cn("text-xl font-bold", !isSpecialCard && "text-primary", specialTextClasses)} style={scoreGlowStyle}>
+                                <div className={cn("text-xl font-bold", cardStyle ? specialTextClasses : "text-primary")} style={scoreGlowStyle}>
                                   {formatAverage(cardAverage)}
                                 </div>
                               </TableCell>

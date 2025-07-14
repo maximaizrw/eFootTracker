@@ -1,5 +1,21 @@
 import type {Config} from 'tailwindcss';
 
+const tailwindColors = {
+  'potw-green': '#39FF14',
+  'potw-euro': '#E020E0',
+  'potw-euro-mar24': '#5603f2',
+  'potw-club-intl': '#b7a25b',
+  'tsubasa-pink': '#ec798f',
+  'startup-blue': '#005BBB',
+  'atalanta-green': '#2CFF05',
+  'spain-2010': '#be0100',
+};
+
+// Generate CSS variables for glow styles
+const colorVariables = Object.fromEntries(
+  Object.entries(tailwindColors).map(([name, color]) => [`--color-${name}`, color])
+);
+
 export default {
   darkMode: ['class'],
   content: [
@@ -15,14 +31,7 @@ export default {
         code: ['monospace'],
       },
       colors: {
-        'potw-green': '#39FF14',
-        'potw-euro': '#E020E0',
-        'potw-euro-mar24': '#5603f2',
-        'potw-club-intl': '#b7a25b',
-        'tsubasa-pink': '#ec798f',
-        'startup-blue': '#005BBB',
-        'atalanta-green': '#2CFF05',
-        'spain-2010': '#be0100',
+        ...tailwindColors,
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {
@@ -113,5 +122,12 @@ export default {
       }
     },
   },
-  plugins: [require('tailwindcss-animate')],
+  plugins: [
+    require('tailwindcss-animate'),
+    function({ addBase }: { addBase: (o: object) => void }) {
+      addBase({
+        ':root': colorVariables,
+      });
+    },
+  ],
 } satisfies Config;
