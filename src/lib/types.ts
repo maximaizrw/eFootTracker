@@ -41,3 +41,36 @@ export type IdealTeamPlayer = {
   position: Position;
   average: number;
 };
+
+// --- Nuevos tipos para Formaciones ---
+
+export const formationPlayStyles = [
+  'Contraataque rápido', 
+  'Contraataque largo', 
+  'Por las bandas', 
+  'Balones largos', 
+  'Posesión'
+] as const;
+export type FormationPlayStyle = typeof formationPlayStyles[number];
+
+export type MatchResult = {
+  id: string;
+  outcome: 'win' | 'draw' | 'loss';
+  date: string; // ISO 8601 string
+};
+
+export type FormationStats = {
+  id: string;
+  name: string;
+  playStyle: FormationPlayStyle;
+  imageUrl: string;
+  sourceUrl?: string;
+  matches: MatchResult[];
+};
+
+export type AddFormationFormValues = {
+  name: string;
+  playStyle: FormationPlayStyle;
+  imageUrl: string;
+  sourceUrl?: string;
+};

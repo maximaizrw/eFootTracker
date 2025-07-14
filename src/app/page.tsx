@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from "@/hooks/use-toast";
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDoc, writeBatch, getDocs } from 'firebase/firestore';
+import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDoc, getDocs, arrayUnion } from 'firebase/firestore';
 import Image from 'next/image';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -24,25 +24,29 @@ import {
 import { AddRatingDialog, type FormValues as AddRatingFormValues } from '@/components/add-rating-dialog';
 import { EditCardDialog, type FormValues as EditCardFormValues } from '@/components/edit-card-dialog';
 import { EditPlayerDialog, type FormValues as EditPlayerFormValues } from '@/components/edit-player-dialog';
+import { AddFormationDialog, type AddFormationFormValues } from '@/components/add-formation-dialog';
+import { FormationsDisplay } from '@/components/formations-display';
 import { PositionIcon } from '@/components/position-icon';
-import type { Player, PlayersByPosition, Position, PlayerCard as PlayerCardType, Formation, IdealTeamPlayer } from '@/lib/types';
+import type { Player, PlayersByPosition, Position, PlayerCard as PlayerCardType, Formation, IdealTeamPlayer, FormationStats, MatchResult } from '@/lib/types';
 import { positions } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Trash2, X, Star, Bot, Download, Wrench, Pencil, Search } from 'lucide-react';
+import { PlusCircle, Trash2, X, Star, Bot, Download, Wrench, Pencil, Search, Trophy } from 'lucide-react';
 import { calculateAverage, cn, formatAverage } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { IdealTeamDisplay } from '@/components/ideal-team-display';
-import { getCardStyle, type CardStyleInfo } from '@/lib/card-styles';
+import { getCardStyle } from '@/lib/card-styles';
 import { Input } from '@/components/ui/input';
 
 
 export default function Home() {
   const [players, setPlayers] = useState<Player[] | null>(null);
+  const [formations, setFormations] = useState<FormationStats[]>([]);
   const [playersByPosition, setPlayersByPosition] = useState<PlayersByPosition | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<Position | 'ideal-11'>('DC');
+  const [activeTab, setActiveTab] = useState<Position | 'ideal-11' | 'formations'>('DC');
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddRatingDialogOpen, setAddRatingDialogOpen] = useState(false);
+  const [isAddFormationDialogOpen, setAddFormationDialogOpen] = useState(false);
   const [isEditCardDialogOpen, setEditCardDialogOpen] = useState(false);
   const [isEditPlayerDialogOpen, setEditPlayerDialogOpen] = useState(false);
   const [isImageViewerOpen, setImageViewerOpen] = useState(false);
@@ -72,7 +76,7 @@ export default function Home() {
       return;
     }
     
-    const unsubscribe = onSnapshot(collection(db, "players"), (snapshot) => {
+    const unsubPlayers = onSnapshot(collection(db, "players"), (snapshot) => {
       try {
         const playersData = snapshot.docs.map(doc => {
             const data = doc.data();
@@ -99,8 +103,8 @@ export default function Home() {
           });
       }
     }, (err) => {
-        console.error("Error fetching from Firestore: ", err);
-        const errorMessage = "No se pudo conectar a la base de datos. Comprueba la configuración de Firebase en Vercel y las reglas de seguridad de Firestore.";
+        console.error("Error fetching players from Firestore: ", err);
+        const errorMessage = "No se pudo conectar a la base de datos para leer jugadores. Comprueba la configuración de Firebase y las reglas de seguridad de Firestore.";
         setError(errorMessage);
         setPlayers([]);
         toast({
@@ -109,8 +113,35 @@ export default function Home() {
             description: errorMessage
         });
     });
+    
+    const unsubFormations = onSnapshot(collection(db, "formations"), (snapshot) => {
+      try {
+        const formationsData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        } as FormationStats));
+        setFormations(formationsData);
+      } catch (error) {
+        console.error("Error processing formations snapshot: ", error);
+        toast({
+          variant: "destructive",
+          title: "Error de Datos",
+          description: "No se pudieron procesar los datos de las formaciones.",
+        });
+      }
+    }, (err) => {
+        console.error("Error fetching formations from Firestore: ", err);
+        toast({
+            variant: "destructive",
+            title: "Error de Conexión",
+            description: "No se pudo conectar a la base de datos para leer formaciones."
+        });
+    });
 
-    return () => unsubscribe();
+    return () => {
+      unsubPlayers();
+      unsubFormations();
+    };
   }, [toast]);
   
   useEffect(() => {
@@ -218,6 +249,60 @@ export default function Home() {
         variant: "destructive",
         title: "Error al Guardar",
         description: "No se pudo guardar la valoración.",
+      });
+    }
+  };
+
+  const handleAddFormation = async (values: AddFormationFormValues) => {
+    try {
+      const newFormation: Omit<FormationStats, 'id'> = {
+        ...values,
+        matches: [],
+      };
+      await addDoc(collection(db, 'formations'), newFormation);
+      toast({ title: "Formación Añadida", description: `La formación "${values.name}" se ha guardado.` });
+    } catch (error) {
+      console.error("Error adding formation: ", error);
+      toast({
+        variant: "destructive",
+        title: "Error al Guardar",
+        description: "No se pudo guardar la formación.",
+      });
+    }
+  };
+  
+  const handleAddMatchResult = async (formationId: string, outcome: 'win' | 'draw' | 'loss') => {
+    try {
+      const formationRef = doc(db, 'formations', formationId);
+      const newResult: MatchResult = {
+        id: uuidv4(),
+        outcome,
+        date: new Date().toISOString(),
+      };
+      await updateDoc(formationRef, {
+        matches: arrayUnion(newResult)
+      });
+      toast({ title: "Resultado Añadido", description: `Se ha registrado un nuevo partido como ${outcome === 'win' ? 'victoria' : outcome === 'draw' ? 'empate' : 'derrota'}.` });
+    } catch (error) {
+      console.error("Error adding match result:", error);
+      toast({
+        variant: "destructive",
+        title: "Error al Registrar",
+        description: "No se pudo guardar el resultado del partido.",
+      });
+    }
+  };
+
+  const handleDeleteFormation = async (formationId: string) => {
+    try {
+      await deleteDoc(doc(db, 'formations', formationId));
+      toast({ title: "Formación Eliminada", description: "La formación y sus estadísticas han sido eliminadas." });
+    } catch (error) {
+      console.error("Error deleting formation:", error);
+      toast({
+        variant: "destructive",
+        title: "Error al Eliminar",
+        description: "No se pudo eliminar la formación.",
       });
     }
   };
@@ -435,8 +520,20 @@ export default function Home() {
         id: doc.id,
         ...doc.data(),
       }));
+      
+      const formationsCollection = collection(db, 'formations');
+      const formationSnapshot = await getDocs(formationsCollection);
+      const formationsData = formationSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
 
-      const jsonData = JSON.stringify(playersData, null, 2);
+      const backupData = {
+        players: playersData,
+        formations: formationsData,
+      };
+
+      const jsonData = JSON.stringify(backupData, null, 2);
       const blob = new Blob([jsonData], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -463,10 +560,29 @@ export default function Home() {
   };
 
   const handleTabChange = (value: string) => {
-    setActiveTab(value as Position | 'ideal-11');
+    setActiveTab(value as Position | 'ideal-11' | 'formations');
     setSearchTerm('');
   };
   
+  const getHeaderButton = () => {
+    switch(activeTab) {
+      case 'formations':
+        return (
+          <Button onClick={() => setAddFormationDialogOpen(true)}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Añadir Formación
+          </Button>
+        );
+      default:
+        return (
+          <Button onClick={() => handleOpenAddRating(activeTab !== 'ideal-11' ? { position: activeTab } : undefined)}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Añadir Valoración
+          </Button>
+        );
+    }
+  };
+
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-screen text-center p-4">
@@ -496,6 +612,11 @@ export default function Home() {
         onAddRating={handleAddRating}
         players={allPlayers}
         initialData={addDialogInitialData}
+      />
+      <AddFormationDialog
+        open={isAddFormationDialogOpen}
+        onOpenChange={setAddFormationDialogOpen}
+        onAddFormation={handleAddFormation}
       />
       <EditCardDialog
         open={isEditCardDialogOpen}
@@ -542,28 +663,37 @@ export default function Home() {
                 <Download className="mr-2 h-4 w-4" />
                 Descargar Backup
             </Button>
-            <Button onClick={() => handleOpenAddRating(activeTab !== 'ideal-11' ? { position: activeTab } : undefined)}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Añadir Valoración
-            </Button>
+            {getHeaderButton()}
           </div>
         </div>
       </header>
 
       <main className="container mx-auto p-4 md:p-8">
         <Tabs defaultValue="DC" className="w-full" onValueChange={handleTabChange}>
-          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-5 md:grid-cols-7 h-auto gap-1 bg-white/5">
+          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-8 h-auto gap-1 bg-white/5">
             {positions.map((pos) => (
               <TabsTrigger key={pos} value={pos} className="py-2">
                 <PositionIcon position={pos} className="mr-2 h-5 w-5"/>
                 {pos}
               </TabsTrigger>
             ))}
+             <TabsTrigger value="formations" className="py-2 data-[state=active]:bg-accent/20 data-[state=active]:text-accent">
+                <Trophy className="mr-2 h-5 w-5"/>
+                Formaciones
+            </TabsTrigger>
             <TabsTrigger value="ideal-11" className="py-2 data-[state=active]:bg-accent/20 data-[state=active]:text-accent">
                 <Star className="mr-2 h-5 w-5"/>
                 11 Ideal
             </TabsTrigger>
           </TabsList>
+          
+          <TabsContent value="formations" className="mt-6">
+            <FormationsDisplay
+              formations={formations}
+              onAddResult={handleAddMatchResult}
+              onDelete={handleDeleteFormation}
+            />
+          </TabsContent>
 
           {positions.map((pos) => {
             const playersForPosition = playersByPosition[pos] || [];
