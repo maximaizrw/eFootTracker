@@ -5,7 +5,7 @@ export type CardStyleInfo = {
 };
 
 export const specialCardStyles: CardStyleInfo[] = [
-  // Most specific first
+  // Reglas más específicas primero para evitar conflictos
   {
     id: 'potwEuroMar24',
     nameFragment: "potw european club championship 21 mar '24",
@@ -16,36 +16,36 @@ export const specialCardStyles: CardStyleInfo[] = [
     nameFragment: "potw club international cup",
     tailwindClass: 'potw-club-intl',
   },
-  // Less specific
+  {
+    id: 'tsubasa',
+    nameFragment: 'captain tsubasa collaboration campaign',
+    tailwindClass: 'tsubasa-pink',
+  },
+   {
+    id: 'spain2010',
+    nameFragment: 'spain 2010',
+    tailwindClass: 'spain-2010',
+  },
   {
     id: 'euroPotw',
     nameFragment: "potw european club championship",
     tailwindClass: 'potw-euro',
   },
   {
+    id: 'atalanta',
+    nameFragment: 'atalanta bc 96-97',
+    tailwindClass: 'atalanta-green',
+  },
+   // Reglas más genéricas al final
+  {
     id: 'genericPotw',
     nameFragment: 'potw',
     tailwindClass: 'potw-green',
   },
   {
-    id: 'tsubasa',
-    nameFragment: 'captain tsubasa collaboration campaign',
-    tailwindClass: 'tsubasa-pink',
-  },
-  {
     id: 'startup',
     nameFragment: 'startup campaign',
     tailwindClass: 'startup-blue',
-  },
-  {
-    id: 'atalanta',
-    nameFragment: 'atalanta bc 96-97',
-    tailwindClass: 'atalanta-green',
-  },
-  {
-    id: 'spain2010',
-    nameFragment: 'spain 2010',
-    tailwindClass: 'spain-2010',
   },
 ];
 
@@ -53,7 +53,7 @@ export const getCardStyle = (cardName: string): CardStyleInfo | null => {
   if (!cardName) return null;
   const cardNameLower = cardName.toLowerCase();
   
-  // The loop ensures more specific name fragments are matched first if they are ordered correctly in the array.
+  // El bucle asegura que las reglas más específicas (al principio del array) se encuentren primero.
   for (const style of specialCardStyles) {
     if (cardNameLower.includes(style.nameFragment)) {
       return style;
