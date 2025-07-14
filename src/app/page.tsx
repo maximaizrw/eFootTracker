@@ -1,10 +1,12 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from "@/hooks/use-toast";
-import { db } from '@/lib/firebase';
+import { db, storage } from '@/lib/firebase';
 import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDoc, getDocs, arrayUnion } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import Image from 'next/image';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -253,10 +255,35 @@ export default function Home() {
     }
   };
 
+  const uploadImage = async (file: File, folder: string): Promise<string> => {
+    const storageRef = ref(storage, `${folder}/${uuidv4()}-${file.name}`);
+    await uploadBytes(storageRef, file);
+    return await getDownloadURL(storageRef);
+  };
+
   const handleAddFormation = async (values: AddFormationFormValues) => {
+    if (!storage) {
+        toast({ variant: "destructive", title: "Error", description: "Firebase Storage no está configurado."});
+        return;
+    }
+
     try {
+      let imageUrl = '';
+      if (values.image && values.image.length > 0) {
+        imageUrl = await uploadImage(values.image[0], 'formations');
+      }
+
+      let secondaryImageUrl = '';
+      if (values.secondaryImage && values.secondaryImage.length > 0) {
+        secondaryImageUrl = await uploadImage(values.secondaryImage[0], 'formations');
+      }
+
       const newFormation: Omit<FormationStats, 'id'> = {
-        ...values,
+        name: values.name,
+        playStyle: values.playStyle,
+        sourceUrl: values.sourceUrl,
+        imageUrl: imageUrl,
+        secondaryImageUrl: secondaryImageUrl,
         matches: [],
       };
       await addDoc(collection(db, 'formations'), newFormation);
@@ -266,7 +293,7 @@ export default function Home() {
       toast({
         variant: "destructive",
         title: "Error al Guardar",
-        description: "No se pudo guardar la formación.",
+        description: "No se pudo guardar la formación. Revisa la consola para más detalles.",
       });
     }
   };
@@ -299,9 +326,34 @@ export default function Home() {
     }
   };
 
-  const handleDeleteFormation = async (formationId: string) => {
+  const handleDeleteFormation = async (formation: FormationStats) => {
+    if (!storage) {
+      toast({ variant: "destructive", title: "Error", description: "Firebase Storage no está configurado."});
+      return;
+    }
     try {
-      await deleteDoc(doc(db, 'formations', formationId));
+      // Delete images from Storage if they exist
+      if (formation.imageUrl) {
+        const imageRef = ref(storage, formation.imageUrl);
+        await deleteObject(imageRef).catch(error => {
+          // It's okay if file doesn't exist, log other errors
+          if (error.code !== 'storage/object-not-found') {
+            console.error("Error deleting main image:", error);
+          }
+        });
+      }
+      if (formation.secondaryImageUrl) {
+        const secondaryImageRef = ref(storage, formation.secondaryImageUrl);
+        await deleteObject(secondaryImageRef).catch(error => {
+          if (error.code !== 'storage/object-not-found') {
+            console.error("Error deleting secondary image:", error);
+          }
+        });
+      }
+
+      // Delete document from Firestore
+      await deleteDoc(doc(db, 'formations', formation.id));
+      
       toast({ title: "Formación Eliminada", description: "La formación y sus estadísticas han sido eliminadas." });
     } catch (error) {
       console.error("Error deleting formation:", error);
@@ -792,3 +844,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

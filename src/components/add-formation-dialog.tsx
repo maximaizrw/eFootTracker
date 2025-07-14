@@ -17,6 +17,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -33,11 +34,21 @@ import { Input } from "@/components/ui/input";
 import type { AddFormationFormValues } from "@/lib/types";
 import { formationPlayStyles } from "@/lib/types";
 
+const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+
 const formSchema = z.object({
   name: z.string().min(2, "El nombre debe tener al menos 2 caracteres."),
   playStyle: z.enum(formationPlayStyles),
-  imageUrl: z.string().url("Debe ser una URL de imagen válida."),
-  secondaryImageUrl: z.string().url("Debe ser una URL válida.").optional().or(z.literal('')),
+  image: z.custom<FileList>()
+    .refine(files => files?.length === 1, "La imagen principal es obligatoria.")
+    .refine(files => files?.[0]?.size <= MAX_FILE_SIZE, `El tamaño máximo es de 2MB.`)
+    .refine(files => ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type), "Solo se aceptan .jpg, .jpeg, .png y .webp."),
+  secondaryImage: z.custom<FileList>()
+    .refine(files => files?.length <= 1, "Solo puedes subir una imagen.")
+    .refine(files => !files || files.length === 0 || files?.[0]?.size <= MAX_FILE_SIZE, `El tamaño máximo es de 2MB.`)
+    .refine(files => !files || files.length === 0 || ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type), "Solo se aceptan .jpg, .jpeg, .png y .webp.")
+    .optional(),
   sourceUrl: z.string().url("Debe ser una URL válida.").optional().or(z.literal('')),
 });
 
@@ -53,8 +64,6 @@ export function AddFormationDialog({ open, onOpenChange, onAddFormation }: AddFo
     defaultValues: {
       name: "",
       playStyle: "Contraataque rápido",
-      imageUrl: "",
-      secondaryImageUrl: "",
       sourceUrl: "",
     },
   });
@@ -111,28 +120,40 @@ export function AddFormationDialog({ open, onOpenChange, onAddFormation }: AddFo
                 </FormItem>
               )}
             />
-            <FormField
+             <FormField
               control={form.control}
-              name="imageUrl"
-              render={({ field }) => (
+              name="image"
+              render={({ field: { onChange, value, ...rest } }) => (
                 <FormItem>
-                  <FormLabel>URL de Imagen (Táctica Principal)</FormLabel>
+                  <FormLabel>Imagen Principal</FormLabel>
                   <FormControl>
-                    <Input placeholder="https://ejemplo.com/tactica_principal.png" {...field} />
+                    <Input 
+                      type="file" 
+                      accept="image/png, image/jpeg, image/webp"
+                      onChange={(e) => onChange(e.target.files)}
+                      {...rest}
+                    />
                   </FormControl>
+                   <FormDescription>Sube la táctica principal.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
             <FormField
               control={form.control}
-              name="secondaryImageUrl"
-              render={({ field }) => (
+              name="secondaryImage"
+              render={({ field: { onChange, value, ...rest } }) => (
                 <FormItem>
-                  <FormLabel>URL de Imagen (Táctica Secundaria - Opcional)</FormLabel>
+                  <FormLabel>Imagen Secundaria (Opcional)</FormLabel>
                   <FormControl>
-                    <Input placeholder="https://ejemplo.com/tactica_secundaria.png" {...field} />
+                    <Input 
+                      type="file" 
+                      accept="image/png, image/jpeg, image/webp"
+                      onChange={(e) => onChange(e.target.files)}
+                      {...rest}
+                    />
                   </FormControl>
+                  <FormDescription>Sube la táctica defensiva u ofensiva.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -159,3 +180,5 @@ export function AddFormationDialog({ open, onOpenChange, onAddFormation }: AddFo
     </Dialog>
   );
 }
+
+    

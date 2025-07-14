@@ -1,5 +1,7 @@
-import { initializeApp, getApps } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+
+import { initializeApp, getApps, type FirebaseApp } from "firebase/app";
+import { getFirestore, type Firestore } from "firebase/firestore";
+import { getStorage, type FirebaseStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -13,8 +15,9 @@ const firebaseConfig = {
 // Check if all config values are present. This is crucial for Vercel deployment.
 const isConfigValid = Object.values(firebaseConfig).every(value => value);
 
-let app;
-let db;
+let app: FirebaseApp;
+let db: Firestore | null = null;
+let storage: FirebaseStorage | null = null;
 
 if (isConfigValid) {
     if (!getApps().length) {
@@ -23,9 +26,12 @@ if (isConfigValid) {
       app = getApps()[0];
     }
     db = getFirestore(app);
+    storage = getStorage(app);
 } else {
     // This message will appear in the server logs or browser console.
     console.error("Firebase config is missing or incomplete. Check your environment variables in Vercel.");
 }
 
-export { db };
+export { db, storage };
+
+    

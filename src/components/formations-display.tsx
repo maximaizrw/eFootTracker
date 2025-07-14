@@ -17,7 +17,7 @@ import {
 type FormationsDisplayProps = {
   formations: FormationStats[];
   onAddMatch: (formationId: string, formationName: string) => void;
-  onDelete: (formationId: string) => void;
+  onDelete: (formation: FormationStats) => void;
   onViewImage: (url: string, name: string) => void;
 };
 
@@ -90,20 +90,22 @@ export function FormationsDisplay({ formations, onAddMatch, onDelete, onViewImag
             </CardHeader>
             <CardContent className="p-4 flex-grow">
               <div className="grid grid-cols-1 gap-2">
-                 <button 
-                   onClick={() => onViewImage(formation.imageUrl, `${formation.name} - Táctica Principal`)}
-                   className="block w-full focus:outline-none focus:ring-2 focus:ring-ring rounded-md overflow-hidden"
-                 >
-                    <div className="aspect-video relative w-full bg-muted">
-                        <Image
-                          src={formation.imageUrl}
-                          alt={`Táctica Principal de ${formation.name}`}
-                          fill
-                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                          className="object-cover"
-                        />
-                    </div>
-                  </button>
+                 {formation.imageUrl && (
+                    <button 
+                      onClick={() => onViewImage(formation.imageUrl, `${formation.name} - Táctica Principal`)}
+                      className="block w-full focus:outline-none focus:ring-2 focus:ring-ring rounded-md overflow-hidden"
+                    >
+                        <div className="aspect-video relative w-full bg-muted">
+                            <Image
+                              src={formation.imageUrl}
+                              alt={`Táctica Principal de ${formation.name}`}
+                              fill
+                              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                              className="object-cover"
+                            />
+                        </div>
+                      </button>
+                 )}
                  {formation.secondaryImageUrl && (
                     <button 
                       onClick={() => onViewImage(formation.secondaryImageUrl!, `${formation.name} - Táctica Secundaria`)}
@@ -168,7 +170,7 @@ export function FormationsDisplay({ formations, onAddMatch, onDelete, onViewImag
               <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button variant="destructive" size="icon" onClick={() => onDelete(formation.id)}>
+                        <Button variant="destructive" size="icon" onClick={() => onDelete(formation)}>
                             <Trash2 className="h-4 w-4" />
                         </Button>
                     </TooltipTrigger>
@@ -182,3 +184,5 @@ export function FormationsDisplay({ formations, onAddMatch, onDelete, onViewImag
     </div>
   );
 }
+
+    
