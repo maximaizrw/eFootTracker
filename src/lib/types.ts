@@ -67,10 +67,10 @@ export type FormationStats = {
   id: string;
   name: string;
   playStyle: FormationPlayStyle;
-  imageUrl: string;
-  imagePath?: string; // Ruta en Firebase Storage
+  imageUrl?: string;
+  imagePath?: string; // Legacy for deletion logic
   secondaryImageUrl?: string;
-  secondaryImagePath?: string; // Ruta en Firebase Storage
+  secondaryImagePath?: string; // Legacy for deletion logic
   sourceUrl?: string;
   matches: MatchResult[];
 };
@@ -78,8 +78,8 @@ export type FormationStats = {
 export type AddFormationFormValues = {
   name: string;
   playStyle: FormationPlayStyle;
-  image: FileList;
-  secondaryImage?: FileList;
+  imageUrl?: string;
+  secondaryImageUrl?: string;
   sourceUrl?: string;
 };
 
@@ -95,5 +95,3 @@ export type FlatPlayer = {
   card: PlayerCardType;
   ratingsForPos: number[];
 };
-
-    
