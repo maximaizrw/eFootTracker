@@ -37,6 +37,7 @@ const formSchema = z.object({
   name: z.string().min(2, "El nombre debe tener al menos 2 caracteres."),
   playStyle: z.enum(formationPlayStyles),
   imageUrl: z.string().url("Debe ser una URL de imagen válida."),
+  secondaryImageUrl: z.string().url("Debe ser una URL válida.").optional().or(z.literal('')),
   sourceUrl: z.string().url("Debe ser una URL válida.").optional().or(z.literal('')),
 });
 
@@ -53,6 +54,7 @@ export function AddFormationDialog({ open, onOpenChange, onAddFormation }: AddFo
       name: "",
       playStyle: "Contraataque rápido",
       imageUrl: "",
+      secondaryImageUrl: "",
       sourceUrl: "",
     },
   });
@@ -114,9 +116,22 @@ export function AddFormationDialog({ open, onOpenChange, onAddFormation }: AddFo
               name="imageUrl"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>URL de la Imagen</FormLabel>
+                  <FormLabel>URL de Imagen (Táctica Principal)</FormLabel>
                   <FormControl>
-                    <Input placeholder="https://ejemplo.com/formacion.png" {...field} />
+                    <Input placeholder="https://ejemplo.com/tactica_principal.png" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="secondaryImageUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>URL de Imagen (Táctica Secundaria - Opcional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="https://ejemplo.com/tactica_secundaria.png" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

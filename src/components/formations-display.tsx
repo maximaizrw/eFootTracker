@@ -18,6 +18,7 @@ type FormationsDisplayProps = {
   formations: FormationStats[];
   onAddMatch: (formationId: string, formationName: string) => void;
   onDelete: (formationId: string) => void;
+  onViewImage: (url: string, name: string) => void;
 };
 
 const calculateStats = (matches: FormationStats['matches']) => {
@@ -38,7 +39,7 @@ const calculateStats = (matches: FormationStats['matches']) => {
   return { wins, draws, losses, goalsFor, goalsAgainst, goalDifference, effectiveness, total };
 };
 
-export function FormationsDisplay({ formations, onAddMatch, onDelete }: FormationsDisplayProps) {
+export function FormationsDisplay({ formations, onAddMatch, onDelete, onViewImage }: FormationsDisplayProps) {
   if (formations.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center text-center p-10 bg-card/80 rounded-lg shadow-sm border border-dashed border-white/10">
@@ -88,16 +89,39 @@ export function FormationsDisplay({ formations, onAddMatch, onDelete }: Formatio
               </div>
             </CardHeader>
             <CardContent className="p-4 flex-grow">
-              <div className="aspect-video relative w-full mb-4 rounded-md overflow-hidden bg-muted">
-                <Image
-                  src={formation.imageUrl}
-                  alt={`Formación ${formation.name}`}
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  className="object-cover"
-                />
+              <div className="grid grid-cols-1 gap-2">
+                 <button 
+                   onClick={() => onViewImage(formation.imageUrl, `${formation.name} - Táctica Principal`)}
+                   className="block w-full focus:outline-none focus:ring-2 focus:ring-ring rounded-md overflow-hidden"
+                 >
+                    <div className="aspect-video relative w-full bg-muted">
+                        <Image
+                          src={formation.imageUrl}
+                          alt={`Táctica Principal de ${formation.name}`}
+                          fill
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          className="object-cover"
+                        />
+                    </div>
+                  </button>
+                 {formation.secondaryImageUrl && (
+                    <button 
+                      onClick={() => onViewImage(formation.secondaryImageUrl!, `${formation.name} - Táctica Secundaria`)}
+                      className="block w-full focus:outline-none focus:ring-2 focus:ring-ring rounded-md overflow-hidden"
+                    >
+                      <div className="aspect-video relative w-full bg-muted">
+                          <Image
+                            src={formation.secondaryImageUrl}
+                            alt={`Táctica Secundaria de ${formation.name}`}
+                            fill
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                            className="object-cover"
+                          />
+                      </div>
+                    </button>
+                 )}
               </div>
-              <div className="grid grid-cols-3 gap-2 text-center border-b border-white/10 pb-3 mb-3">
+              <div className="grid grid-cols-3 gap-2 text-center border-b border-white/10 pb-3 mb-3 mt-4">
                 <div className="text-green-400">
                   <p className="text-2xl font-bold">{stats.wins}</p>
                   <p className="text-xs">Victorias</p>

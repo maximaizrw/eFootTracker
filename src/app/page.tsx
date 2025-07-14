@@ -643,7 +643,7 @@ export default function Home() {
         initialData={editPlayerDialogInitialData}
       />
       <AlertDialog open={isImageViewerOpen} onOpenChange={setImageViewerOpen}>
-        <AlertDialogContent className="max-w-md p-0">
+        <AlertDialogContent className="max-w-xl p-0">
           <AlertDialogHeader className="p-4 border-b">
             <AlertDialogTitle>{viewingImageName}</AlertDialogTitle>
           </AlertDialogHeader>
@@ -651,10 +651,10 @@ export default function Home() {
             {viewingImageUrl && (
               <Image
                 src={viewingImageUrl}
-                alt={viewingImageName || 'Player Image'}
-                width={300}
-                height={300}
-                className="object-contain"
+                alt={viewingImageName || 'Tactic Image'}
+                width={500}
+                height={500}
+                className="object-contain max-h-[80vh]"
               />
             )}
           </div>
@@ -704,6 +704,7 @@ export default function Home() {
               formations={formations}
               onAddMatch={handleOpenAddMatch}
               onDelete={handleDeleteFormation}
+              onViewImage={handleViewImage}
             />
           </TabsContent>
 

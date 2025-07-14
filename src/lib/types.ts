@@ -67,6 +67,7 @@ export type FormationStats = {
   name: string;
   playStyle: FormationPlayStyle;
   imageUrl: string;
+  secondaryImageUrl?: string;
   sourceUrl?: string;
   matches: MatchResult[];
 };
@@ -75,6 +76,7 @@ export type AddFormationFormValues = {
   name: string;
   playStyle: FormationPlayStyle;
   imageUrl: string;
+  secondaryImageUrl?: string;
   sourceUrl?: string;
 };
 
