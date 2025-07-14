@@ -6,6 +6,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatAverage } from '@/lib/utils';
 import { Users } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
 
 type IdealTeamDisplayProps = {
   team: (IdealTeamPlayer | null)[];
@@ -15,7 +17,7 @@ const PlayerDisplayCard = ({ player }: { player: IdealTeamPlayer | null }) => {
   if (!player || player.player.id.startsWith('placeholder')) {
     const position = player?.position;
     return (
-      <div className="flex flex-col items-center justify-center text-center w-24 h-32">
+      <div className="flex flex-col items-center justify-center text-center w-full max-w-[6rem] h-32">
         <div className="w-16 h-16 rounded-full bg-black/20 backdrop-blur-sm flex items-center justify-center border-2 border-dashed border-white/30">
           <span className="text-xs text-white/50">{position}</span>
         </div>
@@ -24,7 +26,7 @@ const PlayerDisplayCard = ({ player }: { player: IdealTeamPlayer | null }) => {
     );
   }
   return (
-    <div className="flex flex-col items-center text-center w-24 h-32 group">
+    <div className="flex flex-col items-center text-center w-full max-w-[6rem] h-32 group">
         <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-white/50 shadow-lg transition-all duration-300 group-hover:scale-110">
           {player.card.imageUrl ? (
               <Image 
@@ -59,7 +61,7 @@ const renderLine = (players: (IdealTeamPlayer | null)[], positions: Position[]) 
     if (filteredPlayers.length === 0) return null;
 
     return (
-        <div className="flex justify-center items-center w-full gap-4 md:gap-8 lg:gap-12">
+        <div className="flex justify-evenly items-center w-full gap-1 md:gap-2">
             {filteredPlayers.map((p, i) => (
                 <PlayerDisplayCard key={`${p?.player.id}-${p?.card.id}-${i}`} player={p} />
             ))}
