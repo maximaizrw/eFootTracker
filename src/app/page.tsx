@@ -600,12 +600,13 @@ export default function Home() {
                           
                           const isPotwEuroMar24 = cardNameLower.includes("potw european club championship 21 mar '24");
                           const isEuroPotw = !isPotwEuroMar24 && cardNameLower.includes("potw european club championship");
-                          const isGenericPotw = !isEuroPotw && !isPotwEuroMar24 && cardNameLower.includes("potw");
+                          const isPotwClubIntl = cardNameLower.includes("potw club international cup");
+                          const isGenericPotw = !isEuroPotw && !isPotwEuroMar24 && !isPotwClubIntl && cardNameLower.includes("potw");
                           const isTsubasa = cardNameLower.includes("captain tsubasa collaboration campaign");
                           const isStartup = cardNameLower.includes("startup campaign");
                           const isAtalanta = cardNameLower.includes("atalanta bc 96-97");
                           const isSpain2010 = cardNameLower.includes("spain 2010");
-                          const isSpecialCard = isPotwEuroMar24 || isEuroPotw || isGenericPotw || isTsubasa || isStartup || isAtalanta || isSpain2010;
+                          const isSpecialCard = isPotwEuroMar24 || isEuroPotw || isGenericPotw || isTsubasa || isStartup || isAtalanta || isSpain2010 || isPotwClubIntl;
 
                           const rowClasses = cn(
                             "border-b-white/10 transition-colors",
@@ -613,6 +614,7 @@ export default function Home() {
                             isTsubasa && "bg-tsubasa-pink/10 hover:bg-tsubasa-pink/20",
                             isPotwEuroMar24 && "bg-potw-euro-mar24/10 hover:bg-potw-euro-mar24/20",
                             isEuroPotw && "bg-potw-euro/10 hover:bg-potw-euro/20",
+                            isPotwClubIntl && "bg-potw-club-intl/10 hover:bg-potw-club-intl/20",
                             isGenericPotw && "bg-potw-green/10 hover:bg-potw-green/20",
                             isAtalanta && "bg-atalanta-green/10 hover:bg-atalanta-green/20",
                             isSpain2010 && "bg-spain-2010/10 hover:bg-spain-2010/20",
@@ -624,6 +626,7 @@ export default function Home() {
                               "text-tsubasa-pink font-semibold": isTsubasa,
                               "text-potw-euro-mar24 font-semibold": isPotwEuroMar24,
                               "text-potw-euro font-semibold": isEuroPotw,
+                              "text-potw-club-intl font-semibold": isPotwClubIntl,
                               "text-potw-green font-semibold": isGenericPotw,
                               "text-atalanta-green font-semibold": isAtalanta,
                               "text-spain-2010 font-semibold": isSpain2010,
@@ -639,6 +642,8 @@ export default function Home() {
                             ? { textShadow: '0 0 6px #5603f2' }
                             : isEuroPotw
                             ? { textShadow: '0 0 6px #E020E0' }
+                            : isPotwClubIntl
+                            ? { textShadow: '0 0 6px #b7a25b' }
                             : isGenericPotw
                             ? { textShadow: '0 0 6px #39FF14' }
                             : isAtalanta
