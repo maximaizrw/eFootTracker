@@ -68,7 +68,9 @@ export type FormationStats = {
   name: string;
   playStyle: FormationPlayStyle;
   imageUrl: string;
+  imagePath?: string; // Ruta en Firebase Storage
   secondaryImageUrl?: string;
+  secondaryImagePath?: string; // Ruta en Firebase Storage
   sourceUrl?: string;
   matches: MatchResult[];
 };

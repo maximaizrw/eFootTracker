@@ -255,10 +255,12 @@ export default function Home() {
     }
   };
 
-  const uploadImage = async (file: File, folder: string): Promise<string> => {
-    const storageRef = ref(storage, `${folder}/${uuidv4()}-${file.name}`);
+  const uploadImage = async (file: File): Promise<{ url: string, path: string }> => {
+    const filePath = `formations/${uuidv4()}-${file.name}`;
+    const storageRef = ref(storage, filePath);
     await uploadBytes(storageRef, file);
-    return await getDownloadURL(storageRef);
+    const url = await getDownloadURL(storageRef);
+    return { url, path: filePath };
   };
 
   const handleAddFormation = async (values: AddFormationFormValues) => {
@@ -269,13 +271,19 @@ export default function Home() {
 
     try {
       let imageUrl = '';
+      let imagePath = '';
       if (values.image && values.image.length > 0) {
-        imageUrl = await uploadImage(values.image[0], 'formations');
+        const uploadResult = await uploadImage(values.image[0]);
+        imageUrl = uploadResult.url;
+        imagePath = uploadResult.path;
       }
 
       let secondaryImageUrl = '';
+      let secondaryImagePath = '';
       if (values.secondaryImage && values.secondaryImage.length > 0) {
-        secondaryImageUrl = await uploadImage(values.secondaryImage[0], 'formations');
+        const uploadResult = await uploadImage(values.secondaryImage[0]);
+        secondaryImageUrl = uploadResult.url;
+        secondaryImagePath = uploadResult.path;
       }
 
       const newFormation: Omit<FormationStats, 'id'> = {
@@ -283,7 +291,9 @@ export default function Home() {
         playStyle: values.playStyle,
         sourceUrl: values.sourceUrl,
         imageUrl: imageUrl,
+        imagePath: imagePath,
         secondaryImageUrl: secondaryImageUrl,
+        secondaryImagePath: secondaryImagePath,
         matches: [],
       };
       await addDoc(collection(db, 'formations'), newFormation);
@@ -332,18 +342,16 @@ export default function Home() {
       return;
     }
     try {
-      // Delete images from Storage if they exist
-      if (formation.imageUrl) {
-        const imageRef = ref(storage, formation.imageUrl);
+      if (formation.imagePath) {
+        const imageRef = ref(storage, formation.imagePath);
         await deleteObject(imageRef).catch(error => {
-          // It's okay if file doesn't exist, log other errors
           if (error.code !== 'storage/object-not-found') {
             console.error("Error deleting main image:", error);
           }
         });
       }
-      if (formation.secondaryImageUrl) {
-        const secondaryImageRef = ref(storage, formation.secondaryImageUrl);
+      if (formation.secondaryImagePath) {
+        const secondaryImageRef = ref(storage, formation.secondaryImagePath);
         await deleteObject(secondaryImageRef).catch(error => {
           if (error.code !== 'storage/object-not-found') {
             console.error("Error deleting secondary image:", error);
@@ -351,7 +359,6 @@ export default function Home() {
         });
       }
 
-      // Delete document from Firestore
       await deleteDoc(doc(db, 'formations', formation.id));
       
       toast({ title: "Formación Eliminada", description: "La formación y sus estadísticas han sido eliminadas." });
