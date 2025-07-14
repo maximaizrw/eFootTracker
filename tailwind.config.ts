@@ -21,6 +21,7 @@ export default {
         'tsubasa-pink': '#ec798f',
         'startup-blue': '#005BBB',
         'atalanta-green': '#2CFF05',
+        'spain-2010': '#be0100',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {
@@ -106,6 +107,7 @@ export default {
         'tsubasa-pink': '0 0 15px 0px #ec798f',
         'startup-blue': '0 0 15px 0px #005BBB',
         'atalanta-green': '0 0 15px 0px #2CFF05',
+        'spain-2010': '0 0 15px 0px #be0100',
       }
     },
   },

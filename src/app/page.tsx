@@ -604,7 +604,8 @@ export default function Home() {
                           const isTsubasa = cardNameLower.includes("captain tsubasa collaboration campaign");
                           const isStartup = cardNameLower.includes("startup campaign");
                           const isAtalanta = cardNameLower.includes("atalanta bc 96-97");
-                          const isSpecialCard = isPotwEuroMar24 || isEuroPotw || isGenericPotw || isTsubasa || isStartup || isAtalanta;
+                          const isSpain2010 = cardNameLower.includes("spain 2010");
+                          const isSpecialCard = isPotwEuroMar24 || isEuroPotw || isGenericPotw || isTsubasa || isStartup || isAtalanta || isSpain2010;
 
                           const rowClasses = cn(
                             "border-b-white/10 transition-colors",
@@ -614,6 +615,7 @@ export default function Home() {
                             isEuroPotw && "bg-potw-euro/10 hover:bg-potw-euro/20",
                             isGenericPotw && "bg-potw-green/10 hover:bg-potw-green/20",
                             isAtalanta && "bg-atalanta-green/10 hover:bg-atalanta-green/20",
+                            isSpain2010 && "bg-spain-2010/10 hover:bg-spain-2010/20",
                             !isSpecialCard && "hover:bg-white/5"
                           );
                           
@@ -624,9 +626,12 @@ export default function Home() {
                               "text-potw-euro font-semibold": isEuroPotw,
                               "text-potw-green font-semibold": isGenericPotw,
                               "text-atalanta-green font-semibold": isAtalanta,
+                              "text-spain-2010 font-semibold": isSpain2010,
                           });
                           
-                          const scoreGlowStyle = isStartup
+                          const scoreGlowStyle = isSpain2010
+                            ? { textShadow: '0 0 6px #be0100' }
+                            : isStartup
                             ? { textShadow: '0 0 6px #005BBB' }
                             : isTsubasa
                             ? { textShadow: '0 0 6px #ec798f' }
