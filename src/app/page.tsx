@@ -399,7 +399,7 @@ export default function Home() {
         return bestPlayerForSlot;
       }
       return {
-        player: { id: `placeholder-${position}-${Math.random()}`, name: `Vacante (${position})`, cards: [] },
+        player: { id: `placeholder-${position}-${Math.random()}`, name: `Vacante`, cards: [] },
         card: { id: `placeholder-card-${position}-${Math.random()}`, name: 'N/A', style: 'Ninguno', ratingsByPosition: {} },
         position: position,
         average: 0,
