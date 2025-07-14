@@ -509,7 +509,7 @@ export default function Home() {
     setFormation(prev => ({ ...prev, [position]: count }));
   };
   
-    const handleDownloadBackup = async () => {
+  const handleDownloadBackup = async () => {
     if (!db) {
       toast({
         variant: "destructive",
@@ -581,7 +581,7 @@ export default function Home() {
         );
       default:
         return (
-          <Button onClick={() => handleOpenAddRating(activeTab !== 'ideal-11' ? { position: activeTab } : undefined)}>
+          <Button onClick={() => handleOpenAddRating(activeTab !== 'ideal-11' ? { position: activeTab as Position } : undefined)}>
             <PlusCircle className="mr-2 h-4 w-4" />
             Añadir Valoración
           </Button>
