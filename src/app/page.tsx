@@ -225,7 +225,7 @@ export default function Home() {
       const bestPlayerForSlot = allRatedPlayers.find(p => 
         !usedCardIds.has(p.card.id) &&
         p.position === slot.position &&
-        p.card.style === slot.style
+        slot.styles.includes(p.card.style)
       );
 
       if (bestPlayerForSlot) {
@@ -235,7 +235,7 @@ export default function Home() {
         // 4. If no player is found, add a placeholder
         newTeam.push({
           player: { id: `placeholder-${slot.position}-${index}`, name: `Vacante`, cards: [] },
-          card: { id: `placeholder-card-${slot.position}-${index}`, name: 'N/A', style: slot.style, ratingsByPosition: {} },
+          card: { id: `placeholder-card-${slot.position}-${index}`, name: 'N/A', style: 'Ninguno', ratingsByPosition: {} },
           position: slot.position,
           average: 0,
         });

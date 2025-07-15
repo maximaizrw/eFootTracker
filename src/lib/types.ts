@@ -83,7 +83,7 @@ export type MatchResult = {
 
 export const FormationSlotSchema = z.object({
   position: z.enum(positions),
-  style: z.enum(playerStyles),
+  styles: z.array(z.enum(playerStyles)).min(1, "Debes seleccionar al menos un estilo de juego."),
 });
 
 export type FormationSlot = z.infer<typeof FormationSlotSchema>;

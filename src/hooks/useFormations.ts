@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type { FormationStats, MatchResult, AddMatchFormValues, AddFormationFormValues, EditFormationFormValues } from '@/lib/types';
 import { playerStyles, positions } from '@/lib/types';
 
-const defaultSlots = Array(11).fill({ position: positions[0], style: playerStyles[0] });
+const defaultSlots = Array(11).fill({ position: positions[0], styles: [playerStyles[0]] });
 
 export function useFormations() {
   const [formations, setFormations] = useState<FormationStats[]>([]);
@@ -35,7 +35,7 @@ export function useFormations() {
               id: doc.id,
               ...data,
               // Ensure slots exist and have the correct length, providing a fallback if not
-              slots: (data.slots && data.slots.length === 11) ? data.slots : defaultSlots,
+              slots: (data.slots && data.slots.length === 11) ? data.slots.map((s: any) => ({ ...s, styles: s.styles || ['Ninguno'] })) : defaultSlots,
             } as FormationStats;
         });
         setFormations(formationsData);
@@ -171,5 +171,3 @@ export function useFormations() {
 
   return { formations, loading, error, addFormation, editFormation, addMatchResult, deleteFormation, downloadBackup };
 }
-
-    

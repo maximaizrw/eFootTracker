@@ -32,8 +32,14 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Command, CommandInput, CommandEmpty, CommandItem, CommandList } from "@/components/ui/command";
+import { Badge } from "@/components/ui/badge";
 import type { EditFormationFormValues, FormationStats } from "@/lib/types";
 import { formationPlayStyles, positions, playerStyles, FormationSlotSchema } from "@/lib/types";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+
 
 const formSchema = z.object({
   id: z.string(),
@@ -45,7 +51,7 @@ const formSchema = z.object({
   sourceUrl: z.string().url("Debe ser una URL válida.").optional().or(z.literal('')),
 });
 
-const defaultSlots = Array(11).fill({ position: 'DC', style: 'Ninguno' });
+const defaultSlots = Array(11).fill({ position: 'DC', styles: ['Ninguno'] });
 
 type EditFormationDialogProps = {
   open: boolean;
@@ -79,7 +85,7 @@ export function EditFormationDialog({ open, onOpenChange, onEditFormation, initi
         id: initialData.id,
         name: initialData.name,
         playStyle: initialData.playStyle,
-        slots: initialData.slots && initialData.slots.length === 11 ? initialData.slots : defaultSlots,
+        slots: initialData.slots && initialData.slots.length === 11 ? initialData.slots.map(s => ({...s, styles: s.styles || ['Ninguno']})) : defaultSlots,
         imageUrl: initialData.imageUrl || "",
         secondaryImageUrl: initialData.secondaryImageUrl || "",
         sourceUrl: initialData.sourceUrl || "",
@@ -144,8 +150,8 @@ export function EditFormationDialog({ open, onOpenChange, onEditFormation, initi
             <ScrollArea className="h-72 w-full rounded-md border p-4">
               <div className="space-y-4">
                 {fields.map((field, index) => (
-                  <div key={field.id} className="grid grid-cols-1 md:grid-cols-3 gap-2 items-end p-2 border-b">
-                    <p className="font-medium md:col-span-1">Jugador {index + 1}</p>
+                  <div key={field.id} className="grid grid-cols-1 md:grid-cols-3 gap-2 items-start p-2 border-b">
+                    <p className="font-medium md:col-span-1 pt-8">Jugador {index + 1}</p>
                     <FormField
                       control={form.control}
                       name={`slots.${index}.position`}
@@ -161,21 +167,75 @@ export function EditFormationDialog({ open, onOpenChange, onEditFormation, initi
                         </FormItem>
                       )}
                     />
-                    <FormField
-                      control={form.control}
-                      name={`slots.${index}.style`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Estilo de Juego</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                            <SelectContent>
-                              {playerStyles.map(style => <SelectItem key={style} value={style}>{style}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        </FormItem>
-                      )}
-                    />
+                     <FormField
+                        control={form.control}
+                        name={`slots.${index}.styles`}
+                        render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                                <FormLabel>Estilos de Juego</FormLabel>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <FormControl>
+                                            <Button
+                                                variant="outline"
+                                                role="combobox"
+                                                className={cn("justify-between h-auto", !field.value || field.value.length === 0 && "text-muted-foreground")}
+                                            >
+                                                <div className="flex gap-1 flex-wrap">
+                                                    {field.value && field.value.length > 0 ? (
+                                                      field.value.map((style) => (
+                                                          <Badge
+                                                              variant="secondary"
+                                                              key={style}
+                                                              className="mr-1"
+                                                          >
+                                                              {style}
+                                                          </Badge>
+                                                      ))
+                                                    ) : (
+                                                        "Seleccionar estilos"
+                                                    )}
+                                                </div>
+                                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                            </Button>
+                                        </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="p-0">
+                                        <Command>
+                                            <CommandInput placeholder="Buscar estilo..." />
+                                            <CommandList>
+                                                <CommandEmpty>No se encontró el estilo.</CommandEmpty>
+                                                {playerStyles.map((style) => (
+                                                    <CommandItem
+                                                        key={style}
+                                                        onSelect={() => {
+                                                            const currentValues = field.value || [];
+                                                            const isSelected = currentValues.includes(style);
+                                                            const newValues = isSelected
+                                                                ? currentValues.filter(s => s !== style)
+                                                                : [...currentValues, style];
+                                                            field.onChange(newValues.length > 0 ? newValues : ['Ninguno']);
+                                                        }}
+                                                    >
+                                                        <Check
+                                                            className={cn(
+                                                                "mr-2 h-4 w-4",
+                                                                field.value?.includes(style)
+                                                                    ? "opacity-100"
+                                                                    : "opacity-0"
+                                                            )}
+                                                        />
+                                                        {style}
+                                                    </CommandItem>
+                                                ))}
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                      />
                   </div>
                 ))}
               </div>
@@ -190,5 +250,3 @@ export function EditFormationDialog({ open, onOpenChange, onEditFormation, initi
     </Dialog>
   );
 }
-
-    
