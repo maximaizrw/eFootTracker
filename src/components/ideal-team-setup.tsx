@@ -33,12 +33,12 @@ export function IdealTeamSetup({ formations, selectedFormationId, onFormationCha
         </SelectTrigger>
         <SelectContent>
           {formations.map(f => (
-            <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+            <SelectItem key={f.id} value={f.id}>
+              {f.name} {f.creator && ` - ${f.creator}`}
+            </SelectItem>
           ))}
         </SelectContent>
       </Select>
     </div>
   );
 }
-
-    

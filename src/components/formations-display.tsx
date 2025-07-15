@@ -61,7 +61,10 @@ const FormationCard = ({ formation, onAddMatch, onDelete, onEdit, onViewImage }:
         <CardHeader className="p-4 border-b border-white/10">
           <div className="flex justify-between items-start">
               <div>
-                <CardTitle className="text-xl">{formation.name}</CardTitle>
+                <CardTitle className="text-xl">
+                  {formation.name}
+                  {formation.creator && <span className="block text-sm font-normal text-muted-foreground -mt-1">{formation.creator}</span>}
+                </CardTitle>
                 <CardDescription>{formation.playStyle}</CardDescription>
               </div>
               {formation.sourceUrl && (
@@ -194,7 +197,7 @@ const FormationRow = ({ formation, onAddMatch, onEdit, onDelete }: Omit<Formatio
     return (
         <div className="flex items-center justify-between p-4 bg-card/60 border border-white/10 rounded-lg">
             <div className="flex-1">
-                <p className="text-lg font-semibold">{formation.name}</p>
+                <p className="text-lg font-semibold">{formation.name} {formation.creator && <span className="font-normal text-muted-foreground">- {formation.creator}</span>}</p>
                 <p className="text-sm text-muted-foreground">{formation.playStyle}</p>
             </div>
             <div className="flex items-center gap-6 mx-6">
