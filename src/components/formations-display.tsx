@@ -7,7 +7,7 @@ import Link from 'next/link';
 import type { FormationStats } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Trash2, Link as LinkIcon, Trophy, LayoutGrid, List } from 'lucide-react';
+import { PlusCircle, Trash2, Link as LinkIcon, Trophy, LayoutGrid, List, Pencil } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -21,6 +21,7 @@ type FormationsDisplayProps = {
   formations: FormationStats[];
   onAddMatch: (formationId: string, formationName: string) => void;
   onDelete: (formation: FormationStats) => void;
+  onEdit: (formation: FormationStats) => void;
   onViewImage: (url: string, name: string) => void;
 };
 
@@ -43,7 +44,7 @@ const calculateStats = (matches: FormationStats['matches']) => {
 };
 
 
-const FormationCard = ({ formation, onAddMatch, onDelete, onViewImage }: Omit<FormationsDisplayProps, 'formations'> & { formation: FormationStats }) => {
+const FormationCard = ({ formation, onAddMatch, onDelete, onEdit, onViewImage }: Omit<FormationsDisplayProps, 'formations'> & { formation: FormationStats }) => {
     const stats = calculateStats(formation.matches);
     const effectivenessColor = 
       stats.effectiveness >= 66 ? 'text-green-400' :
@@ -158,22 +159,32 @@ const FormationCard = ({ formation, onAddMatch, onDelete, onViewImage }: Omit<Fo
             <PlusCircle className="mr-2 h-4 w-4" />
             Añadir Partido
           </Button>
-          <TooltipProvider>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button variant="destructive" size="icon" onClick={() => onDelete(formation)}>
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
-                </TooltipTrigger>
-                <TooltipContent><p>Eliminar Formación</p></TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <div className="flex items-center gap-2">
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="outline" size="icon" onClick={() => onEdit(formation)}>
+                            <Pencil className="h-4 w-4" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>Editar Formación</p></TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="destructive" size="icon" onClick={() => onDelete(formation)}>
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>Eliminar Formación</p></TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+          </div>
         </CardFooter>
       </Card>
     );
 };
 
-const FormationRow = ({ formation, onAddMatch, onDelete }: Omit<FormationsDisplayProps, 'formations' | 'onViewImage'> & { formation: FormationStats }) => {
+const FormationRow = ({ formation, onAddMatch, onEdit, onDelete }: Omit<FormationsDisplayProps, 'formations' | 'onViewImage'> & { formation: FormationStats }) => {
     const stats = calculateStats(formation.matches);
      const effectivenessColor = 
       stats.effectiveness >= 66 ? 'text-green-400' :
@@ -204,6 +215,14 @@ const FormationRow = ({ formation, onAddMatch, onDelete }: Omit<FormationsDispla
                 <TooltipProvider>
                   <Tooltip>
                       <TooltipTrigger asChild>
+                           <Button variant="outline" size="icon" onClick={() => onEdit(formation)}>
+                                <Pencil className="h-4 w-4" />
+                            </Button>
+                      </TooltipTrigger>
+                      <TooltipContent><p>Editar Formación</p></TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                      <TooltipTrigger asChild>
                           <Button variant="destructive" size="icon" onClick={() => onDelete(formation)}>
                               <Trash2 className="h-4 w-4" />
                           </Button>
@@ -216,7 +235,7 @@ const FormationRow = ({ formation, onAddMatch, onDelete }: Omit<FormationsDispla
     );
 };
 
-export function FormationsDisplay({ formations, onAddMatch, onDelete, onViewImage }: FormationsDisplayProps) {
+export function FormationsDisplay({ formations, onAddMatch, onDelete, onEdit, onViewImage }: FormationsDisplayProps) {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   if (formations.length === 0) {
@@ -250,6 +269,7 @@ export function FormationsDisplay({ formations, onAddMatch, onDelete, onViewImag
                         formation={formation}
                         onAddMatch={onAddMatch}
                         onDelete={onDelete}
+                        onEdit={onEdit}
                         onViewImage={onViewImage}
                     />
                 ))}
@@ -261,6 +281,7 @@ export function FormationsDisplay({ formations, onAddMatch, onDelete, onViewImag
                         key={formation.id}
                         formation={formation}
                         onAddMatch={onAddMatch}
+                        onEdit={onEdit}
                         onDelete={onDelete}
                     />
                 ))}
@@ -269,5 +290,3 @@ export function FormationsDisplay({ formations, onAddMatch, onDelete, onViewImag
     </div>
   );
 }
-
-    

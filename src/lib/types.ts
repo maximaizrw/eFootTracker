@@ -96,6 +96,16 @@ export type AddFormationFormValues = {
   sourceUrl?: string;
 };
 
+export type EditFormationFormValues = {
+  id: string;
+  name: string;
+  playStyle: FormationPlayStyle;
+  imageUrl?: string;
+  secondaryImageUrl?: string;
+  sourceUrl?: string;
+};
+
+
 export type AddMatchFormValues = {
   formationId: string;
   goalsFor: number;
@@ -127,5 +137,3 @@ export type EditTrainingGuideFormValues = {
   title: string;
   content: string;
 };
-
-    

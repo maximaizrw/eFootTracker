@@ -20,6 +20,7 @@ import { AddRatingDialog, type FormValues as AddRatingFormValues } from '@/compo
 import { EditCardDialog, type FormValues as EditCardFormValues } from '@/components/edit-card-dialog';
 import { EditPlayerDialog, type FormValues as EditPlayerFormValues } from '@/components/edit-player-dialog';
 import { AddFormationDialog, type AddFormationFormValues } from '@/components/add-formation-dialog';
+import { EditFormationDialog, type EditFormationFormValues } from '@/components/edit-formation-dialog';
 import { AddMatchDialog, type AddMatchFormValues } from '@/components/add-match-dialog';
 import { PlayerDetailDialog } from '@/components/player-detail-dialog';
 import { AddTrainingGuideDialog, type AddTrainingGuideFormValues } from '@/components/add-training-guide-dialog';
@@ -37,7 +38,7 @@ import { useFormations } from '@/hooks/useFormations';
 import { useTrainings } from '@/hooks/useTrainings';
 import { useToast } from "@/hooks/use-toast";
 
-import type { Player, PlayerCard as PlayerCardType, Formation, IdealTeamPlayer, FlatPlayer, Position, TrainingGuide } from '@/lib/types';
+import type { Player, PlayerCard as PlayerCardType, Formation, IdealTeamPlayer, FlatPlayer, Position, TrainingGuide, FormationStats } from '@/lib/types';
 import { positions } from '@/lib/types';
 import { PlusCircle, Trash2, X, Star, Bot, Download, Search, Trophy, NotebookPen } from 'lucide-react';
 import { calculateAverage, getPositionGroup } from '@/lib/utils';
@@ -67,6 +68,7 @@ export default function Home() {
     loading: formationsLoading,
     error: formationsError,
     addFormation,
+    editFormation,
     addMatchResult,
     deleteFormation: deleteFormationFromDb,
     downloadBackup: downloadFormationsBackup,
@@ -86,6 +88,7 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddRatingDialogOpen, setAddRatingDialogOpen] = useState(false);
   const [isAddFormationDialogOpen, setAddFormationDialogOpen] = useState(false);
+  const [isEditFormationDialogOpen, setEditFormationDialogOpen] = useState(false);
   const [isAddMatchDialogOpen, setAddMatchDialogOpen] = useState(false);
   const [isEditCardDialogOpen, setEditCardDialogOpen] = useState(false);
   const [isEditPlayerDialogOpen, setEditPlayerDialogOpen] = useState(false);
@@ -99,6 +102,7 @@ export default function Home() {
   const [addMatchInitialData, setAddMatchInitialData] = useState<{ formationId: string; formationName: string } | undefined>(undefined);
   const [editCardDialogInitialData, setEditCardDialogInitialData] = useState<EditCardFormValues | undefined>(undefined);
   const [editPlayerDialogInitialData, setEditPlayerDialogInitialData] = useState<EditPlayerFormValues | undefined>(undefined);
+  const [editFormationDialogInitialData, setEditFormationDialogInitialData] = useState<EditFormationFormValues | undefined>(undefined);
   const [editTrainingGuideInitialData, setEditTrainingGuideInitialData] = useState<EditTrainingGuideFormValues | undefined>(undefined);
   const [selectedPlayerForDetail, setSelectedPlayerForDetail] = useState<Player | null>(null);
   
@@ -142,6 +146,18 @@ export default function Home() {
     setSelectedPlayerForDetail(player);
     setPlayerDetailDialogOpen(true);
   };
+  
+  const handleOpenEditFormation = (formation: FormationStats) => {
+    setEditFormationDialogInitialData({
+      id: formation.id,
+      name: formation.name,
+      playStyle: formation.playStyle,
+      imageUrl: formation.imageUrl || '',
+      secondaryImageUrl: formation.secondaryImageUrl || '',
+      sourceUrl: formation.sourceUrl || '',
+    });
+    setEditFormationDialogOpen(true);
+  };
 
   const handleViewImage = (url: string, name: string) => {
     setViewingImageUrl(url);
@@ -161,44 +177,6 @@ export default function Home() {
       content: guide.content,
     });
     setEditTrainingGuideDialogOpen(true);
-  };
-
-
-  const handleDeleteFormation = async (formation: any) => {
-    if(!db) return;
-    try {
-      await deleteFormationFromDb(formation.id);
-    } catch (error) {
-      console.error("Error deleting formation:", error);
-      toast({
-        variant: "destructive",
-        title: "Error al eliminar",
-        description: "No se pudo eliminar la formación."
-      });
-    }
-  };
-
-  const handleAddFormation = async (values: AddFormationFormValues) => {
-    if (!db) return;
-    try {
-        const newFormation = {
-            name: values.name,
-            playStyle: values.playStyle,
-            imageUrl: values.imageUrl || '',
-            secondaryImageUrl: values.secondaryImageUrl || '',
-            sourceUrl: values.sourceUrl || '',
-            matches: [],
-        };
-        await addDoc(collection(db, 'formations'), newFormation);
-        toast({ title: "Formación Añadida", description: `La formación "${values.name}" se ha guardado.` });
-    } catch (error) {
-        console.error("Error adding formation: ", error);
-        toast({
-            variant: "destructive",
-            title: "Error al Guardar",
-            description: `No se pudo guardar la formación.`,
-        });
-    }
   };
 
   const handleGenerateTeam = () => {
@@ -383,7 +361,13 @@ export default function Home() {
       <AddFormationDialog
         open={isAddFormationDialogOpen}
         onOpenChange={setAddFormationDialogOpen}
-        onAddFormation={handleAddFormation}
+        onAddFormation={addFormation}
+      />
+      <EditFormationDialog
+        open={isEditFormationDialogOpen}
+        onOpenChange={setEditFormationDialogOpen}
+        onEditFormation={editFormation}
+        initialData={editFormationDialogInitialData}
       />
       <AddMatchDialog
         open={isAddMatchDialogOpen}
@@ -484,7 +468,8 @@ export default function Home() {
             <FormationsDisplay
               formations={formations}
               onAddMatch={handleOpenAddMatch}
-              onDelete={handleDeleteFormation}
+              onDelete={deleteFormationFromDb}
+              onEdit={handleOpenEditFormation}
               onViewImage={handleViewImage}
             />
           </TabsContent>

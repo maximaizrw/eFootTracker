@@ -6,7 +6,7 @@ import { db } from '@/lib/firebase';
 import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDocs, arrayUnion, query, orderBy } from 'firebase/firestore';
 import { useToast } from './use-toast';
 import { v4 as uuidv4 } from 'uuid';
-import type { FormationStats, MatchResult, AddMatchFormValues } from '@/lib/types';
+import type { FormationStats, MatchResult, AddMatchFormValues, AddFormationFormValues, EditFormationFormValues } from '@/lib/types';
 
 export function useFormations() {
   const [formations, setFormations] = useState<FormationStats[]>([]);
@@ -57,6 +57,51 @@ export function useFormations() {
 
     return () => unsub();
   }, [toast]);
+  
+  const addFormation = async (values: AddFormationFormValues) => {
+    if (!db) return;
+    try {
+        const newFormation = {
+            name: values.name,
+            playStyle: values.playStyle,
+            imageUrl: values.imageUrl || '',
+            secondaryImageUrl: values.secondaryImageUrl || '',
+            sourceUrl: values.sourceUrl || '',
+            matches: [],
+        };
+        await addDoc(collection(db, 'formations'), newFormation);
+        toast({ title: "Formación Añadida", description: `La formación "${values.name}" se ha guardado.` });
+    } catch (error) {
+        console.error("Error adding formation: ", error);
+        toast({
+            variant: "destructive",
+            title: "Error al Guardar",
+            description: `No se pudo guardar la formación.`,
+        });
+    }
+  };
+  
+  const editFormation = async (values: EditFormationFormValues) => {
+    if (!db) return;
+    try {
+      const formationRef = doc(db, 'formations', values.id);
+      await updateDoc(formationRef, {
+        name: values.name,
+        playStyle: values.playStyle,
+        imageUrl: values.imageUrl || '',
+        secondaryImageUrl: values.secondaryImageUrl || '',
+        sourceUrl: values.sourceUrl || '',
+      });
+      toast({ title: "Formación Actualizada", description: `La formación "${values.name}" ha sido actualizada.` });
+    } catch (error) {
+      console.error("Error updating formation: ", error);
+      toast({
+        variant: "destructive",
+        title: "Error al Actualizar",
+        description: `No se pudo actualizar la formación.`,
+      });
+    }
+  };
 
 
   const addMatchResult = async (values: AddMatchFormValues) => {
@@ -113,7 +158,5 @@ export function useFormations() {
     }
   };
 
-  return { formations, loading, error, addMatchResult, deleteFormation, downloadBackup };
+  return { formations, loading, error, addFormation, editFormation, addMatchResult, deleteFormation, downloadBackup };
 }
-
-    
