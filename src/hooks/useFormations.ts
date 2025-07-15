@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDocs, arrayUnion } from 'firebase/firestore';
+import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDocs, arrayUnion, query, orderBy } from 'firebase/firestore';
 import { useToast } from './use-toast';
 import { v4 as uuidv4 } from 'uuid';
 import type { FormationStats, MatchResult, AddFormationFormValues, AddMatchFormValues } from '@/lib/types';
@@ -22,7 +22,9 @@ export function useFormations() {
       return;
     }
 
-    const unsub = onSnapshot(collection(db, "formations"), (snapshot) => {
+    const q = query(collection(db, "formations"), orderBy("name", "asc"));
+
+    const unsub = onSnapshot(q, (snapshot) => {
       try {
         const formationsData = snapshot.docs.map(doc => ({
           id: doc.id,
@@ -56,16 +58,11 @@ export function useFormations() {
     return () => unsub();
   }, [toast]);
 
-  const addFormation = async (values: Omit<FormationStats, 'id' | 'matches'>) => {
+  const addFormation = async (values: AddFormationFormValues) => {
+    if(!db) return;
     try {
-      const newFormation: Omit<FormationStats, 'id'> = {
-        name: values.name,
-        playStyle: values.playStyle,
-        sourceUrl: values.sourceUrl || '',
-        imageUrl: values.imageUrl || '',
-        imagePath: values.imagePath || '',
-        secondaryImageUrl: values.secondaryImageUrl || '',
-        secondaryImagePath: values.secondaryImagePath || '',
+      const newFormation = {
+        ...values,
         matches: [],
       };
       await addDoc(collection(db, 'formations'), newFormation);
@@ -81,6 +78,7 @@ export function useFormations() {
   };
 
   const addMatchResult = async (values: AddMatchFormValues) => {
+    if(!db) return;
     try {
       const formationRef = doc(db, 'formations', values.formationId);
       const newResult: MatchResult = {
@@ -103,9 +101,10 @@ export function useFormations() {
     }
   };
 
-  const deleteFormation = async (formation: FormationStats) => {
+  const deleteFormation = async (formationId: string) => {
+    if(!db) return;
     try {
-      await deleteDoc(doc(db, 'formations', formation.id));
+      await deleteDoc(doc(db, 'formations', formationId));
       toast({ title: "Formación Eliminada", description: "La formación y sus estadísticas han sido eliminadas." });
     } catch (error) {
       console.error("Error deleting formation:", error);

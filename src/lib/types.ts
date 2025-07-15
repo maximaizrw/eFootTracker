@@ -60,7 +60,7 @@ export type IdealTeamPlayer = {
   average: number;
 };
 
-// --- Nuevos tipos para Formaciones ---
+// --- Tipos para Formaciones ---
 
 export const formationPlayStyles = [
   'Contraataque rápido', 
@@ -83,9 +83,7 @@ export type FormationStats = {
   name: string;
   playStyle: FormationPlayStyle;
   imageUrl?: string;
-  imagePath?: string;
   secondaryImageUrl?: string;
-  secondaryImagePath?: string;
   sourceUrl?: string;
   matches: MatchResult[];
 };
@@ -93,8 +91,8 @@ export type FormationStats = {
 export type AddFormationFormValues = {
   name: string;
   playStyle: FormationPlayStyle;
-  image?: FileList;
-  secondaryImage?: FileList;
+  imageUrl?: string;
+  secondaryImageUrl?: string;
   sourceUrl?: string;
 };
 
@@ -104,9 +102,22 @@ export type AddMatchFormValues = {
   goalsAgainst: number;
 }
 
-// Tipos para componentes refactorizados
+// --- Tipos para componentes refactorizados
 export type FlatPlayer = {
   player: PlayerType;
   card: PlayerCardType;
   ratingsForPos: number[];
+};
+
+// --- Tipos para Guías de Entrenamiento ---
+export type TrainingGuide = {
+  id: string;
+  title: string;
+  content: string; // Markdown content
+  createdAt: string; // ISO 8601 string
+};
+
+export type AddTrainingGuideFormValues = {
+  title: string;
+  content: string;
 };

@@ -22,20 +22,23 @@ import { EditPlayerDialog, type FormValues as EditPlayerFormValues } from '@/com
 import { AddFormationDialog, type AddFormationFormValues } from '@/components/add-formation-dialog';
 import { AddMatchDialog, type AddMatchFormValues } from '@/components/add-match-dialog';
 import { PlayerDetailDialog } from '@/components/player-detail-dialog';
+import { AddTrainingGuideDialog, type AddTrainingGuideFormValues } from '@/components/add-training-guide-dialog';
 
 import { FormationsDisplay } from '@/components/formations-display';
 import { IdealTeamDisplay } from '@/components/ideal-team-display';
 import { IdealTeamSetup } from '@/components/ideal-team-setup';
 import { PlayerTable } from '@/components/player-table';
 import { PositionIcon } from '@/components/position-icon';
+import { TrainingGuideDisplay } from '@/components/training-guide-display';
 
 import { usePlayers } from '@/hooks/usePlayers';
 import { useFormations } from '@/hooks/useFormations';
+import { useTrainings } from '@/hooks/useTrainings';
 import { useToast } from "@/hooks/use-toast";
 
 import type { Player, PlayerStyle, PlayerCard as PlayerCardType, Formation, IdealTeamPlayer, FlatPlayer, Position } from '@/lib/types';
 import { positions } from '@/lib/types';
-import { PlusCircle, Trash2, X, Star, Bot, Download, Search, Trophy } from 'lucide-react';
+import { PlusCircle, Trash2, X, Star, Bot, Download, Search, Trophy, NotebookPen } from 'lucide-react';
 import { calculateAverage, getPositionGroup } from '@/lib/utils';
 import { ref, getDownloadURL, uploadBytes, deleteObject } from 'firebase/storage';
 import { storage } from '@/lib/firebase';
@@ -62,13 +65,22 @@ export default function Home() {
     formations,
     loading: formationsLoading,
     error: formationsError,
-    addFormation: addFormationToDb,
+    addFormation,
     addMatchResult,
     deleteFormation: deleteFormationFromDb,
     downloadBackup: downloadFormationsBackup,
   } = useFormations();
+  
+  const {
+    trainingGuides,
+    loading: trainingsLoading,
+    error: trainingsError,
+    addTrainingGuide,
+    deleteTrainingGuide,
+  } = useTrainings();
 
-  const [activeTab, setActiveTab] = useState<Position | 'ideal-11' | 'formations'>('DC');
+
+  const [activeTab, setActiveTab] = useState<string>('DC');
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddRatingDialogOpen, setAddRatingDialogOpen] = useState(false);
   const [isAddFormationDialogOpen, setAddFormationDialogOpen] = useState(false);
@@ -77,6 +89,7 @@ export default function Home() {
   const [isEditPlayerDialogOpen, setEditPlayerDialogOpen] = useState(false);
   const [isPlayerDetailDialogOpen, setPlayerDetailDialogOpen] = useState(false);
   const [isImageViewerOpen, setImageViewerOpen] = useState(false);
+  const [isAddTrainingGuideDialogOpen, setAddTrainingGuideDialogOpen] = useState(false);
   const [viewingImageUrl, setViewingImageUrl] = useState<string | null>(null);
   const [viewingImageName, setViewingImageName] = useState<string | null>(null);
   const [addDialogInitialData, setAddDialogInitialData] = useState<Partial<AddRatingFormValues> | undefined>(undefined);
@@ -97,53 +110,6 @@ export default function Home() {
   
   const { toast } = useToast();
 
-  const uploadImage = async (imageFile: File): Promise<{ url: string; path: string }> => {
-    if (!storage) {
-      throw new Error("Firebase Storage is not configured.");
-    }
-    const imagePath = `formations/${uuidv4()}-${imageFile.name}`;
-    const storageRef = ref(storage, imagePath);
-    await uploadBytes(storageRef, imageFile);
-    const downloadURL = await getDownloadURL(storageRef);
-    return { url: downloadURL, path: imagePath };
-  };
-
-  const handleAddFormation = async (values: AddFormationFormValues) => {
-    try {
-      let imageUrl = '';
-      let imagePath = '';
-      if (values.image && values.image.length > 0) {
-        const result = await uploadImage(values.image[0]);
-        imageUrl = result.url;
-        imagePath = result.path;
-      }
-
-      let secondaryImageUrl = '';
-      let secondaryImagePath = '';
-      if (values.secondaryImage && values.secondaryImage.length > 0) {
-        const result = await uploadImage(values.secondaryImage[0]);
-        secondaryImageUrl = result.url;
-        secondaryImagePath = result.path;
-      }
-
-      await addFormationToDb({
-        ...values,
-        imageUrl,
-        imagePath,
-        secondaryImageUrl,
-        secondaryImagePath,
-      });
-
-    } catch (error) {
-      console.error("Error creating formation:", error);
-      toast({
-        variant: "destructive",
-        title: "Error al crear formación",
-        description: "No se pudo subir la imagen o guardar los datos."
-      });
-    }
-  };
-
   const handleDeleteFormation = async (formation: any) => {
     try {
       if (formation.imagePath && storage) {
@@ -152,7 +118,7 @@ export default function Home() {
       if (formation.secondaryImagePath && storage) {
         await deleteObject(ref(storage, formation.secondaryImagePath));
       }
-      await deleteFormationFromDb(formation);
+      await deleteFormationFromDb(formation.id);
     } catch (error) {
       console.error("Error deleting formation or its images:", error);
       if ((error as any)?.code !== 'storage/object-not-found') {
@@ -162,7 +128,7 @@ export default function Home() {
           description: "No se pudo eliminar la formación o sus imágenes."
         });
       } else {
-        await deleteFormationFromDb(formation);
+        await deleteFormationFromDb(formation.id);
       }
     }
   };
@@ -312,7 +278,7 @@ export default function Home() {
   };
 
   const handleTabChange = (value: string) => {
-    setActiveTab(value as Position | 'ideal-11' | 'formations');
+    setActiveTab(value);
     setSearchTerm('');
     setStyleFilter('all');
     setCardFilter('all');
@@ -327,9 +293,18 @@ export default function Home() {
             Añadir Formación
           </Button>
         );
+      case 'trainings':
+        return (
+           <Button onClick={() => setAddTrainingGuideDialogOpen(true)}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Añadir Guía
+          </Button>
+        );
+      case 'ideal-11':
+        return null;
       default:
         return (
-          <Button onClick={() => handleOpenAddRating(activeTab !== 'ideal-11' ? { position: activeTab as Position } : undefined)}>
+          <Button onClick={() => handleOpenAddRating({ position: activeTab as Position })}>
             <PlusCircle className="mr-2 h-4 w-4" />
             Añadir Valoración
           </Button>
@@ -346,7 +321,7 @@ export default function Home() {
   };
 
 
-  const error = playersError || formationsError;
+  const error = playersError || formationsError || trainingsError;
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-screen text-center p-4">
@@ -358,7 +333,7 @@ export default function Home() {
     );
   }
 
-  if (playersLoading || formationsLoading) {
+  if (playersLoading || formationsLoading || trainingsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-xl font-semibold">Conectando a la base de datos...</div>
@@ -380,13 +355,18 @@ export default function Home() {
       <AddFormationDialog
         open={isAddFormationDialogOpen}
         onOpenChange={setAddFormationDialogOpen}
-        onAddFormation={handleAddFormation}
+        onAddFormation={addFormation}
       />
       <AddMatchDialog
         open={isAddMatchDialogOpen}
         onOpenChange={setAddMatchDialogOpen}
         onAddMatch={addMatchResult}
         initialData={addMatchInitialData}
+      />
+      <AddTrainingGuideDialog
+        open={isAddTrainingGuideDialogOpen}
+        onOpenChange={setAddTrainingGuideDialogOpen}
+        onAddGuide={addTrainingGuide}
       />
       <EditCardDialog
         open={isEditCardDialogOpen}
@@ -444,8 +424,8 @@ export default function Home() {
       </header>
 
       <main className="container mx-auto p-4 md:p-8">
-        <Tabs defaultValue="DC" className="w-full" onValueChange={handleTabChange}>
-          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-8 h-auto gap-1 bg-white/5">
+        <Tabs defaultValue="DC" className="w-full" onValueChange={handleTabChange} value={activeTab}>
+          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-9 h-auto gap-1 bg-white/5">
             {positions.map((pos) => (
               <TabsTrigger key={pos} value={pos} className="py-2">
                 <PositionIcon position={pos} className="mr-2 h-5 w-5"/>
@@ -455,6 +435,10 @@ export default function Home() {
              <TabsTrigger value="formations" className="py-2 data-[state=active]:bg-accent/20 data-[state=active]:text-accent">
                 <Trophy className="mr-2 h-5 w-5"/>
                 Formaciones
+            </TabsTrigger>
+            <TabsTrigger value="trainings" className="py-2 data-[state=active]:bg-accent/20 data-[state=active]:text-accent">
+                <NotebookPen className="mr-2 h-5 w-5"/>
+                Entrenamientos
             </TabsTrigger>
             <TabsTrigger value="ideal-11" className="py-2 data-[state=active]:bg-accent/20 data-[state=active]:text-accent">
                 <Star className="mr-2 h-5 w-5"/>
@@ -468,6 +452,13 @@ export default function Home() {
               onAddMatch={handleOpenAddMatch}
               onDelete={handleDeleteFormation}
               onViewImage={handleViewImage}
+            />
+          </TabsContent>
+
+          <TabsContent value="trainings" className="mt-6">
+            <TrainingGuideDisplay
+              guides={trainingGuides}
+              onDelete={deleteTrainingGuide}
             />
           </TabsContent>
 
