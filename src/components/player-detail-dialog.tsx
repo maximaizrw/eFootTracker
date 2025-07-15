@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts';
 import type { Player, Position } from "@/lib/types";
 import {
   Dialog,
@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { calculateAverage, formatAverage } from "@/lib/utils";
+import { calculateAverage, formatAverage, getPositionGroupColor } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 
@@ -98,7 +98,11 @@ export function PlayerDetailDialog({ open, onOpenChange, player }: PlayerDetailD
                             labelStyle={{ color: "hsl(var(--foreground))" }}
                             formatter={(value, name, props) => [`${value} (${props.payload.matches} partidos)`, "Promedio"]}
                         />
-                        <Bar dataKey="average" fill="hsl(var(--primary))" barSize={20} />
+                        <Bar dataKey="average" barSize={20}>
+                           {performanceData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={getPositionGroupColor(entry.position)} />
+                            ))}
+                        </Bar>
                       </BarChart>
                     </ResponsiveContainer>
                   </div>

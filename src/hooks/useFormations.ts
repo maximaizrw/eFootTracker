@@ -56,14 +56,16 @@ export function useFormations() {
     return () => unsub();
   }, [toast]);
 
-  const addFormation = async (values: AddFormationFormValues) => {
+  const addFormation = async (values: Omit<FormationStats, 'id' | 'matches'>) => {
     try {
       const newFormation: Omit<FormationStats, 'id'> = {
         name: values.name,
         playStyle: values.playStyle,
         sourceUrl: values.sourceUrl || '',
         imageUrl: values.imageUrl || '',
+        imagePath: values.imagePath || '',
         secondaryImageUrl: values.secondaryImageUrl || '',
+        secondaryImagePath: values.secondaryImagePath || '',
         matches: [],
       };
       await addDoc(collection(db, 'formations'), newFormation);

@@ -34,12 +34,29 @@ import { Input } from "@/components/ui/input";
 import type { AddFormationFormValues } from "@/lib/types";
 import { formationPlayStyles } from "@/lib/types";
 
+const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+
 const formSchema = z.object({
   name: z.string().min(2, "El nombre debe tener al menos 2 caracteres."),
   playStyle: z.enum(formationPlayStyles),
-  imageUrl: z.string().url("Debe ser una URL válida.").optional().or(z.literal('')),
-  secondaryImageUrl: z.string().url("Debe ser una URL válida.").optional().or(z.literal('')),
   sourceUrl: z.string().url("Debe ser una URL válida.").optional().or(z.literal('')),
+  image: z
+    .custom<FileList>()
+    .refine((files) => files?.length === 1, "La imagen principal es obligatoria.")
+    .refine((files) => files?.[0]?.size <= MAX_FILE_SIZE, `El tamaño máximo es de 2MB.`)
+    .refine(
+      (files) => ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type),
+      "Solo se aceptan archivos .jpg, .jpeg, .png y .webp."
+    ),
+  secondaryImage: z
+    .custom<FileList>()
+    .refine((files) => files?.length <= 1, "Solo puedes subir un archivo.")
+    .refine((files) => !files || files.length === 0 || files?.[0]?.size <= MAX_FILE_SIZE, `El tamaño máximo es de 2MB.`)
+    .refine(
+      (files) => !files || files.length === 0 || ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type),
+      "Solo se aceptan archivos .jpg, .jpeg, .png y .webp."
+    ).optional(),
 });
 
 
@@ -55,8 +72,6 @@ export function AddFormationDialog({ open, onOpenChange, onAddFormation }: AddFo
     defaultValues: {
       name: "",
       playStyle: "Contraataque rápido",
-      imageUrl: "",
-      secondaryImageUrl: "",
       sourceUrl: "",
     },
   });
@@ -66,6 +81,9 @@ export function AddFormationDialog({ open, onOpenChange, onAddFormation }: AddFo
     onOpenChange(false);
     form.reset();
   }
+  
+  const imageRef = form.register("image");
+  const secondaryImageRef = form.register("secondaryImage");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -113,33 +131,33 @@ export function AddFormationDialog({ open, onOpenChange, onAddFormation }: AddFo
                 </FormItem>
               )}
             />
-             <FormField
-              control={form.control}
-              name="imageUrl"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>URL de Imagen Principal (Opcional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://ejemplo.com/tactica.png" {...field} />
-                  </FormControl>
-                   <FormDescription>Pega la URL de la táctica principal.</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
+            <FormField
+                control={form.control}
+                name="image"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Imagen Principal</FormLabel>
+                        <FormControl>
+                            <Input type="file" {...imageRef} />
+                        </FormControl>
+                        <FormDescription>La táctica principal. Obligatoria.</FormDescription>
+                        <FormMessage />
+                    </FormItem>
+                )}
             />
             <FormField
-              control={form.control}
-              name="secondaryImageUrl"
-              render={({ field }) => (
-                <FormItem>
-                    <FormLabel>URL de Imagen Secundaria (Opcional)</FormLabel>
-                    <FormControl>
-                        <Input placeholder="https://ejemplo.com/tactica_def.png" {...field} />
-                    </FormControl>
-                    <FormDescription>Pega la URL de la táctica defensiva u ofensiva.</FormDescription>
-                    <FormMessage />
-                </FormItem>
-              )}
+                control={form.control}
+                name="secondaryImage"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Imagen Secundaria</FormLabel>
+                        <FormControl>
+                           <Input type="file" {...secondaryImageRef} />
+                        </FormControl>
+                        <FormDescription>Táctica defensiva u ofensiva. Opcional.</FormDescription>
+                        <FormMessage />
+                    </FormItem>
+                )}
             />
             <FormField
               control={form.control}

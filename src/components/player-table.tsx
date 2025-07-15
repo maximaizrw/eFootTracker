@@ -6,10 +6,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Trash2, X, Wrench, Pencil, LineChart } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { PlusCircle, Trash2, X, Wrench, Pencil, LineChart, Search } from 'lucide-react';
 import { calculateAverage, cn, formatAverage } from '@/lib/utils';
 import { getCardStyle } from '@/lib/card-styles';
-import type { Player, PlayerCard, Position, FlatPlayer } from '@/lib/types';
+import type { Player, PlayerCard, Position, FlatPlayer, PlayerStyle } from '@/lib/types';
 import type { FormValues as AddRatingFormValues } from '@/components/add-rating-dialog';
 
 type PlayerTableProps = {
@@ -25,6 +27,97 @@ type PlayerTableProps = {
   onDeleteCard: (playerId: string, cardId: string, position: Position) => void;
   onDeleteRating: (playerId: string, cardId: string, position: Position, ratingIndex: number) => void;
 };
+
+type FilterProps = {
+  searchTerm: string;
+  onSearchTermChange: (value: string) => void;
+  styleFilter: string;
+  onStyleFilterChange: (value: string) => void;
+  cardFilter: string;
+  onCardFilterChange: (value: string) => void;
+  uniqueStyles: string[];
+  uniqueCardNames: string[];
+  position: Position;
+};
+
+const Filters = ({
+  searchTerm,
+  onSearchTermChange,
+  styleFilter,
+  onStyleFilterChange,
+  cardFilter,
+  onCardFilterChange,
+  uniqueStyles,
+  uniqueCardNames,
+  position
+}: FilterProps) => (
+  <div className="flex flex-col md:flex-row gap-2">
+    <div className="relative flex-grow">
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <Input
+        placeholder={`Buscar en ${position}...`}
+        value={searchTerm}
+        onChange={(e) => onSearchTermChange(e.target.value)}
+        className="pl-10 w-full"
+      />
+    </div>
+    <Select value={styleFilter} onValueChange={onStyleFilterChange}>
+      <SelectTrigger className="w-full md:w-[180px]">
+        <SelectValue placeholder="Filtrar por estilo" />
+      </SelectTrigger>
+      <SelectContent>
+        {uniqueStyles.map(style => (
+          <SelectItem key={style} value={style}>{style === 'all' ? 'Todos los Estilos' : style}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+    <Select value={cardFilter} onValueChange={onCardFilterChange}>
+      <SelectTrigger className="w-full md:w-[180px]">
+        <SelectValue placeholder="Filtrar por carta" />
+      </SelectTrigger>
+      <SelectContent>
+        {uniqueCardNames.map(name => (
+          <SelectItem key={name} value={name}>{name === 'all' ? 'Todas las Cartas' : name}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  </div>
+);
+
+type PaginationProps = {
+    currentPage: number;
+    totalPages: number;
+    onPageChange: (direction: 'next' | 'prev') => void;
+};
+
+const Pagination = ({ currentPage, totalPages, onPageChange }: PaginationProps) => {
+    if (totalPages <= 1) return null;
+
+    return (
+        <div className="flex items-center justify-end gap-2 p-4 border-t border-white/10">
+            <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onPageChange('prev')}
+                disabled={currentPage === 0}
+            >
+                Anterior
+            </Button>
+            <span className="text-sm text-muted-foreground">
+                Página {currentPage + 1} de {totalPages}
+            </span>
+            <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onPageChange('next')}
+                disabled={currentPage >= totalPages - 1}
+            >
+                Siguiente
+            </Button>
+        </div>
+    );
+};
+
 
 export function PlayerTable({
   players,
@@ -235,3 +328,5 @@ export function PlayerTable({
   );
 }
 
+PlayerTable.Filters = Filters;
+PlayerTable.Pagination = Pagination;

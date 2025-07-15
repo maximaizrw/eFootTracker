@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,11 +33,15 @@ import { usePlayers } from '@/hooks/usePlayers';
 import { useFormations } from '@/hooks/useFormations';
 import { useToast } from "@/hooks/use-toast";
 
-import type { Player, PlayersByPosition, Position, PlayerCard as PlayerCardType, Formation, IdealTeamPlayer, FlatPlayer } from '@/lib/types';
+import type { Player, PlayerStyle, PlayerCard as PlayerCardType, Formation, IdealTeamPlayer, FlatPlayer, Position } from '@/lib/types';
 import { positions } from '@/lib/types';
 import { PlusCircle, Trash2, X, Star, Bot, Download, Search, Trophy } from 'lucide-react';
-import { calculateAverage } from '@/lib/utils';
+import { calculateAverage, getPositionGroup } from '@/lib/utils';
+import { ref, getDownloadURL, uploadBytes, deleteObject } from 'firebase/storage';
+import { storage } from '@/lib/firebase';
+import { v4 as uuidv4 } from 'uuid';
 
+const ITEMS_PER_PAGE = 10;
 
 export default function Home() {
   const { 
@@ -58,9 +62,9 @@ export default function Home() {
     formations,
     loading: formationsLoading,
     error: formationsError,
-    addFormation,
+    addFormation: addFormationToDb,
     addMatchResult,
-    deleteFormation,
+    deleteFormation: deleteFormationFromDb,
     downloadBackup: downloadFormationsBackup,
   } = useFormations();
 
@@ -85,7 +89,83 @@ export default function Home() {
     PT: 1, DFC: 3, LI: 0, LD: 1, MCD: 1, MC: 1, MDI: 0, MDD: 0, MO: 3, EXI: 0, EXD: 0, SD: 0, DC: 1
   });
   const [idealTeam, setIdealTeam] = useState<(IdealTeamPlayer | null)[]>([]);
+  
+  // State for filters and pagination
+  const [styleFilter, setStyleFilter] = useState<string>('all');
+  const [cardFilter, setCardFilter] = useState<string>('all');
+  const [pagination, setPagination] = useState<Record<string, number>>({});
+  
   const { toast } = useToast();
+
+  const uploadImage = async (imageFile: File): Promise<{ url: string; path: string }> => {
+    if (!storage) {
+      throw new Error("Firebase Storage is not configured.");
+    }
+    const imagePath = `formations/${uuidv4()}-${imageFile.name}`;
+    const storageRef = ref(storage, imagePath);
+    await uploadBytes(storageRef, imageFile);
+    const downloadURL = await getDownloadURL(storageRef);
+    return { url: downloadURL, path: imagePath };
+  };
+
+  const handleAddFormation = async (values: AddFormationFormValues) => {
+    try {
+      let imageUrl = '';
+      let imagePath = '';
+      if (values.image && values.image.length > 0) {
+        const result = await uploadImage(values.image[0]);
+        imageUrl = result.url;
+        imagePath = result.path;
+      }
+
+      let secondaryImageUrl = '';
+      let secondaryImagePath = '';
+      if (values.secondaryImage && values.secondaryImage.length > 0) {
+        const result = await uploadImage(values.secondaryImage[0]);
+        secondaryImageUrl = result.url;
+        secondaryImagePath = result.path;
+      }
+
+      await addFormationToDb({
+        ...values,
+        imageUrl,
+        imagePath,
+        secondaryImageUrl,
+        secondaryImagePath,
+      });
+
+    } catch (error) {
+      console.error("Error creating formation:", error);
+      toast({
+        variant: "destructive",
+        title: "Error al crear formación",
+        description: "No se pudo subir la imagen o guardar los datos."
+      });
+    }
+  };
+
+  const handleDeleteFormation = async (formation: any) => {
+    try {
+      if (formation.imagePath && storage) {
+        await deleteObject(ref(storage, formation.imagePath));
+      }
+      if (formation.secondaryImagePath && storage) {
+        await deleteObject(ref(storage, formation.secondaryImagePath));
+      }
+      await deleteFormationFromDb(formation);
+    } catch (error) {
+      console.error("Error deleting formation or its images:", error);
+      if ((error as any)?.code !== 'storage/object-not-found') {
+        toast({
+          variant: "destructive",
+          title: "Error al eliminar",
+          description: "No se pudo eliminar la formación o sus imágenes."
+        });
+      } else {
+        await deleteFormationFromDb(formation);
+      }
+    }
+  };
   
   const handleOpenAddRating = (initialData?: Partial<AddRatingFormValues>) => {
     setAddDialogInitialData(initialData);
@@ -234,6 +314,8 @@ export default function Home() {
   const handleTabChange = (value: string) => {
     setActiveTab(value as Position | 'ideal-11' | 'formations');
     setSearchTerm('');
+    setStyleFilter('all');
+    setCardFilter('all');
   };
   
   const getHeaderButton = () => {
@@ -254,6 +336,15 @@ export default function Home() {
         );
     }
   };
+  
+  const handlePageChange = (position: Position, direction: 'next' | 'prev') => {
+    setPagination(prev => {
+      const currentPage = prev[position] || 0;
+      const newPage = direction === 'next' ? currentPage + 1 : currentPage - 1;
+      return { ...prev, [position]: Math.max(0, newPage) };
+    });
+  };
+
 
   const error = playersError || formationsError;
   if (error) {
@@ -289,7 +380,7 @@ export default function Home() {
       <AddFormationDialog
         open={isAddFormationDialogOpen}
         onOpenChange={setAddFormationDialogOpen}
-        onAddFormation={addFormation}
+        onAddFormation={handleAddFormation}
       />
       <AddMatchDialog
         open={isAddMatchDialogOpen}
@@ -375,7 +466,7 @@ export default function Home() {
             <FormationsDisplay
               formations={formations}
               onAddMatch={handleOpenAddMatch}
-              onDelete={deleteFormation}
+              onDelete={handleDeleteFormation}
               onViewImage={handleViewImage}
             />
           </TabsContent>
@@ -391,35 +482,51 @@ export default function Home() {
                     card,
                     ratingsForPos: card.ratingsByPosition![pos]!
                 }))
-            )
-            .filter(({ player }) => player.name.toLowerCase().includes(searchTerm.toLowerCase()))
-            .sort((a, b) => {
+            );
+            
+            const filteredPlayerList = flatPlayerList.filter(({ player, card }) => {
+                const searchMatch = player.name.toLowerCase().includes(searchTerm.toLowerCase());
+                const styleMatch = styleFilter === 'all' || card.style === styleFilter;
+                const cardMatch = cardFilter === 'all' || card.name === cardFilter;
+                return searchMatch && styleMatch && cardMatch;
+            }).sort((a, b) => {
               const avgA = calculateAverage(a.ratingsForPos);
               const avgB = calculateAverage(b.ratingsForPos);
 
               if (avgB !== avgA) {
                 return avgB - avgA;
               }
-
               return b.ratingsForPos.length - a.ratingsForPos.length;
             });
+
+            const currentPage = pagination[pos] || 0;
+            const paginatedPlayers = filteredPlayerList.slice(
+              currentPage * ITEMS_PER_PAGE,
+              (currentPage + 1) * ITEMS_PER_PAGE
+            );
+            const totalPages = Math.ceil(filteredPlayerList.length / ITEMS_PER_PAGE);
+
+            const uniqueStyles = ['all', ...Array.from(new Set(flatPlayerList.map(p => p.card.style)))];
+            const uniqueCardNames = ['all', ...Array.from(new Set(flatPlayerList.map(p => p.card.name)))];
 
             return (
               <TabsContent key={pos} value={pos} className="mt-6">
                 <Card className="bg-card/60 border-white/10 overflow-hidden">
                     <CardHeader className="p-4 border-b border-white/10">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                placeholder={`Buscar en ${pos}...`}
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-10 w-full md:w-1/3"
-                            />
-                        </div>
+                       <PlayerTable.Filters
+                          searchTerm={searchTerm}
+                          onSearchTermChange={setSearchTerm}
+                          styleFilter={styleFilter}
+                          onStyleFilterChange={setStyleFilter}
+                          cardFilter={cardFilter}
+                          onCardFilterChange={setCardFilter}
+                          uniqueStyles={uniqueStyles}
+                          uniqueCardNames={uniqueCardNames}
+                          position={pos}
+                        />
                     </CardHeader>
                     <PlayerTable
-                      players={flatPlayerList}
+                      players={paginatedPlayers}
                       position={pos}
                       searchTerm={searchTerm}
                       onOpenAddRating={handleOpenAddRating}
@@ -430,6 +537,11 @@ export default function Home() {
                       onDeletePlayer={deletePlayer}
                       onDeleteCard={deleteCard}
                       onDeleteRating={deleteRating}
+                    />
+                    <PlayerTable.Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPageChange={(direction) => handlePageChange(pos, direction)}
                     />
                   </Card>
               </TabsContent>
