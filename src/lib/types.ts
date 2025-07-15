@@ -1,5 +1,6 @@
 
 import type { Player as PlayerType, PlayerCard as PlayerCardType, Position as PositionType } from './types';
+import * as z from "zod";
 
 export const playerStyles = ['Ninguno', 'Cazagoles', 'Señuelo', 'Hombre de área', 'Hombre objetivo', 'Creador de juego', 'El destructor', 'Portero defensivo', 'Portero ofensivo', 'Atacante extra', 'Lateral defensivo', 'Lateral Ofensivo', 'Lateral finalizador', 'Omnipresente', 'Medio escudo', 'Organizador', 'Jugador de huecos', 'Especialista en centros', 'Extremo móvil', 'Creador de jugadas', 'Diez Clasico', 'Segundo delantero', 'Extremo prolífico'] as const;
 export type PlayerStyle = typeof playerStyles[number];
@@ -49,6 +50,8 @@ export type PlayersByPosition = {
   [key in Position]: Player[];
 };
 
+// This is now deprecated in favor of the more detailed FormationSlot system.
+// It can be removed later if no longer referenced for simple setups.
 export type Formation = {
   [key in Position]?: number;
 };
@@ -78,10 +81,18 @@ export type MatchResult = {
   date: string; // ISO 8601 string
 };
 
+export const FormationSlotSchema = z.object({
+  position: z.enum(positions),
+  style: z.enum(playerStyles),
+});
+
+export type FormationSlot = z.infer<typeof FormationSlotSchema>;
+
 export type FormationStats = {
   id: string;
   name: string;
   playStyle: FormationPlayStyle;
+  slots: FormationSlot[];
   imageUrl?: string;
   secondaryImageUrl?: string;
   sourceUrl?: string;
@@ -91,6 +102,7 @@ export type FormationStats = {
 export type AddFormationFormValues = {
   name: string;
   playStyle: FormationPlayStyle;
+  slots: FormationSlot[];
   imageUrl?: string;
   secondaryImageUrl?: string;
   sourceUrl?: string;
@@ -100,6 +112,7 @@ export type EditFormationFormValues = {
   id: string;
   name: string;
   playStyle: FormationPlayStyle;
+  slots: FormationSlot[];
   imageUrl?: string;
   secondaryImageUrl?: string;
   sourceUrl?: string;
@@ -137,3 +150,5 @@ export type EditTrainingGuideFormValues = {
   title: string;
   content: string;
 };
+
+    

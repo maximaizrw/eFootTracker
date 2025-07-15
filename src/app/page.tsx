@@ -38,7 +38,7 @@ import { useFormations } from '@/hooks/useFormations';
 import { useTrainings } from '@/hooks/useTrainings';
 import { useToast } from "@/hooks/use-toast";
 
-import type { Player, PlayerCard as PlayerCardType, Formation, IdealTeamPlayer, FlatPlayer, Position, TrainingGuide, FormationStats } from '@/lib/types';
+import type { Player, PlayerCard as PlayerCardType, FormationStats, IdealTeamPlayer, FlatPlayer, Position, TrainingGuide } from '@/lib/types';
 import { positions } from '@/lib/types';
 import { PlusCircle, Trash2, X, Star, Bot, Download, Search, Trophy, NotebookPen } from 'lucide-react';
 import { calculateAverage, getPositionGroup } from '@/lib/utils';
@@ -102,13 +102,11 @@ export default function Home() {
   const [addMatchInitialData, setAddMatchInitialData] = useState<{ formationId: string; formationName: string } | undefined>(undefined);
   const [editCardDialogInitialData, setEditCardDialogInitialData] = useState<EditCardFormValues | undefined>(undefined);
   const [editPlayerDialogInitialData, setEditPlayerDialogInitialData] = useState<EditPlayerFormValues | undefined>(undefined);
-  const [editFormationDialogInitialData, setEditFormationDialogInitialData] = useState<EditFormationFormValues | undefined>(undefined);
+  const [editFormationDialogInitialData, setEditFormationDialogInitialData] = useState<FormationStats | undefined>(undefined);
   const [editTrainingGuideInitialData, setEditTrainingGuideInitialData] = useState<EditTrainingGuideFormValues | undefined>(undefined);
   const [selectedPlayerForDetail, setSelectedPlayerForDetail] = useState<Player | null>(null);
   
-  const [formation, setFormation] = useState<Formation>({
-    PT: 1, DFC: 3, LI: 0, LD: 1, MCD: 1, MC: 1, MDI: 0, MDD: 0, MO: 3, EXI: 0, EXD: 0, SD: 0, DC: 1
-  });
+  const [selectedFormationId, setSelectedFormationId] = useState<string | undefined>(undefined);
   const [idealTeam, setIdealTeam] = useState<(IdealTeamPlayer | null)[]>([]);
   
   // State for filters and pagination
@@ -117,6 +115,14 @@ export default function Home() {
   const [pagination, setPagination] = useState<Record<string, number>>({});
   
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Select first formation by default if available
+    if (!selectedFormationId && formations && formations.length > 0) {
+      setSelectedFormationId(formations[0].id);
+    }
+  }, [formations, selectedFormationId]);
+
 
   const handleOpenAddRating = (initialData?: Partial<AddRatingFormValues>) => {
     setAddDialogInitialData(initialData);
@@ -148,14 +154,7 @@ export default function Home() {
   };
   
   const handleOpenEditFormation = (formation: FormationStats) => {
-    setEditFormationDialogInitialData({
-      id: formation.id,
-      name: formation.name,
-      playStyle: formation.playStyle,
-      imageUrl: formation.imageUrl || '',
-      secondaryImageUrl: formation.secondaryImageUrl || '',
-      sourceUrl: formation.sourceUrl || '',
-    });
+    setEditFormationDialogInitialData(formation);
     setEditFormationDialogOpen(true);
   };
 
@@ -181,71 +180,77 @@ export default function Home() {
 
   const handleGenerateTeam = () => {
     if (!players) return;
-
-    const allRatedPlayers: IdealTeamPlayer[] = players.flatMap(player =>
-        (player.cards || []).flatMap(card =>
-            Object.keys(card.ratingsByPosition || {}).map(posStr => {
-                const position = posStr as Position;
-                const ratings = card.ratingsByPosition![position];
-                if (!ratings || ratings.length === 0) return null;
-                return {
-                    player,
-                    card,
-                    position,
-                    average: calculateAverage(ratings),
-                };
-            }).filter((p): p is IdealTeamPlayer => p !== null)
-        )
-    ).sort((a, b) => b.average - a.average);
-
-    const usedCardIds = new Set<string>();
-    const requiredSlots: Position[] = [];
-    let totalPlayers = 0;
-
-    (Object.keys(formation) as Position[]).forEach(pos => {
-      const count = formation[pos] ?? 0;
-      totalPlayers += count;
-      for (let i = 0; i < count; i++) {
-        requiredSlots.push(pos);
-      }
-    });
-
-    if (totalPlayers === 0) {
+    if (!selectedFormationId) {
       toast({
-        variant: "destructive",
-        title: "Formación Vacía",
-        description: "Por favor, selecciona al menos un jugador en la formación.",
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Por favor, selecciona una formación primero.',
       });
       return;
     }
 
-    const newTeam: (IdealTeamPlayer | null)[] = requiredSlots.map(position => {
-      const bestPlayerForSlot = allRatedPlayers.find(
-        p => p.position === position && !usedCardIds.has(p.card.id)
+    const formation = formations.find(f => f.id === selectedFormationId);
+    if (!formation || !formation.slots) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'La formación seleccionada no es válida.',
+      });
+      return;
+    }
+
+    // 1. Create a flat list of all possible player-card-position combinations with their average rating
+    const allRatedPlayers: IdealTeamPlayer[] = players.flatMap(player =>
+      (player.cards || []).flatMap(card =>
+        Object.keys(card.ratingsByPosition || {}).map(posStr => {
+          const position = posStr as Position;
+          const ratings = card.ratingsByPosition![position];
+          if (!ratings || ratings.length === 0) return null;
+          return {
+            player,
+            card,
+            position,
+            average: calculateAverage(ratings),
+          };
+        }).filter((p): p is IdealTeamPlayer => p !== null)
+      )
+    ).sort((a, b) => b.average - a.average);
+
+    const usedCardIds = new Set<string>();
+    const newTeam: (IdealTeamPlayer | null)[] = [];
+
+    // 2. Iterate through each required slot in the formation
+    formation.slots.forEach((slot, index) => {
+      // 3. Find the best available player for that specific slot
+      const bestPlayerForSlot = allRatedPlayers.find(p => 
+        !usedCardIds.has(p.card.id) &&
+        p.position === slot.position &&
+        p.card.style === slot.style
       );
 
       if (bestPlayerForSlot) {
         usedCardIds.add(bestPlayerForSlot.card.id);
-        return bestPlayerForSlot;
+        newTeam.push(bestPlayerForSlot);
+      } else {
+        // 4. If no player is found, add a placeholder
+        newTeam.push({
+          player: { id: `placeholder-${slot.position}-${index}`, name: `Vacante`, cards: [] },
+          card: { id: `placeholder-card-${slot.position}-${index}`, name: 'N/A', style: slot.style, ratingsByPosition: {} },
+          position: slot.position,
+          average: 0,
+        });
       }
-      return {
-        player: { id: `placeholder-${position}-${Math.random()}`, name: `Vacante`, cards: [] },
-        card: { id: `placeholder-card-${position}-${Math.random()}`, name: 'N/A', style: 'Ninguno', ratingsByPosition: {} },
-        position: position,
-        average: 0,
-      };
     });
-
+    
     setIdealTeam(newTeam);
     toast({
       title: "11 Ideal Generado",
-      description: `Se ha generado un equipo con ${newTeam.filter(p => p && !p.player.id.startsWith('placeholder')).length} de ${totalPlayers} jugadores.`,
+      description: `Se ha generado un equipo para la formación "${formation.name}".`,
     });
   };
 
-  const handleFormationChange = (position: Position, value: string) => {
-    const count = parseInt(value, 10);
-    setFormation(prev => ({ ...prev, [position]: count }));
+  const handleFormationSelectionChange = (id: string) => {
+    setSelectedFormationId(id);
   };
   
   const handleDownloadBackup = async () => {
@@ -567,15 +572,16 @@ export default function Home() {
                    Generador de 11 Ideal
                  </CardTitle>
                  <CardDescription>
-                   Define tu formación táctica y generaremos el mejor equipo posible basado en el promedio de tus jugadores.
+                   Selecciona una de tus formaciones tácticas y generaremos el mejor equipo posible basado en el promedio y estilo de tus jugadores.
                  </CardDescription>
                </CardHeader>
                <CardContent>
                   <IdealTeamSetup 
-                    formation={formation} 
-                    onFormationChange={handleFormationChange} 
+                    formations={formations}
+                    selectedFormationId={selectedFormationId}
+                    onFormationChange={handleFormationSelectionChange} 
                   />
-                  <Button onClick={handleGenerateTeam} className="mt-6">
+                  <Button onClick={handleGenerateTeam} className="mt-6" disabled={!selectedFormationId}>
                     <Star className="mr-2 h-4 w-4" />
                     Generar 11 Ideal
                   </Button>
@@ -589,5 +595,7 @@ export default function Home() {
     </div>
   );
 }
+
+    
 
     

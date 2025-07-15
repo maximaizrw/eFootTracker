@@ -7,6 +7,9 @@ import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDocs, arr
 import { useToast } from './use-toast';
 import { v4 as uuidv4 } from 'uuid';
 import type { FormationStats, MatchResult, AddMatchFormValues, AddFormationFormValues, EditFormationFormValues } from '@/lib/types';
+import { playerStyles, positions } from '@/lib/types';
+
+const defaultSlots = Array(11).fill({ position: positions[0], style: playerStyles[0] });
 
 export function useFormations() {
   const [formations, setFormations] = useState<FormationStats[]>([]);
@@ -26,10 +29,15 @@ export function useFormations() {
 
     const unsub = onSnapshot(q, (snapshot) => {
       try {
-        const formationsData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        } as FormationStats));
+        const formationsData = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              ...data,
+              // Ensure slots exist and have the correct length, providing a fallback if not
+              slots: (data.slots && data.slots.length === 11) ? data.slots : defaultSlots,
+            } as FormationStats;
+        });
         setFormations(formationsData);
         setError(null);
       } catch (err) {
@@ -64,10 +72,11 @@ export function useFormations() {
         const newFormation = {
             name: values.name,
             playStyle: values.playStyle,
+            slots: values.slots,
+            matches: [],
             imageUrl: values.imageUrl || '',
             secondaryImageUrl: values.secondaryImageUrl || '',
             sourceUrl: values.sourceUrl || '',
-            matches: [],
         };
         await addDoc(collection(db, 'formations'), newFormation);
         toast({ title: "Formación Añadida", description: `La formación "${values.name}" se ha guardado.` });
@@ -85,9 +94,11 @@ export function useFormations() {
     if (!db) return;
     try {
       const formationRef = doc(db, 'formations', values.id);
+      // We only update the fields from the form, leaving 'matches' untouched
       await updateDoc(formationRef, {
         name: values.name,
         playStyle: values.playStyle,
+        slots: values.slots,
         imageUrl: values.imageUrl || '',
         secondaryImageUrl: values.secondaryImageUrl || '',
         sourceUrl: values.sourceUrl || '',
@@ -128,10 +139,10 @@ export function useFormations() {
     }
   };
 
-  const deleteFormation = async (formationId: string) => {
+  const deleteFormation = async (formation: FormationStats) => {
     if(!db) return;
     try {
-      await deleteDoc(doc(db, 'formations', formationId));
+      await deleteDoc(doc(db, 'formations', formation.id));
       toast({ title: "Formación Eliminada", description: "La formación y sus estadísticas han sido eliminadas." });
     } catch (error) {
       console.error("Error deleting formation:", error);
@@ -160,3 +171,5 @@ export function useFormations() {
 
   return { formations, loading, error, addFormation, editFormation, addMatchResult, deleteFormation, downloadBackup };
 }
+
+    
