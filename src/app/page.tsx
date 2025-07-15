@@ -38,7 +38,7 @@ import { useFormations } from '@/hooks/useFormations';
 import { useTrainings } from '@/hooks/useTrainings';
 import { useToast } from "@/hooks/use-toast";
 
-import type { Player, PlayerCard as PlayerCardType, FormationStats, IdealTeamPlayer, FlatPlayer, Position, TrainingGuide } from '@/lib/types';
+import type { Player, PlayerCard as PlayerCardType, FormationStats, IdealTeamSlot, FlatPlayer, Position, TrainingGuide } from '@/lib/types';
 import { positions } from '@/lib/types';
 import { PlusCircle, Trash2, X, Star, Bot, Download, Search, Trophy, NotebookPen } from 'lucide-react';
 import { calculateAverage } from '@/lib/utils';
@@ -105,7 +105,7 @@ export default function Home() {
   const [selectedPlayerForDetail, setSelectedPlayerForDetail] = useState<Player | null>(null);
   
   const [selectedFormationId, setSelectedFormationId] = useState<string | undefined>(undefined);
-  const [idealTeam, setIdealTeam] = useState<(IdealTeamPlayer | null)[]>([]);
+  const [idealTeam, setIdealTeam] = useState<IdealTeamSlot[]>([]);
   
   // State for filters and pagination
   const [styleFilter, setStyleFilter] = useState<string>('all');
@@ -528,7 +528,7 @@ export default function Home() {
                    Generador de 11 Ideal
                  </CardTitle>
                  <CardDescription>
-                   Selecciona una de tus formaciones tácticas y generaremos el mejor equipo posible basado en el promedio y estilo de tus jugadores.
+                   Selecciona una de tus formaciones tácticas y generaremos el mejor equipo posible (titulares y suplentes) basado en el promedio y estilo de tus jugadores.
                  </CardDescription>
                </CardHeader>
                <CardContent>
@@ -543,7 +543,7 @@ export default function Home() {
                   </Button>
                </CardContent>
              </Card>
-            <IdealTeamDisplay team={idealTeam} />
+            <IdealTeamDisplay teamSlots={idealTeam} />
           </TabsContent>
 
         </Tabs>

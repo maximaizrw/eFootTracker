@@ -61,6 +61,11 @@ export type IdealTeamPlayer = {
   average: number;
 };
 
+export type IdealTeamSlot = {
+  starter: IdealTeamPlayer | null;
+  substitute: IdealTeamPlayer | null;
+}
+
 // --- Tipos para Formaciones ---
 
 export const formationPlayStyles = [

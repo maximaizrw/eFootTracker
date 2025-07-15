@@ -1,20 +1,19 @@
 
-import type { Player, FormationStats, IdealTeamPlayer, Position } from './types';
+import type { Player, FormationStats, IdealTeamPlayer, Position, IdealTeamSlot } from './types';
 import { calculateAverage } from './utils';
 
 /**
- * Generates the ideal team based on a given formation and a list of available players.
+ * Generates the ideal team (starters and substitutes) based on a given formation.
  * 
  * @param players - The list of all available players.
- * @param formation - The selected formation with defined slots (position and required styles).
- * @returns An array of 11 players (or placeholders) that best fit the formation.
+ * @param formation - The selected formation with defined slots.
+ * @returns An array of 11 slots, each with a starter and a substitute.
  */
 export function generateIdealTeam(
   players: Player[],
   formation: FormationStats
-): (IdealTeamPlayer | null)[] {
-  // 1. Create a flat list of all possible player-card-position combinations with their average rating.
-  // This list represents every single "version" of a player you could field.
+): IdealTeamSlot[] {
+  // 1. Create a flat list of all possible player-card-position combinations.
   const allRatedPlayers: IdealTeamPlayer[] = players.flatMap(player =>
     (player.cards || []).flatMap(card =>
       Object.keys(card.ratingsByPosition || {}).map(posStr => {
@@ -32,30 +31,47 @@ export function generateIdealTeam(
   ).sort((a, b) => b.average - a.average); // Sort once by highest average rating.
 
   const usedCardIds = new Set<string>();
-  const newTeam: (IdealTeamPlayer | null)[] = [];
+  const newTeam: IdealTeamSlot[] = [];
 
   // 2. Iterate through each required slot in the formation.
   formation.slots.forEach((slot, index) => {
-    // 3. Find the best available player for that specific slot.
-    // It finds the first player in the pre-sorted list that matches the criteria.
-    const bestPlayerForSlot = allRatedPlayers.find(p => 
-      !usedCardIds.has(p.card.id) && // Card is not already in the team
-      p.position === slot.position && // Player matches the position
-      (slot.styles.length === 0 || slot.styles.includes(p.card.style)) // Player's style is in the allowed list, or any style is allowed
+    // 3. Find the best available player for the starter.
+    const starter = allRatedPlayers.find(p => 
+      !usedCardIds.has(p.card.id) &&
+      p.position === slot.position &&
+      (slot.styles.length === 0 || slot.styles.includes(p.card.style))
+    );
+    
+    if (starter) {
+      usedCardIds.add(starter.card.id); // Mark starter card as used
+    }
+    
+    // 4. Find the best available player for the substitute.
+    const substitute = allRatedPlayers.find(p =>
+      !usedCardIds.has(p.card.id) &&
+      p.position === slot.position &&
+      (slot.styles.length === 0 || slot.styles.includes(p.card.style))
     );
 
-    if (bestPlayerForSlot) {
-      usedCardIds.add(bestPlayerForSlot.card.id); // Mark card as used
-      newTeam.push(bestPlayerForSlot);
-    } else {
-      // 4. If no player is found, add a placeholder.
-      newTeam.push({
-        player: { id: `placeholder-${slot.position}-${index}`, name: `Vacante`, cards: [] },
-        card: { id: `placeholder-card-${slot.position}-${index}`, name: 'N/A', style: 'Ninguno', ratingsByPosition: {} },
-        position: slot.position,
-        average: 0,
-      });
+    if (substitute) {
+      usedCardIds.add(substitute.card.id); // Mark substitute card as used
     }
+
+    // 5. Add the pair (or placeholders) to the team.
+    newTeam.push({
+        starter: starter || {
+            player: { id: `placeholder-S-${slot.position}-${index}`, name: `Vacante`, cards: [] },
+            card: { id: `placeholder-card-S-${slot.position}-${index}`, name: 'N/A', style: 'Ninguno', ratingsByPosition: {} },
+            position: slot.position,
+            average: 0,
+        },
+        substitute: substitute || {
+             player: { id: `placeholder-SUB-${slot.position}-${index}`, name: `Vacante`, cards: [] },
+            card: { id: `placeholder-card-SUB-${slot.position}-${index}`, name: 'N/A', style: 'Ninguno', ratingsByPosition: {} },
+            position: slot.position,
+            average: 0,
+        }
+    });
   });
   
   return newTeam;
