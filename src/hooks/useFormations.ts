@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type { FormationStats, MatchResult, AddMatchFormValues, AddFormationFormValues, EditFormationFormValues } from '@/lib/types';
 import { playerStyles, positions } from '@/lib/types';
 
-const defaultSlots = Array(11).fill({ position: positions[0], styles: [playerStyles[0]] });
+const defaultSlots = Array(11).fill({ position: 'DC', styles: [] });
 
 export function useFormations() {
   const [formations, setFormations] = useState<FormationStats[]>([]);
@@ -34,8 +34,10 @@ export function useFormations() {
             return {
               id: doc.id,
               ...data,
-              // Ensure slots exist and have the correct length, providing a fallback if not
-              slots: (data.slots && data.slots.length === 11) ? data.slots.map((s: any) => ({ ...s, styles: s.styles || ['Ninguno'] })) : defaultSlots,
+              // Ensure slots exist and are properly formatted
+              slots: (data.slots && data.slots.length === 11) 
+                ? data.slots.map((s: any) => ({ ...s, styles: s.styles || [] })) 
+                : defaultSlots,
             } as FormationStats;
         });
         setFormations(formationsData);
@@ -94,7 +96,6 @@ export function useFormations() {
     if (!db) return;
     try {
       const formationRef = doc(db, 'formations', values.id);
-      // We only update the fields from the form, leaving 'matches' untouched
       await updateDoc(formationRef, {
         name: values.name,
         playStyle: values.playStyle,

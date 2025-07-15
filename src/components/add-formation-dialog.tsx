@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useMemo } from "react";
+import { useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -58,6 +58,51 @@ type AddFormationDialogProps = {
 
 const defaultSlots = Array(11).fill({ position: 'DC', styles: [] });
 
+// Function to generate slots from a formation name like "4-3-3"
+const generateSlotsFromName = (name: string): { position: Position, styles: PlayerStyle[] }[] | null => {
+  const parts = name.match(/(\d)-(\d)-(\d)-?(\d)?/);
+  if (!parts) return null;
+
+  const numbers = parts.slice(1).filter(Boolean).map(Number);
+  const totalPlayers = numbers.reduce((sum, num) => sum + num, 0);
+  if (totalPlayers !== 10) return null; // Expects 10 field players + 1 GK
+
+  let generatedSlots: { position: Position, styles: PlayerStyle[] }[] = [{ position: 'PT', styles: [] }];
+  
+  const [def, mid, fwd, fwd2] = numbers;
+  
+  // Defenders
+  if (def === 4) generatedSlots.push({ position: 'LI', styles: [] }, { position: 'DFC', styles: [] }, { position: 'DFC', styles: [] }, { position: 'LD', styles: [] });
+  else if (def === 3) generatedSlots.push({ position: 'DFC', styles: [] }, { position: 'DFC', styles: [] }, { position: 'DFC', styles: [] });
+  else if (def === 5) generatedSlots.push({ position: 'LI', styles: [] }, { position: 'DFC', styles: [] }, { position: 'DFC', styles: [] }, { position: 'DFC', styles: [] }, { position: 'LD', styles: [] });
+
+  // Midfielders
+  if (fwd2) { // e.g. 4-2-3-1
+      const holdingMid = mid;
+      const attackingMid = fwd;
+      if (holdingMid === 2) generatedSlots.push({ position: 'MCD', styles: [] }, { position: 'MCD', styles: [] });
+      if (attackingMid === 3) generatedSlots.push({ position: 'EXI', styles: [] }, { position: 'MO', styles: [] }, { position: 'EXD', styles: [] });
+  } else {
+      if (mid === 3) generatedSlots.push({ position: 'MC', styles: [] }, { position: 'MCD', styles: [] }, { position: 'MC', styles: [] });
+      else if (mid === 4) generatedSlots.push({ position: 'MDI', styles: [] }, { position: 'MC', styles: [] }, { position: 'MC', styles: [] }, { position: 'MDD', styles: [] });
+      else if (mid === 5) generatedSlots.push({ position: 'MDI', styles: [] }, { position: 'MC', styles: [] }, { position: 'MCD', styles: [] }, { position: 'MC', styles: [] }, { position: 'MDD', styles: [] });
+  }
+  
+  // Forwards
+  const finalFwds = fwd2 || fwd;
+  if (finalFwds === 1) generatedSlots.push({ position: 'DC', styles: [] });
+  else if (finalFwds === 2) generatedSlots.push({ position: 'DC', styles: [] }, { position: 'DC', styles: [] });
+  else if (finalFwds === 3) generatedSlots.push({ position: 'EXI', styles: [] }, { position: 'DC', styles: [] }, { position: 'EXD', styles: [] });
+  
+  if (generatedSlots.length !== 11) {
+    const needed = 11 - generatedSlots.length;
+    for(let i=0; i<needed; i++) generatedSlots.push({ position: 'MC', styles: [] });
+  }
+
+  return generatedSlots.slice(0, 11);
+};
+
+
 export function AddFormationDialog({ open, onOpenChange, onAddFormation }: AddFormationDialogProps) {
   const form = useForm<AddFormationFormValues>({
     resolver: zodResolver(formSchema),
@@ -71,12 +116,20 @@ export function AddFormationDialog({ open, onOpenChange, onAddFormation }: AddFo
     },
   });
 
-  const { fields, update } = useFieldArray({
+  const { fields, update, replace } = useFieldArray({
     control: form.control,
     name: "slots",
   });
   
   const watchedSlots = form.watch('slots');
+  const watchedName = form.watch('name');
+
+  useEffect(() => {
+    const generated = generateSlotsFromName(watchedName);
+    if (generated) {
+      replace(generated);
+    }
+  }, [watchedName, replace]);
 
   function onSubmit(values: AddFormationFormValues) {
     onAddFormation(values);
@@ -90,7 +143,7 @@ export function AddFormationDialog({ open, onOpenChange, onAddFormation }: AddFo
         <DialogHeader>
           <DialogTitle>Añadir Nueva Formación Táctica</DialogTitle>
           <DialogDescription>
-            Define los 11 puestos, especificando posición y estilo de juego para cada uno.
+            Define los 11 puestos, especificando posición y estilo de juego para cada uno. Prueba nombrar la formación como "4-3-3" o "4-2-3-1" para un auto-rellenado.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -137,7 +190,7 @@ export function AddFormationDialog({ open, onOpenChange, onAddFormation }: AddFo
               <div className="space-y-4">
                 {fields.map((field, index) => {
                   const currentPosition = watchedSlots[index]?.position as Position;
-                  const availableStyles = getAvailableStylesForPosition(currentPosition, true);
+                  const availableStyles = getAvailableStylesForPosition(currentPosition, false);
 
                   return (
                     <div key={field.id} className="grid grid-cols-1 md:grid-cols-3 gap-2 items-start p-2 border-b">
@@ -151,7 +204,6 @@ export function AddFormationDialog({ open, onOpenChange, onAddFormation }: AddFo
                             <Select 
                               onValueChange={(value) => {
                                 field.onChange(value);
-                                // Reset styles when position changes
                                 update(index, { ...watchedSlots[index], position: value as Position, styles: [] });
                               }} 
                               value={field.value}
@@ -238,6 +290,47 @@ export function AddFormationDialog({ open, onOpenChange, onAddFormation }: AddFo
                 })}
               </div>
             </ScrollArea>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                    control={form.control}
+                    name="imageUrl"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>URL Táctica Principal (Opcional)</FormLabel>
+                        <FormControl>
+                        <Input placeholder="https://ejemplo.com/tactica.png" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="secondaryImageUrl"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>URL Táctica Secundaria (Opcional)</FormLabel>
+                        <FormControl>
+                        <Input placeholder="https://ejemplo.com/tactica_sec.png" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="sourceUrl"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>URL Fuente (Opcional)</FormLabel>
+                        <FormControl>
+                        <Input placeholder="https://youtube.com/..." {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+            </div>
             
             <DialogFooter>
               <Button type="submit">Guardar Formación</Button>
