@@ -44,7 +44,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Slider } from "@/components/ui/slider";
-import { cn } from "@/lib/utils";
+import { cn, getAvailableStylesForPosition } from "@/lib/utils";
 import type { Player, Position, PlayerStyle } from "@/lib/types";
 import { positions, playerStyles } from "@/lib/types";
 
@@ -184,29 +184,7 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
   }, [playerIdValue, cardNameValue, players, form, initialData]);
 
   const availableStyles = useMemo(() => {
-    const gkStyles: PlayerStyle[] = ['Ninguno', 'Portero defensivo', 'Portero ofensivo'];
-    const fbStyles: PlayerStyle[] = ['Ninguno', 'Lateral defensivo', 'Lateral Ofensivo', 'Lateral finalizador'];
-    const dfcStyles: PlayerStyle[] = ['Ninguno', 'El destructor', 'Creador de juego', 'Atacante extra'];
-    const mcdStyles: PlayerStyle[] = ['Ninguno', 'Omnipresente', 'Medio escudo', 'Organizador', 'El destructor'];
-    const mcStyles: PlayerStyle[] = ['Ninguno', 'Jugador de huecos', 'Omnipresente', 'Medio escudo', 'El destructor', 'Organizador', 'Creador de jugadas'];
-    const mdiMddStyles: PlayerStyle[] = ['Ninguno', 'Omnipresente', 'Jugador de huecos', 'Especialista en centros', 'Extremo móvil', 'Creador de jugadas'];
-    const moStyles: PlayerStyle[] = ['Ninguno', 'Creador de jugadas', 'Diez Clasico', 'Jugador de huecos', 'Señuelo'];
-    const sdStyles: PlayerStyle[] = ['Ninguno', 'Segundo delantero', 'Creador de jugadas', 'Diez Clasico', 'Jugador de huecos', 'Señuelo'];
-    const wingerStyles: PlayerStyle[] = ['Ninguno', 'Creador de jugadas', 'Extremo prolífico', 'Extremo móvil', 'Especialista en centros'];
-    const dcStyles: PlayerStyle[] = ['Ninguno', 'Cazagoles', 'Señuelo', 'Hombre de área', 'Hombre objetivo', 'Segundo delantero'];
-
-    if (positionValue === 'PT') return gkStyles;
-    if (positionValue === 'LI' || positionValue === 'LD') return fbStyles;
-    if (positionValue === 'DFC') return dfcStyles;
-    if (positionValue === 'MCD') return mcdStyles;
-    if (positionValue === 'MC') return mcStyles;
-    if (positionValue === 'MDI' || positionValue === 'MDD') return mdiMddStyles;
-    if (positionValue === 'MO') return moStyles;
-    if (positionValue === 'SD') return sdStyles;
-    if (positionValue === 'EXI' || positionValue === 'EXD') return wingerStyles;
-    if (positionValue === 'DC') return dcStyles;
-    
-    return ['Ninguno'];
+    return getAvailableStylesForPosition(positionValue, true);
   }, [positionValue]);
 
   useEffect(() => {

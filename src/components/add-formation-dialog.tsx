@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useMemo } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -35,10 +35,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Command, CommandInput, CommandEmpty, CommandItem, CommandList } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
-import type { AddFormationFormValues } from "@/lib/types";
-import { formationPlayStyles, positions, playerStyles, FormationSlotSchema } from "@/lib/types";
-import { Check, ChevronsUpDown, XIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
+import type { AddFormationFormValues, Position, PlayerStyle } from "@/lib/types";
+import { formationPlayStyles, positions, FormationSlotSchema } from "@/lib/types";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn, getAvailableStylesForPosition } from "@/lib/utils";
 
 const formSchema = z.object({
   name: z.string().min(2, "El nombre debe tener al menos 2 caracteres."),
@@ -56,7 +56,7 @@ type AddFormationDialogProps = {
   onAddFormation: (values: AddFormationFormValues) => void;
 };
 
-const defaultSlots = Array(11).fill({ position: 'DC', styles: ['Ninguno'] });
+const defaultSlots = Array(11).fill({ position: 'DC', styles: [] });
 
 export function AddFormationDialog({ open, onOpenChange, onAddFormation }: AddFormationDialogProps) {
   const form = useForm<AddFormationFormValues>({
@@ -71,10 +71,12 @@ export function AddFormationDialog({ open, onOpenChange, onAddFormation }: AddFo
     },
   });
 
-  const { fields } = useFieldArray({
+  const { fields, update } = useFieldArray({
     control: form.control,
     name: "slots",
   });
+  
+  const watchedSlots = form.watch('slots');
 
   function onSubmit(values: AddFormationFormValues) {
     onAddFormation(values);
@@ -133,95 +135,107 @@ export function AddFormationDialog({ open, onOpenChange, onAddFormation }: AddFo
 
             <ScrollArea className="h-72 w-full rounded-md border p-4">
               <div className="space-y-4">
-                {fields.map((field, index) => (
-                  <div key={field.id} className="grid grid-cols-1 md:grid-cols-3 gap-2 items-start p-2 border-b">
-                    <p className="font-medium md:col-span-1 pt-8">Jugador {index + 1}</p>
-                    <FormField
-                      control={form.control}
-                      name={`slots.${index}.position`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Posición</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                            <SelectContent>
-                              {positions.map(pos => <SelectItem key={pos} value={pos}>{pos}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        </FormItem>
-                      )}
-                    />
-                     <FormField
+                {fields.map((field, index) => {
+                  const currentPosition = watchedSlots[index]?.position as Position;
+                  const availableStyles = getAvailableStylesForPosition(currentPosition, true);
+
+                  return (
+                    <div key={field.id} className="grid grid-cols-1 md:grid-cols-3 gap-2 items-start p-2 border-b">
+                      <p className="font-medium md:col-span-1 pt-8">Jugador {index + 1}</p>
+                      <FormField
                         control={form.control}
-                        name={`slots.${index}.styles`}
+                        name={`slots.${index}.position`}
                         render={({ field }) => (
-                            <FormItem className="flex flex-col">
-                                <FormLabel>Estilos de Juego</FormLabel>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <FormControl>
-                                            <Button
-                                                variant="outline"
-                                                role="combobox"
-                                                className={cn("justify-between h-auto", !field.value || field.value.length === 0 && "text-muted-foreground")}
-                                            >
-                                                <div className="flex gap-1 flex-wrap">
-                                                    {field.value && field.value.length > 0 ? (
-                                                      field.value.map((style) => (
-                                                          <Badge
-                                                              variant="secondary"
-                                                              key={style}
-                                                              className="mr-1"
-                                                          >
-                                                              {style}
-                                                          </Badge>
-                                                      ))
-                                                    ) : (
-                                                        "Seleccionar estilos"
-                                                    )}
-                                                </div>
-                                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                            </Button>
-                                        </FormControl>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="p-0">
-                                        <Command>
-                                            <CommandInput placeholder="Buscar estilo..." />
-                                            <CommandList>
-                                                <CommandEmpty>No se encontró el estilo.</CommandEmpty>
-                                                {playerStyles.map((style) => (
-                                                    <CommandItem
-                                                        key={style}
-                                                        onSelect={() => {
-                                                            const currentValues = field.value || [];
-                                                            const isSelected = currentValues.includes(style);
-                                                            const newValues = isSelected
-                                                                ? currentValues.filter(s => s !== style)
-                                                                : [...currentValues, style];
-                                                            field.onChange(newValues.length > 0 ? newValues : ['Ninguno']);
-                                                        }}
-                                                    >
-                                                        <Check
-                                                            className={cn(
-                                                                "mr-2 h-4 w-4",
-                                                                field.value?.includes(style)
-                                                                    ? "opacity-100"
-                                                                    : "opacity-0"
-                                                            )}
-                                                        />
-                                                        {style}
-                                                    </CommandItem>
-                                                ))}
-                                            </CommandList>
-                                        </Command>
-                                    </PopoverContent>
-                                </Popover>
-                                <FormMessage />
-                            </FormItem>
+                          <FormItem>
+                            <FormLabel>Posición</FormLabel>
+                            <Select 
+                              onValueChange={(value) => {
+                                field.onChange(value);
+                                // Reset styles when position changes
+                                update(index, { ...watchedSlots[index], position: value as Position, styles: [] });
+                              }} 
+                              value={field.value}
+                            >
+                              <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                              <SelectContent>
+                                {positions.map(pos => <SelectItem key={pos} value={pos}>{pos}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                          </FormItem>
                         )}
                       />
-                  </div>
-                ))}
+                       <FormField
+                          control={form.control}
+                          name={`slots.${index}.styles`}
+                          render={({ field }) => (
+                              <FormItem className="flex flex-col">
+                                  <FormLabel>Estilos de Juego Permitidos</FormLabel>
+                                  <Popover>
+                                      <PopoverTrigger asChild>
+                                          <FormControl>
+                                              <Button
+                                                  variant="outline"
+                                                  role="combobox"
+                                                  className={cn("justify-between h-auto", !field.value || field.value.length === 0 && "text-muted-foreground")}
+                                              >
+                                                  <div className="flex gap-1 flex-wrap">
+                                                      {field.value && field.value.length > 0 ? (
+                                                        field.value.map((style) => (
+                                                            <Badge
+                                                                variant="secondary"
+                                                                key={style}
+                                                                className="mr-1"
+                                                            >
+                                                                {style}
+                                                            </Badge>
+                                                        ))
+                                                      ) : (
+                                                          "Cualquiera"
+                                                      )}
+                                                  </div>
+                                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                              </Button>
+                                          </FormControl>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="p-0">
+                                          <Command>
+                                              <CommandInput placeholder="Buscar estilo..." />
+                                              <CommandList>
+                                                  <CommandEmpty>No se encontró el estilo.</CommandEmpty>
+                                                  {availableStyles.map((style) => (
+                                                      <CommandItem
+                                                          key={style}
+                                                          onSelect={() => {
+                                                              const currentValues = field.value || [];
+                                                              const isSelected = currentValues.includes(style);
+                                                              const newValues = isSelected
+                                                                  ? currentValues.filter(s => s !== style)
+                                                                  : [...currentValues, style];
+                                                              field.onChange(newValues);
+                                                          }}
+                                                      >
+                                                          <Check
+                                                              className={cn(
+                                                                  "mr-2 h-4 w-4",
+                                                                  field.value?.includes(style)
+                                                                      ? "opacity-100"
+                                                                      : "opacity-0"
+                                                              )}
+                                                          />
+                                                          {style}
+                                                      </CommandItem>
+                                                  ))}
+                                              </CommandList>
+                                          </Command>
+                                      </PopoverContent>
+                                  </Popover>
+                                  <FormMessage />
+                              </FormItem>
+                          )}
+                        />
+                    </div>
+                  );
+                })}
               </div>
             </ScrollArea>
             
@@ -234,5 +248,3 @@ export function AddFormationDialog({ open, onOpenChange, onAddFormation }: AddFo
     </Dialog>
   );
 }
-
-    

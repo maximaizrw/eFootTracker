@@ -41,10 +41,8 @@ import { useToast } from "@/hooks/use-toast";
 import type { Player, PlayerCard as PlayerCardType, FormationStats, IdealTeamPlayer, FlatPlayer, Position, TrainingGuide } from '@/lib/types';
 import { positions } from '@/lib/types';
 import { PlusCircle, Trash2, X, Star, Bot, Download, Search, Trophy, NotebookPen } from 'lucide-react';
-import { calculateAverage, getPositionGroup } from '@/lib/utils';
-import { ref, getDownloadURL, uploadBytes, deleteObject } from 'firebase/storage';
-import { storage } from '@/lib/firebase';
-import { v4 as uuidv4 } from 'uuid';
+import { calculateAverage } from '@/lib/utils';
+import { generateIdealTeam } from '@/lib/team-generator';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -179,12 +177,11 @@ export default function Home() {
   };
 
   const handleGenerateTeam = () => {
-    if (!players) return;
-    if (!selectedFormationId) {
+    if (!players || !selectedFormationId) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Por favor, selecciona una formación primero.',
+        description: 'Por favor, selecciona jugadores y una formación primero.',
       });
       return;
     }
@@ -198,50 +195,9 @@ export default function Home() {
       });
       return;
     }
-
-    // 1. Create a flat list of all possible player-card-position combinations with their average rating
-    const allRatedPlayers: IdealTeamPlayer[] = players.flatMap(player =>
-      (player.cards || []).flatMap(card =>
-        Object.keys(card.ratingsByPosition || {}).map(posStr => {
-          const position = posStr as Position;
-          const ratings = card.ratingsByPosition![position];
-          if (!ratings || ratings.length === 0) return null;
-          return {
-            player,
-            card,
-            position,
-            average: calculateAverage(ratings),
-          };
-        }).filter((p): p is IdealTeamPlayer => p !== null)
-      )
-    ).sort((a, b) => b.average - a.average);
-
-    const usedCardIds = new Set<string>();
-    const newTeam: (IdealTeamPlayer | null)[] = [];
-
-    // 2. Iterate through each required slot in the formation
-    formation.slots.forEach((slot, index) => {
-      // 3. Find the best available player for that specific slot
-      const bestPlayerForSlot = allRatedPlayers.find(p => 
-        !usedCardIds.has(p.card.id) &&
-        p.position === slot.position &&
-        slot.styles.includes(p.card.style)
-      );
-
-      if (bestPlayerForSlot) {
-        usedCardIds.add(bestPlayerForSlot.card.id);
-        newTeam.push(bestPlayerForSlot);
-      } else {
-        // 4. If no player is found, add a placeholder
-        newTeam.push({
-          player: { id: `placeholder-${slot.position}-${index}`, name: `Vacante`, cards: [] },
-          card: { id: `placeholder-card-${slot.position}-${index}`, name: 'N/A', style: 'Ninguno', ratingsByPosition: {} },
-          position: slot.position,
-          average: 0,
-        });
-      }
-    });
     
+    const newTeam = generateIdealTeam(players, formation);
+
     setIdealTeam(newTeam);
     toast({
       title: "11 Ideal Generado",
@@ -595,7 +551,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
-
-    

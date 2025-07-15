@@ -1,7 +1,7 @@
 
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
-import type { Position, PositionGroup } from "./types";
+import type { Position, PositionGroup, PlayerStyle } from "./types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -60,4 +60,32 @@ export function getAverageColorClass(average: number): string {
   if (average >= 7.5) return 'text-cyan-400';
   if (average >= 6.0) return 'text-yellow-400';
   return 'text-orange-400';
+}
+
+export function getAvailableStylesForPosition(position: Position, includeNinguno = false): PlayerStyle[] {
+    const baseStyles: PlayerStyle[] = includeNinguno ? ['Ninguno'] : [];
+
+    const gkStyles: PlayerStyle[] = ['Portero defensivo', 'Portero ofensivo'];
+    const fbStyles: PlayerStyle[] = ['Lateral defensivo', 'Lateral Ofensivo', 'Lateral finalizador'];
+    const dfcStyles: PlayerStyle[] = ['El destructor', 'Creador de juego', 'Atacante extra'];
+    const mcdStyles: PlayerStyle[] = ['Omnipresente', 'Medio escudo', 'Organizador', 'El destructor'];
+    const mcStyles: PlayerStyle[] = ['Jugador de huecos', 'Omnipresente', 'Medio escudo', 'El destructor', 'Organizador', 'Creador de jugadas'];
+    const mdiMddStyles: PlayerStyle[] = ['Omnipresente', 'Jugador de huecos', 'Especialista en centros', 'Extremo móvil', 'Creador de jugadas'];
+    const moStyles: PlayerStyle[] = ['Creador de jugadas', 'Diez Clasico', 'Jugador de huecos', 'Señuelo'];
+    const sdStyles: PlayerStyle[] = ['Segundo delantero', 'Creador de jugadas', 'Diez Clasico', 'Jugador de huecos', 'Señuelo'];
+    const wingerStyles: PlayerStyle[] = ['Creador de jugadas', 'Extremo prolífico', 'Extremo móvil', 'Especialista en centros'];
+    const dcStyles: PlayerStyle[] = ['Cazagoles', 'Señuelo', 'Hombre de área', 'Hombre objetivo', 'Segundo delantero'];
+
+    if (position === 'PT') return [...baseStyles, ...gkStyles];
+    if (position === 'LI' || position === 'LD') return [...baseStyles, ...fbStyles];
+    if (position === 'DFC') return [...baseStyles, ...dfcStyles];
+    if (position === 'MCD') return [...baseStyles, ...mcdStyles];
+    if (position === 'MC') return [...baseStyles, ...mcStyles];
+    if (position === 'MDI' || position === 'MDD') return [...baseStyles, ...mdiMddStyles];
+    if (position === 'MO') return [...baseStyles, ...moStyles];
+    if (position === 'SD') return [...baseStyles, ...sdStyles];
+    if (position === 'EXI' || position === 'EXD') return [...baseStyles, ...wingerStyles];
+    if (position === 'DC') return [...baseStyles, ...dcStyles];
+    
+    return baseStyles;
 }

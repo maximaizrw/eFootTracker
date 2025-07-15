@@ -50,8 +50,6 @@ export type PlayersByPosition = {
   [key in Position]: Player[];
 };
 
-// This is now deprecated in favor of the more detailed FormationSlot system.
-// It can be removed later if no longer referenced for simple setups.
 export type Formation = {
   [key in Position]?: number;
 };
@@ -83,7 +81,7 @@ export type MatchResult = {
 
 export const FormationSlotSchema = z.object({
   position: z.enum(positions),
-  styles: z.array(z.enum(playerStyles)).min(1, "Debes seleccionar al menos un estilo de juego."),
+  styles: z.array(z.enum(playerStyles)).optional().default([]),
 });
 
 export type FormationSlot = z.infer<typeof FormationSlotSchema>;
@@ -150,5 +148,3 @@ export type EditTrainingGuideFormValues = {
   title: string;
   content: string;
 };
-
-    
