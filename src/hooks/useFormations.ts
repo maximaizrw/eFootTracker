@@ -6,7 +6,7 @@ import { db } from '@/lib/firebase';
 import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDocs, arrayUnion, query, orderBy } from 'firebase/firestore';
 import { useToast } from './use-toast';
 import { v4 as uuidv4 } from 'uuid';
-import type { FormationStats, MatchResult, AddFormationFormValues, AddMatchFormValues } from '@/lib/types';
+import type { FormationStats, MatchResult, AddMatchFormValues } from '@/lib/types';
 
 export function useFormations() {
   const [formations, setFormations] = useState<FormationStats[]>([]);
@@ -58,24 +58,6 @@ export function useFormations() {
     return () => unsub();
   }, [toast]);
 
-  const addFormation = async (values: AddFormationFormValues) => {
-    if(!db) return;
-    try {
-      const newFormation = {
-        ...values,
-        matches: [],
-      };
-      await addDoc(collection(db, 'formations'), newFormation);
-      toast({ title: "Formación Añadida", description: `La formación "${values.name}" se ha guardado.` });
-    } catch (error) {
-      console.error("Error adding formation: ", error);
-      toast({
-        variant: "destructive",
-        title: "Error al Guardar",
-        description: `No se pudo guardar la formación.`,
-      });
-    }
-  };
 
   const addMatchResult = async (values: AddMatchFormValues) => {
     if(!db) return;
@@ -131,5 +113,7 @@ export function useFormations() {
     }
   };
 
-  return { formations, loading, error, addFormation, addMatchResult, deleteFormation, downloadBackup };
+  return { formations, loading, error, addMatchResult, deleteFormation, downloadBackup };
 }
+
+    

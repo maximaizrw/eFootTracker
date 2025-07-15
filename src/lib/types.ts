@@ -121,3 +121,11 @@ export type AddTrainingGuideFormValues = {
   title: string;
   content: string;
 };
+
+export type EditTrainingGuideFormValues = {
+  id: string;
+  title: string;
+  content: string;
+};
+
+    

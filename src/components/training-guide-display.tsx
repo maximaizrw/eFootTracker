@@ -4,7 +4,7 @@
 import type { TrainingGuide } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Trash2, NotebookPen } from 'lucide-react';
+import { Trash2, NotebookPen, Pencil } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -44,10 +44,11 @@ const SimpleMarkdown: React.FC<{ content: string }> = ({ content }) => {
 
 type TrainingGuideDisplayProps = {
   guides: TrainingGuide[];
+  onEdit: (guide: TrainingGuide) => void;
   onDelete: (guideId: string) => void;
 };
 
-export function TrainingGuideDisplay({ guides, onDelete }: TrainingGuideDisplayProps) {
+export function TrainingGuideDisplay({ guides, onEdit, onDelete }: TrainingGuideDisplayProps) {
   if (guides.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center text-center p-10 bg-card/80 rounded-lg shadow-sm border border-dashed border-white/10">
@@ -76,9 +77,17 @@ export function TrainingGuideDisplay({ guides, onDelete }: TrainingGuideDisplayP
             <CardContent className="p-4 flex-grow">
               <SimpleMarkdown content={guide.content} />
             </CardContent>
-            <CardFooter className="p-4 border-t border-white/10 flex justify-end">
+            <CardFooter className="p-4 border-t border-white/10 flex justify-end gap-2">
               <TooltipProvider>
                 <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="outline" size="icon" onClick={() => onEdit(guide)}>
+                            <Pencil className="h-4 w-4" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>Editar Guía</p></TooltipContent>
+                </Tooltip>
+                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button variant="destructive" size="icon" onClick={() => onDelete(guide.id)}>
                             <Trash2 className="h-4 w-4" />
@@ -94,3 +103,5 @@ export function TrainingGuideDisplay({ guides, onDelete }: TrainingGuideDisplayP
     </div>
   );
 }
+
+    

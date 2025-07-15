@@ -23,6 +23,7 @@ import { AddFormationDialog, type AddFormationFormValues } from '@/components/ad
 import { AddMatchDialog, type AddMatchFormValues } from '@/components/add-match-dialog';
 import { PlayerDetailDialog } from '@/components/player-detail-dialog';
 import { AddTrainingGuideDialog, type AddTrainingGuideFormValues } from '@/components/add-training-guide-dialog';
+import { EditTrainingGuideDialog, type EditTrainingGuideFormValues } from '@/components/edit-training-guide-dialog';
 
 import { FormationsDisplay } from '@/components/formations-display';
 import { IdealTeamDisplay } from '@/components/ideal-team-display';
@@ -36,7 +37,7 @@ import { useFormations } from '@/hooks/useFormations';
 import { useTrainings } from '@/hooks/useTrainings';
 import { useToast } from "@/hooks/use-toast";
 
-import type { Player, PlayerStyle, PlayerCard as PlayerCardType, Formation, IdealTeamPlayer, FlatPlayer, Position } from '@/lib/types';
+import type { Player, PlayerCard as PlayerCardType, Formation, IdealTeamPlayer, FlatPlayer, Position, TrainingGuide } from '@/lib/types';
 import { positions } from '@/lib/types';
 import { PlusCircle, Trash2, X, Star, Bot, Download, Search, Trophy, NotebookPen } from 'lucide-react';
 import { calculateAverage, getPositionGroup } from '@/lib/utils';
@@ -76,6 +77,7 @@ export default function Home() {
     loading: trainingsLoading,
     error: trainingsError,
     addTrainingGuide,
+    editTrainingGuide,
     deleteTrainingGuide,
   } = useTrainings();
 
@@ -90,12 +92,14 @@ export default function Home() {
   const [isPlayerDetailDialogOpen, setPlayerDetailDialogOpen] = useState(false);
   const [isImageViewerOpen, setImageViewerOpen] = useState(false);
   const [isAddTrainingGuideDialogOpen, setAddTrainingGuideDialogOpen] = useState(false);
+  const [isEditTrainingGuideDialogOpen, setEditTrainingGuideDialogOpen] = useState(false);
   const [viewingImageUrl, setViewingImageUrl] = useState<string | null>(null);
   const [viewingImageName, setViewingImageName] = useState<string | null>(null);
   const [addDialogInitialData, setAddDialogInitialData] = useState<Partial<AddRatingFormValues> | undefined>(undefined);
   const [addMatchInitialData, setAddMatchInitialData] = useState<{ formationId: string; formationName: string } | undefined>(undefined);
   const [editCardDialogInitialData, setEditCardDialogInitialData] = useState<EditCardFormValues | undefined>(undefined);
   const [editPlayerDialogInitialData, setEditPlayerDialogInitialData] = useState<EditPlayerFormValues | undefined>(undefined);
+  const [editTrainingGuideInitialData, setEditTrainingGuideInitialData] = useState<EditTrainingGuideFormValues | undefined>(undefined);
   const [selectedPlayerForDetail, setSelectedPlayerForDetail] = useState<Player | null>(null);
   
   const [formation, setFormation] = useState<Formation>({
@@ -110,29 +114,6 @@ export default function Home() {
   
   const { toast } = useToast();
 
-  const handleDeleteFormation = async (formation: any) => {
-    try {
-      if (formation.imagePath && storage) {
-        await deleteObject(ref(storage, formation.imagePath));
-      }
-      if (formation.secondaryImagePath && storage) {
-        await deleteObject(ref(storage, formation.secondaryImagePath));
-      }
-      await deleteFormationFromDb(formation.id);
-    } catch (error) {
-      console.error("Error deleting formation or its images:", error);
-      if ((error as any)?.code !== 'storage/object-not-found') {
-        toast({
-          variant: "destructive",
-          title: "Error al eliminar",
-          description: "No se pudo eliminar la formación o sus imágenes."
-        });
-      } else {
-        await deleteFormationFromDb(formation.id);
-      }
-    }
-  };
-  
   const handleOpenAddRating = (initialData?: Partial<AddRatingFormValues>) => {
     setAddDialogInitialData(initialData);
     setAddRatingDialogOpen(true);
@@ -171,6 +152,53 @@ export default function Home() {
   const handleOpenAddMatch = (formationId: string, formationName: string) => {
     setAddMatchInitialData({ formationId, formationName });
     setAddMatchDialogOpen(true);
+  };
+
+  const handleOpenEditTrainingGuide = (guide: TrainingGuide) => {
+    setEditTrainingGuideInitialData({
+      id: guide.id,
+      title: guide.title,
+      content: guide.content,
+    });
+    setEditTrainingGuideDialogOpen(true);
+  };
+
+
+  const handleDeleteFormation = async (formation: any) => {
+    if(!db) return;
+    try {
+      await deleteFormationFromDb(formation.id);
+    } catch (error) {
+      console.error("Error deleting formation:", error);
+      toast({
+        variant: "destructive",
+        title: "Error al eliminar",
+        description: "No se pudo eliminar la formación."
+      });
+    }
+  };
+
+  const handleAddFormation = async (values: AddFormationFormValues) => {
+    if (!db) return;
+    try {
+        const newFormation = {
+            name: values.name,
+            playStyle: values.playStyle,
+            imageUrl: values.imageUrl || '',
+            secondaryImageUrl: values.secondaryImageUrl || '',
+            sourceUrl: values.sourceUrl || '',
+            matches: [],
+        };
+        await addDoc(collection(db, 'formations'), newFormation);
+        toast({ title: "Formación Añadida", description: `La formación "${values.name}" se ha guardado.` });
+    } catch (error) {
+        console.error("Error adding formation: ", error);
+        toast({
+            variant: "destructive",
+            title: "Error al Guardar",
+            description: `No se pudo guardar la formación.`,
+        });
+    }
   };
 
   const handleGenerateTeam = () => {
@@ -355,7 +383,7 @@ export default function Home() {
       <AddFormationDialog
         open={isAddFormationDialogOpen}
         onOpenChange={setAddFormationDialogOpen}
-        onAddFormation={addFormation}
+        onAddFormation={handleAddFormation}
       />
       <AddMatchDialog
         open={isAddMatchDialogOpen}
@@ -367,6 +395,12 @@ export default function Home() {
         open={isAddTrainingGuideDialogOpen}
         onOpenChange={setAddTrainingGuideDialogOpen}
         onAddGuide={addTrainingGuide}
+      />
+      <EditTrainingGuideDialog
+        open={isEditTrainingGuideDialogOpen}
+        onOpenChange={setEditTrainingGuideDialogOpen}
+        onEditGuide={editTrainingGuide}
+        initialData={editTrainingGuideInitialData}
       />
       <EditCardDialog
         open={isEditCardDialogOpen}
@@ -458,6 +492,7 @@ export default function Home() {
           <TabsContent value="trainings" className="mt-6">
             <TrainingGuideDisplay
               guides={trainingGuides}
+              onEdit={handleOpenEditTrainingGuide}
               onDelete={deleteTrainingGuide}
             />
           </TabsContent>
@@ -569,3 +604,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

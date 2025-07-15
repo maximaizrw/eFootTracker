@@ -3,9 +3,9 @@
 
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, doc, addDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
 import { useToast } from './use-toast';
-import type { TrainingGuide, AddTrainingGuideFormValues } from '@/lib/types';
+import type { TrainingGuide, AddTrainingGuideFormValues, EditTrainingGuideFormValues } from '@/lib/types';
 
 export function useTrainings() {
   const [trainingGuides, setTrainingGuides] = useState<TrainingGuide[]>([]);
@@ -76,6 +76,26 @@ export function useTrainings() {
     }
   };
 
+   const editTrainingGuide = async (values: EditTrainingGuideFormValues) => {
+    if (!db) return;
+    try {
+      const guideRef = doc(db, 'trainings', values.id);
+      await updateDoc(guideRef, {
+        title: values.title,
+        content: values.content,
+      });
+      toast({ title: "Guía Actualizada", description: `La guía "${values.title}" ha sido actualizada.` });
+    } catch (error) {
+      console.error("Error updating training guide: ", error);
+      toast({
+        variant: "destructive",
+        title: "Error al Actualizar",
+        description: `No se pudo actualizar la guía.`,
+      });
+    }
+  };
+
+
   const deleteTrainingGuide = async (guideId: string) => {
     if (!db) return;
     try {
@@ -92,5 +112,7 @@ export function useTrainings() {
   };
 
 
-  return { trainingGuides, loading, error, addTrainingGuide, deleteTrainingGuide };
+  return { trainingGuides, loading, error, addTrainingGuide, editTrainingGuide, deleteTrainingGuide };
 }
+
+    
