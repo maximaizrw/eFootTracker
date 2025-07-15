@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from 'next/image';
@@ -5,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Trash2, X, Wrench, Pencil } from 'lucide-react';
+import { PlusCircle, Trash2, X, Wrench, Pencil, LineChart } from 'lucide-react';
 import { calculateAverage, cn, formatAverage } from '@/lib/utils';
 import { getCardStyle } from '@/lib/card-styles';
 import type { Player, PlayerCard, Position, FlatPlayer } from '@/lib/types';
@@ -18,7 +19,9 @@ type PlayerTableProps = {
   onOpenAddRating: (initialData?: Partial<AddRatingFormValues>) => void;
   onOpenEditCard: (player: Player, card: PlayerCard) => void;
   onOpenEditPlayer: (player: Player) => void;
+  onOpenPlayerDetail: (player: Player) => void;
   onViewImage: (url: string, name: string) => void;
+  onDeletePlayer: (playerId: string) => void;
   onDeleteCard: (playerId: string, cardId: string, position: Position) => void;
   onDeleteRating: (playerId: string, cardId: string, position: Position, ratingIndex: number) => void;
 };
@@ -30,7 +33,9 @@ export function PlayerTable({
   onOpenAddRating,
   onOpenEditCard,
   onOpenEditPlayer,
+  onOpenPlayerDetail,
   onViewImage,
+  onDeletePlayer,
   onDeleteCard,
   onDeleteRating,
 }: PlayerTableProps) {
@@ -103,14 +108,26 @@ export function PlayerTable({
                   )}
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                        <div className="font-medium text-base">{player.name}</div>
-                        <Button
-                            variant="ghost" size="icon" className="h-6 w-6 rounded-full"
-                            aria-label={`Editar jugador ${player.name}`}
-                            onClick={() => onOpenEditPlayer(player)}
-                            >
-                            <Pencil className="h-3 w-3 text-muted-foreground/60 hover:text-muted-foreground" />
-                        </Button>
+                        <button 
+                            onClick={() => onOpenPlayerDetail(player)}
+                            className="font-medium text-base hover:underline"
+                        >
+                            {player.name}
+                        </button>
+                        <TooltipProvider>
+                           <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="ghost" size="icon" className="h-6 w-6 rounded-full"
+                                        aria-label={`Editar jugador ${player.name}`}
+                                        onClick={() => onOpenEditPlayer(player)}
+                                        >
+                                        <Pencil className="h-3 w-3 text-muted-foreground/60 hover:text-muted-foreground" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Editar nombre del jugador</p></TooltipContent>
+                           </Tooltip>
+                        </TooltipProvider>
                     </div>
                     <div className={cn("text-sm", cardStyle ? specialTextClasses : 'text-muted-foreground')}>{card.name}</div>
                   </div>
@@ -151,6 +168,20 @@ export function PlayerTable({
               </TableCell>
               <TableCell className="text-right">
                 <TooltipProvider>
+                   <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-full"
+                          aria-label={`Ver estadísticas de ${player.name}`}
+                          onClick={() => onOpenPlayerDetail(player)}
+                      >
+                          <LineChart className="h-4 w-4 text-accent/80 hover:text-accent" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>Ver estadísticas detalladas</p></TooltipContent>
+                  </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
@@ -203,3 +234,4 @@ export function PlayerTable({
     </Table>
   );
 }
+

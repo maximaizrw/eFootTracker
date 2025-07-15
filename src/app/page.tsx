@@ -2,13 +2,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import { useToast } from "@/hooks/use-toast";
-import { db, storage } from '@/lib/firebase';
-import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDoc, getDocs, arrayUnion } from 'firebase/firestore';
-import { ref, deleteObject } from "firebase/storage";
 import Image from 'next/image';
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -19,30 +13,57 @@ import {
   AlertDialogFooter,
   AlertDialogCancel
 } from "@/components/ui/alert-dialog";
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 import { AddRatingDialog, type FormValues as AddRatingFormValues } from '@/components/add-rating-dialog';
 import { EditCardDialog, type FormValues as EditCardFormValues } from '@/components/edit-card-dialog';
 import { EditPlayerDialog, type FormValues as EditPlayerFormValues } from '@/components/edit-player-dialog';
 import { AddFormationDialog, type AddFormationFormValues } from '@/components/add-formation-dialog';
 import { AddMatchDialog, type AddMatchFormValues } from '@/components/add-match-dialog';
+import { PlayerDetailDialog } from '@/components/player-detail-dialog';
+
 import { FormationsDisplay } from '@/components/formations-display';
+import { IdealTeamDisplay } from '@/components/ideal-team-display';
+import { IdealTeamSetup } from '@/components/ideal-team-setup';
+import { PlayerTable } from '@/components/player-table';
 import { PositionIcon } from '@/components/position-icon';
-import type { Player, PlayersByPosition, Position, PlayerCard as PlayerCardType, Formation, IdealTeamPlayer, FormationStats, MatchResult, FlatPlayer } from '@/lib/types';
+
+import { usePlayers } from '@/hooks/usePlayers';
+import { useFormations } from '@/hooks/useFormations';
+import { useToast } from "@/hooks/use-toast";
+
+import type { Player, PlayersByPosition, Position, PlayerCard as PlayerCardType, Formation, IdealTeamPlayer, FlatPlayer } from '@/lib/types';
 import { positions } from '@/lib/types';
-import { Button } from '@/components/ui/button';
 import { PlusCircle, Trash2, X, Star, Bot, Download, Search, Trophy } from 'lucide-react';
 import { calculateAverage } from '@/lib/utils';
-import { IdealTeamDisplay } from '@/components/ideal-team-display';
-import { Input } from '@/components/ui/input';
-import { PlayerTable } from '@/components/player-table';
-import { IdealTeamSetup } from '@/components/ideal-team-setup';
 
 
 export default function Home() {
-  const [players, setPlayers] = useState<Player[] | null>(null);
-  const [formations, setFormations] = useState<FormationStats[]>([]);
-  const [playersByPosition, setPlayersByPosition] = useState<PlayersByPosition | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { 
+    players, 
+    playersByPosition, 
+    loading: playersLoading, 
+    error: playersError, 
+    addRating,
+    editCard,
+    editPlayer,
+    deletePlayer,
+    deleteCard,
+    deleteRating,
+    downloadBackup: downloadPlayersBackup,
+  } = usePlayers();
+
+  const {
+    formations,
+    loading: formationsLoading,
+    error: formationsError,
+    addFormation,
+    addMatchResult,
+    deleteFormation,
+    downloadBackup: downloadFormationsBackup,
+  } = useFormations();
+
   const [activeTab, setActiveTab] = useState<Position | 'ideal-11' | 'formations'>('DC');
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddRatingDialogOpen, setAddRatingDialogOpen] = useState(false);
@@ -50,6 +71,7 @@ export default function Home() {
   const [isAddMatchDialogOpen, setAddMatchDialogOpen] = useState(false);
   const [isEditCardDialogOpen, setEditCardDialogOpen] = useState(false);
   const [isEditPlayerDialogOpen, setEditPlayerDialogOpen] = useState(false);
+  const [isPlayerDetailDialogOpen, setPlayerDetailDialogOpen] = useState(false);
   const [isImageViewerOpen, setImageViewerOpen] = useState(false);
   const [viewingImageUrl, setViewingImageUrl] = useState<string | null>(null);
   const [viewingImageName, setViewingImageName] = useState<string | null>(null);
@@ -57,121 +79,13 @@ export default function Home() {
   const [addMatchInitialData, setAddMatchInitialData] = useState<{ formationId: string; formationName: string } | undefined>(undefined);
   const [editCardDialogInitialData, setEditCardDialogInitialData] = useState<EditCardFormValues | undefined>(undefined);
   const [editPlayerDialogInitialData, setEditPlayerDialogInitialData] = useState<EditPlayerFormValues | undefined>(undefined);
+  const [selectedPlayerForDetail, setSelectedPlayerForDetail] = useState<Player | null>(null);
+  
   const [formation, setFormation] = useState<Formation>({
     PT: 1, DFC: 3, LI: 0, LD: 1, MCD: 1, MC: 1, MDI: 0, MDD: 0, MO: 3, EXI: 0, EXD: 0, SD: 0, DC: 1
   });
   const [idealTeam, setIdealTeam] = useState<(IdealTeamPlayer | null)[]>([]);
   const { toast } = useToast();
-
-  useEffect(() => {
-    setError(null);
-
-    if (!db) {
-      const errorMessage = "La configuración de Firebase no está completa. Revisa que las variables de entorno se hayan añadido correctamente en la configuración de tu proyecto en Vercel y que hayas hecho un 'Redeploy'.";
-      setError(errorMessage);
-      setPlayers([]);
-      toast({
-          variant: "destructive",
-          title: "Error de Configuración",
-          description: errorMessage,
-      });
-      return;
-    }
-    
-    const unsubPlayers = onSnapshot(collection(db, "players"), (snapshot) => {
-      try {
-        const playersData = snapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-                id: doc.id,
-                name: data.name,
-                cards: (data.cards || []).map((card: any) => ({
-                    ...card,
-                    style: card.style || 'Ninguno',
-                    imageUrl: card.imageUrl || '',
-                    ratingsByPosition: card.ratingsByPosition || {}
-                })),
-            } as Player;
-        });
-        setPlayers(playersData);
-      } catch (error) {
-          console.error("Error processing snapshot: ", error);
-          const errorMessage = "No se pudieron procesar los datos de los jugadores. Revisa la consola para más detalles.";
-          setError(errorMessage);
-          toast({
-              variant: "destructive",
-              title: "Error de Datos",
-              description: errorMessage,
-          });
-      }
-    }, (err) => {
-        console.error("Error fetching players from Firestore: ", err);
-        const errorMessage = "No se pudo conectar a la base de datos para leer jugadores. Comprueba la configuración de Firebase y las reglas de seguridad de Firestore.";
-        setError(errorMessage);
-        setPlayers([]);
-        toast({
-            variant: "destructive",
-            title: "Error de Conexión",
-            description: errorMessage
-        });
-    });
-    
-    const unsubFormations = onSnapshot(collection(db, "formations"), (snapshot) => {
-      try {
-        const formationsData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        } as FormationStats));
-        setFormations(formationsData);
-      } catch (error) {
-        console.error("Error processing formations snapshot: ", error);
-        toast({
-          variant: "destructive",
-          title: "Error de Datos",
-          description: "No se pudieron procesar los datos de las formaciones.",
-        });
-      }
-    }, (err) => {
-        console.error("Error fetching formations from Firestore: ", err);
-        toast({
-            variant: "destructive",
-            title: "Error de Conexión",
-            description: "No se pudo conectar a la base de datos para leer formaciones."
-        });
-    });
-
-    return () => {
-      unsubPlayers();
-      unsubFormations();
-    };
-  }, [toast]);
-  
-  useEffect(() => {
-    if (players !== null) {
-      const grouped = positions.reduce((acc, pos) => {
-        acc[pos] = [];
-        return acc;
-      }, {} as PlayersByPosition);
-      
-      players.forEach(player => {
-        const playerPositions = new Set<Position>();
-        (player.cards || []).forEach(card => {
-          Object.keys(card.ratingsByPosition || {}).forEach(pos => {
-            if ((card.ratingsByPosition?.[pos as Position] ?? []).length > 0) {
-              playerPositions.add(pos as Position);
-            }
-          });
-        });
-
-        playerPositions.forEach(pos => {
-          if (grouped[pos]) {
-            grouped[pos].push(player);
-          }
-        });
-      });
-      setPlayersByPosition(grouped);
-    }
-  }, [players]);
   
   const handleOpenAddRating = (initialData?: Partial<AddRatingFormValues>) => {
     setAddDialogInitialData(initialData);
@@ -197,276 +111,20 @@ export default function Home() {
     setEditPlayerDialogOpen(true);
   };
 
+  const handleOpenPlayerDetail = (player: Player) => {
+    setSelectedPlayerForDetail(player);
+    setPlayerDetailDialogOpen(true);
+  };
+
   const handleViewImage = (url: string, name: string) => {
     setViewingImageUrl(url);
     setViewingImageName(name);
     setImageViewerOpen(true);
   };
 
-  const handleAddRating = async (values: AddRatingFormValues) => {
-    const { playerId, playerName, cardName, position, rating, style } = values;
-    
-    try {
-      if (playerId) {
-        const playerRef = doc(db, 'players', playerId);
-        const playerDoc = await getDoc(playerRef);
-        
-        if (!playerDoc.exists()) {
-            throw new Error("Player with given ID not found in DB.");
-        }
-        
-        const playerData = playerDoc.data() as Player;
-        const newCards: PlayerCardType[] = JSON.parse(JSON.stringify(playerData.cards || []));
-        let card = newCards.find(c => c.name.toLowerCase() === cardName.toLowerCase());
-
-        if (card) {
-          if (!card.ratingsByPosition) {
-            card.ratingsByPosition = {};
-          }
-          if (!card.ratingsByPosition[position]) {
-            card.ratingsByPosition[position] = [];
-          }
-          card.ratingsByPosition[position]!.push(rating);
-        } else {
-          card = { id: uuidv4(), name: cardName, style: style, imageUrl: '', ratingsByPosition: { [position]: [rating] } };
-          newCards.push(card);
-        }
-        
-        await updateDoc(playerRef, {
-            cards: newCards
-        });
-
-      } else {
-        const newPlayer = {
-          name: playerName,
-          cards: [{ id: uuidv4(), name: cardName, style: style, imageUrl: '', ratingsByPosition: { [position]: [rating] } }],
-        };
-        await addDoc(collection(db, 'players'), newPlayer);
-      }
-      
-      toast({ title: "Éxito", description: `La valoración para ${playerName} ha sido guardada.` });
-    } catch (error) {
-      console.error("Error adding rating: ", error);
-      toast({
-        variant: "destructive",
-        title: "Error al Guardar",
-        description: "No se pudo guardar la valoración.",
-      });
-    }
-  };
-
-  const handleAddFormation = async (values: AddFormationFormValues) => {
-    try {
-      const newFormation: Omit<FormationStats, 'id'> = {
-        name: values.name,
-        playStyle: values.playStyle,
-        sourceUrl: values.sourceUrl || '',
-        imageUrl: values.imageUrl || '',
-        secondaryImageUrl: values.secondaryImageUrl || '',
-        matches: [],
-      };
-      await addDoc(collection(db, 'formations'), newFormation);
-      toast({ title: "Formación Añadida", description: `La formación "${values.name}" se ha guardado.` });
-    } catch (error) {
-      console.error("Error adding formation: ", error);
-      toast({
-        variant: "destructive",
-        title: "Error al Guardar",
-        description: `No se pudo guardar la formación.`,
-      });
-    }
-  };
-  
   const handleOpenAddMatch = (formationId: string, formationName: string) => {
     setAddMatchInitialData({ formationId, formationName });
     setAddMatchDialogOpen(true);
-  };
-
-  const handleAddMatchResult = async (values: AddMatchFormValues) => {
-    try {
-      const formationRef = doc(db, 'formations', values.formationId);
-      const newResult: MatchResult = {
-        id: uuidv4(),
-        goalsFor: values.goalsFor,
-        goalsAgainst: values.goalsAgainst,
-        date: new Date().toISOString(),
-      };
-      await updateDoc(formationRef, {
-        matches: arrayUnion(newResult)
-      });
-      toast({ title: "Resultado Añadido", description: `Marcador ${values.goalsFor} - ${values.goalsAgainst} guardado.` });
-    } catch (error) {
-      console.error("Error adding match result:", error);
-      toast({
-        variant: "destructive",
-        title: "Error al Registrar",
-        description: "No se pudo guardar el resultado del partido.",
-      });
-    }
-  };
-
-  const handleDeleteFormation = async (formation: FormationStats) => {
-    if (!storage) {
-      toast({ variant: "destructive", title: "Error", description: "Firebase Storage no está configurado."});
-      // Continue to delete from DB even if storage is not set up
-    }
-    try {
-      // Try to delete images from storage if path exists (for older versions)
-      if (formation.imagePath) {
-        const imageRef = ref(storage!, formation.imagePath);
-        await deleteObject(imageRef).catch(error => {
-          if (error.code !== 'storage/object-not-found') {
-            console.error("Error deleting main image:", error);
-          }
-        });
-      }
-      if (formation.secondaryImagePath) {
-        const secondaryImageRef = ref(storage!, formation.secondaryImagePath);
-        await deleteObject(secondaryImageRef).catch(error => {
-          if (error.code !== 'storage/object-not-found') {
-            console.error("Error deleting secondary image:", error);
-          }
-        });
-      }
-
-      await deleteDoc(doc(db, 'formations', formation.id));
-      
-      toast({ title: "Formación Eliminada", description: "La formación y sus estadísticas han sido eliminadas." });
-    } catch (error) {
-      console.error("Error deleting formation:", error);
-      toast({
-        variant: "destructive",
-        title: "Error al Eliminar",
-        description: "No se pudo eliminar la formación.",
-      });
-    }
-  };
-
-  const handleEditCard = async (values: EditCardFormValues) => {
-    if (!players) return;
-    const { playerId, cardId, currentCardName, currentStyle, imageUrl } = values;
-
-    const player = players.find(p => p.id === playerId);
-    if (!player) return;
-
-    const newCards = JSON.parse(JSON.stringify(player.cards)) as PlayerCardType[];
-    const cardToUpdate = newCards.find(c => c.id === cardId);
-
-    if (cardToUpdate) {
-        cardToUpdate.name = currentCardName;
-        cardToUpdate.style = currentStyle;
-        cardToUpdate.imageUrl = imageUrl || '';
-
-        try {
-            await updateDoc(doc(db, 'players', playerId), { cards: newCards });
-            toast({ title: "Carta Actualizada", description: "Los datos de la carta se han actualizado." });
-        } catch (error) {
-            console.error("Error updating card: ", error);
-            toast({
-                variant: "destructive",
-                title: "Error al Actualizar",
-                description: "No se pudieron guardar los cambios de la carta."
-            });
-        }
-    }
-  };
-
-  const handleEditPlayer = async (values: EditPlayerFormValues) => {
-    const { playerId, currentPlayerName } = values;
-    try {
-      const playerRef = doc(db, 'players', playerId);
-      await updateDoc(playerRef, {
-        name: currentPlayerName,
-      });
-      toast({ title: "Jugador Actualizado", description: "El nombre del jugador se ha actualizado." });
-    } catch (error) {
-      console.error("Error updating player: ", error);
-      toast({
-        variant: "destructive",
-        title: "Error al Actualizar",
-        description: "No se pudo guardar el cambio de nombre."
-      });
-    }
-  };
-
-  const handleDeletePlayer = async (playerId: string) => {
-    try {
-        await deleteDoc(doc(db, 'players', playerId));
-        toast({ title: "Jugador Eliminado", description: "El jugador ha sido eliminado." });
-    } catch (error) {
-        console.error("Error deleting player: ", error);
-        toast({
-            variant: "destructive",
-            title: "Error al Eliminar",
-            description: "No se pudo eliminar al jugador."
-        });
-    }
-  };
-
-  const handleDeleteCard = async (playerId: string, cardId: string, position: Position) => {
-    if (!players) return;
-    const player = players.find(p => p.id === playerId);
-    if (!player) return;
-
-    const newCards: PlayerCardType[] = JSON.parse(JSON.stringify(player.cards));
-    const cardToUpdate = newCards.find(c => c.id === cardId);
-
-    if (!cardToUpdate || !cardToUpdate.ratingsByPosition || !cardToUpdate.ratingsByPosition[position]) {
-        toast({
-            variant: "destructive",
-            title: "Error",
-            description: "No se encontraron valoraciones para esta posición.",
-        });
-        return;
-    }
-    
-    delete cardToUpdate.ratingsByPosition[position];
-
-    const hasRatingsLeft = Object.keys(cardToUpdate.ratingsByPosition).length > 0;
-
-    const finalCards = hasRatingsLeft ? newCards.map(c => c.id === cardId ? cardToUpdate : c) : newCards.filter(c => c.id !== cardId);
-
-    try {
-        await updateDoc(doc(db, 'players', playerId), { cards: finalCards });
-        toast({ title: "Acción Completada", description: `Se eliminaron las valoraciones de ${player.name} para la posición ${position}.` });
-    } catch (error) {
-        console.error("Error deleting position ratings from card: ", error);
-        toast({
-            variant: "destructive",
-            title: "Error al Eliminar",
-            description: "No se pudo completar la acción."
-        });
-    }
-  };
-
-  const handleDeleteRating = async (playerId: string, cardId: string, position: Position, ratingIndex: number) => {
-    if (!players) return;
-    const player = players.find(p => p.id === playerId);
-    if (!player) return;
-
-    const newCards = JSON.parse(JSON.stringify(player.cards)) as PlayerCardType[];
-    const card = newCards.find(c => c.id === cardId);
-    
-    if(card && card.ratingsByPosition && card.ratingsByPosition[position]) {
-        card.ratingsByPosition[position]!.splice(ratingIndex, 1);
-        if (card.ratingsByPosition[position]!.length === 0) {
-            delete card.ratingsByPosition[position];
-        }
-    } else {
-        return;
-    }
-    
-    try {
-        await updateDoc(doc(db, 'players', playerId), { cards: newCards });
-        toast({ title: "Valoración Eliminada", description: "La valoración ha sido eliminada." });
-    } catch (error) {
-        console.error("Error deleting rating: ", error);
-        toast({
-            variant: "destructive",
-            title: "Error al Eliminar",
-            description: "No se pudo eliminar la valoración."
-        });
-    }
   };
 
   const handleGenerateTeam = () => {
@@ -539,59 +197,38 @@ export default function Home() {
   };
   
   const handleDownloadBackup = async () => {
-    if (!db) {
-      toast({
-        variant: "destructive",
-        title: "Error de Conexión",
-        description: "No se pudo conectar a la base de datos.",
-      });
-      return;
-    }
-
-    try {
-      const playersCollection = collection(db, 'players');
-      const playerSnapshot = await getDocs(playersCollection);
-      const playersData = playerSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      
-      const formationsCollection = collection(db, 'formations');
-      const formationSnapshot = await getDocs(formationsCollection);
-      const formationsData = formationSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      const backupData = {
-        players: playersData,
-        formations: formationsData,
-      };
-
-      const jsonData = JSON.stringify(backupData, null, 2);
-      const blob = new Blob([jsonData], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'eFootTracker_backup.json';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      toast({
-        title: "Descarga Iniciada",
-        description: "El backup de la base de datos se está descargando.",
-      });
-
-    } catch (error) {
-      console.error("Error downloading backup: ", error);
-      toast({
+    const playersData = await downloadPlayersBackup();
+    const formationsData = await downloadFormationsBackup();
+    
+    if (!playersData || !formationsData) {
+       toast({
         variant: "destructive",
         title: "Error en la Descarga",
         description: "No se pudo generar el archivo de backup.",
       });
+      return;
     }
+    
+    const backupData = {
+      players: playersData,
+      formations: formationsData,
+    };
+
+    const jsonData = JSON.stringify(backupData, null, 2);
+    const blob = new Blob([jsonData], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'eFootTracker_backup.json';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Descarga Iniciada",
+      description: "El backup de la base de datos se está descargando.",
+    });
   };
 
   const handleTabChange = (value: string) => {
@@ -618,6 +255,7 @@ export default function Home() {
     }
   };
 
+  const error = playersError || formationsError;
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-screen text-center p-4">
@@ -629,7 +267,7 @@ export default function Home() {
     );
   }
 
-  if (!playersByPosition) {
+  if (playersLoading || formationsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-xl font-semibold">Conectando a la base de datos...</div>
@@ -644,32 +282,37 @@ export default function Home() {
        <AddRatingDialog
         open={isAddRatingDialogOpen}
         onOpenChange={setAddRatingDialogOpen}
-        onAddRating={handleAddRating}
+        onAddRating={addRating}
         players={allPlayers}
         initialData={addDialogInitialData}
       />
       <AddFormationDialog
         open={isAddFormationDialogOpen}
         onOpenChange={setAddFormationDialogOpen}
-        onAddFormation={handleAddFormation}
+        onAddFormation={addFormation}
       />
       <AddMatchDialog
         open={isAddMatchDialogOpen}
         onOpenChange={setAddMatchDialogOpen}
-        onAddMatch={handleAddMatchResult}
+        onAddMatch={addMatchResult}
         initialData={addMatchInitialData}
       />
       <EditCardDialog
         open={isEditCardDialogOpen}
         onOpenChange={setEditCardDialogOpen}
-        onEditCard={handleEditCard}
+        onEditCard={editCard}
         initialData={editCardDialogInitialData}
       />
       <EditPlayerDialog
         open={isEditPlayerDialogOpen}
         onOpenChange={setEditPlayerDialogOpen}
-        onEditPlayer={handleEditPlayer}
+        onEditPlayer={editPlayer}
         initialData={editPlayerDialogInitialData}
+      />
+      <PlayerDetailDialog
+        open={isPlayerDetailDialogOpen}
+        onOpenChange={setPlayerDetailDialogOpen}
+        player={selectedPlayerForDetail}
       />
       <AlertDialog open={isImageViewerOpen} onOpenChange={setImageViewerOpen}>
         <AlertDialogContent className="max-w-xl p-0">
@@ -732,7 +375,7 @@ export default function Home() {
             <FormationsDisplay
               formations={formations}
               onAddMatch={handleOpenAddMatch}
-              onDelete={handleDeleteFormation}
+              onDelete={deleteFormation}
               onViewImage={handleViewImage}
             />
           </TabsContent>
@@ -782,9 +425,11 @@ export default function Home() {
                       onOpenAddRating={handleOpenAddRating}
                       onOpenEditCard={handleOpenEditCard}
                       onOpenEditPlayer={handleOpenEditPlayer}
+                      onOpenPlayerDetail={handleOpenPlayerDetail}
                       onViewImage={handleViewImage}
-                      onDeleteCard={handleDeleteCard}
-                      onDeleteRating={handleDeleteRating}
+                      onDeletePlayer={deletePlayer}
+                      onDeleteCard={deleteCard}
+                      onDeleteRating={deleteRating}
                     />
                   </Card>
               </TabsContent>
@@ -821,5 +466,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
