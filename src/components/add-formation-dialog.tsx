@@ -42,6 +42,7 @@ import { cn, getAvailableStylesForPosition } from "@/lib/utils";
 
 const formSchema = z.object({
   name: z.string().min(2, "El nombre debe tener al menos 2 caracteres."),
+  creator: z.string().optional(),
   playStyle: z.enum(formationPlayStyles),
   slots: z.array(FormationSlotSchema).length(11, "Debe definir exactamente 11 posiciones."),
   imageUrl: z.string().url("Debe ser una URL válida.").optional().or(z.literal('')),
@@ -108,6 +109,7 @@ export function AddFormationDialog({ open, onOpenChange, onAddFormation }: AddFo
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
+      creator: "",
       playStyle: "Contraataque rápido",
       slots: defaultSlots,
       imageUrl: "",
@@ -157,6 +159,19 @@ export function AddFormationDialog({ open, onOpenChange, onAddFormation }: AddFo
                     <FormLabel>Nombre de la Formación</FormLabel>
                     <FormControl>
                       <Input placeholder="Ej: 4-3-3 de Klopp" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="creator"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nombre del Creador (Opcional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ej: Zeitzler" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

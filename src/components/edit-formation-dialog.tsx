@@ -44,6 +44,7 @@ import { cn, getAvailableStylesForPosition } from "@/lib/utils";
 const formSchema = z.object({
   id: z.string(),
   name: z.string().min(2, "El nombre debe tener al menos 2 caracteres."),
+  creator: z.string().optional(),
   playStyle: z.enum(formationPlayStyles),
   slots: z.array(FormationSlotSchema).length(11, "Debe definir exactamente 11 posiciones."),
   imageUrl: z.string().url("Debe ser una URL válida.").optional().or(z.literal('')),
@@ -66,6 +67,7 @@ export function EditFormationDialog({ open, onOpenChange, onEditFormation, initi
     defaultValues: {
       id: "",
       name: "",
+      creator: "",
       playStyle: "Contraataque rápido",
       slots: defaultSlots,
       imageUrl: "",
@@ -86,6 +88,7 @@ export function EditFormationDialog({ open, onOpenChange, onEditFormation, initi
       form.reset({
         id: initialData.id,
         name: initialData.name,
+        creator: initialData.creator || "",
         playStyle: initialData.playStyle,
         slots: initialData.slots && initialData.slots.length === 11 ? initialData.slots.map(s => ({...s, styles: s.styles || []})) : defaultSlots,
         imageUrl: initialData.imageUrl || "",
@@ -120,6 +123,19 @@ export function EditFormationDialog({ open, onOpenChange, onEditFormation, initi
                     <FormLabel>Nombre de la Formación</FormLabel>
                     <FormControl>
                       <Input placeholder="Ej: 4-3-3 de Klopp" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="creator"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nombre del Creador (Opcional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ej: Zeitzler" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

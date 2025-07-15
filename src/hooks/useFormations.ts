@@ -73,6 +73,7 @@ export function useFormations() {
     try {
         const newFormation = {
             name: values.name,
+            creator: values.creator || '',
             playStyle: values.playStyle,
             slots: values.slots,
             matches: [],
@@ -98,6 +99,7 @@ export function useFormations() {
       const formationRef = doc(db, 'formations', values.id);
       await updateDoc(formationRef, {
         name: values.name,
+        creator: values.creator || '',
         playStyle: values.playStyle,
         slots: values.slots,
         imageUrl: values.imageUrl || '',

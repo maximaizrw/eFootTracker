@@ -89,6 +89,7 @@ export type FormationSlot = z.infer<typeof FormationSlotSchema>;
 export type FormationStats = {
   id: string;
   name: string;
+  creator?: string;
   playStyle: FormationPlayStyle;
   slots: FormationSlot[];
   imageUrl?: string;
@@ -99,6 +100,7 @@ export type FormationStats = {
 
 export type AddFormationFormValues = {
   name: string;
+  creator?: string;
   playStyle: FormationPlayStyle;
   slots: FormationSlot[];
   imageUrl?: string;
@@ -109,6 +111,7 @@ export type AddFormationFormValues = {
 export type EditFormationFormValues = {
   id: string;
   name: string;
+  creator?: string;
   playStyle: FormationPlayStyle;
   slots: FormationSlot[];
   imageUrl?: string;
