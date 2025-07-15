@@ -54,3 +54,10 @@ export function getPositionGroupColor(position: Position): string {
       return 'hsl(var(--primary))';
   }
 }
+
+export function getAverageColorClass(average: number): string {
+  if (average >= 8.5) return 'text-green-400';
+  if (average >= 7.5) return 'text-cyan-400';
+  if (average >= 6.0) return 'text-yellow-400';
+  return 'text-orange-400';
+}

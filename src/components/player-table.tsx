@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PlusCircle, Trash2, X, Wrench, Pencil, LineChart, Search } from 'lucide-react';
-import { calculateAverage, cn, formatAverage } from '@/lib/utils';
+import { calculateAverage, cn, formatAverage, getAverageColorClass } from '@/lib/utils';
 import { getCardStyle } from '@/lib/card-styles';
 import type { Player, PlayerCard, Position, FlatPlayer, PlayerStyle } from '@/lib/types';
 import type { FormValues as AddRatingFormValues } from '@/components/add-rating-dialog';
@@ -181,6 +181,8 @@ export function PlayerTable({
           const scoreGlowStyle = cardStyle
             ? { textShadow: `0 0 6px var(--card-color)` }
             : { textShadow: '0 0 8px hsl(var(--primary))' };
+          
+          const averageColorClass = getAverageColorClass(cardAverage);
 
           return (
              <TableRow key={`${player.id}-${card.id}-${position}`} className={rowClasses} style={rowStyle}>
@@ -232,7 +234,7 @@ export function PlayerTable({
                 ) : <span className="text-muted-foreground">-</span>}
               </TableCell>
               <TableCell>
-                <div className={cn("text-xl font-bold", cardStyle ? specialTextClasses : "text-primary")} style={scoreGlowStyle}>
+                 <div className={cn("text-xl font-bold", cardStyle ? specialTextClasses : averageColorClass)} style={scoreGlowStyle}>
                   {formatAverage(cardAverage)}
                 </div>
               </TableCell>
