@@ -32,13 +32,15 @@ import { IdealTeamSetup } from '@/components/ideal-team-setup';
 import { PlayerTable } from '@/components/player-table';
 import { PositionIcon } from '@/components/position-icon';
 import { TrainingGuideDisplay } from '@/components/training-guide-display';
+import { TeamAnalysisDisplay } from '@/components/team-analysis-display';
 
 import { usePlayers } from '@/hooks/usePlayers';
 import { useFormations } from '@/hooks/useFormations';
 import { useTrainings } from '@/hooks/useTrainings';
 import { useToast } from "@/hooks/use-toast";
 
-import type { Player, PlayerCard as PlayerCardType, FormationStats, IdealTeamSlot, FlatPlayer, Position, TrainingGuide } from '@/lib/types';
+import { analyzeTeam } from '@/ai/flows/analyze-team-flow';
+import type { Player, PlayerCard as PlayerCardType, FormationStats, IdealTeamSlot, FlatPlayer, Position, TrainingGuide, AnalyzeTeamOutput } from '@/lib/types';
 import { positions } from '@/lib/types';
 import { PlusCircle, Trash2, X, Star, Bot, Download, Search, Trophy, NotebookPen } from 'lucide-react';
 import { calculateAverage } from '@/lib/utils';
@@ -106,7 +108,9 @@ export default function Home() {
   
   const [selectedFormationId, setSelectedFormationId] = useState<string | undefined>(undefined);
   const [idealTeam, setIdealTeam] = useState<IdealTeamSlot[]>([]);
-  
+  const [analysisResult, setAnalysisResult] = useState<AnalyzeTeamOutput | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
   // State for filters and pagination
   const [styleFilter, setStyleFilter] = useState<string>('all');
   const [cardFilter, setCardFilter] = useState<string>('all');
@@ -177,6 +181,7 @@ export default function Home() {
   };
 
   const handleGenerateTeam = () => {
+    setAnalysisResult(null); // Clear previous analysis
     if (!players || !selectedFormationId) {
       toast({
         variant: 'destructive',
@@ -204,9 +209,61 @@ export default function Home() {
       description: `Se ha generado un equipo para la formación "${formation.name}".`,
     });
   };
+  
+  const handleAnalyzeTeam = async () => {
+    if (idealTeam.length === 0) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Primero debes generar un equipo.' });
+      return;
+    }
+    const formation = formations.find(f => f.id === selectedFormationId);
+    if (!formation) {
+      toast({ variant: 'destructive', title: 'Error', description: 'La formación seleccionada no es válida.' });
+      return;
+    }
+
+    setIsAnalyzing(true);
+    setAnalysisResult(null);
+
+    try {
+      const teamForAnalysis = idealTeam.map(slot => ({
+        starter: {
+          playerName: slot.starter?.player.name || 'Vacante',
+          cardName: slot.starter?.card.name || 'N/A',
+          position: slot.starter?.position || 'N/A',
+          style: slot.starter?.card.style || 'Ninguno',
+          average: slot.starter?.average || 0,
+        },
+        substitute: slot.substitute ? {
+          playerName: slot.substitute.player.name,
+          cardName: slot.substitute.card.name,
+          position: slot.substitute.position,
+          style: slot.substitute.card.style,
+          average: slot.substitute.average,
+        } : null,
+      }));
+
+      const result = await analyzeTeam({
+        formationName: formation.name,
+        playStyle: formation.playStyle,
+        team: teamForAnalysis,
+      });
+      setAnalysisResult(result);
+    } catch (error) {
+      console.error("Error analyzing team:", error);
+      toast({
+        variant: 'destructive',
+        title: 'Error de Análisis',
+        description: 'No se pudo completar el análisis de IA. Inténtalo de nuevo.',
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
   const handleFormationSelectionChange = (id: string) => {
     setSelectedFormationId(id);
+    setIdealTeam([]); // Clear team when formation changes
+    setAnalysisResult(null); // Clear analysis
   };
   
   const handleDownloadBackup = async () => {
@@ -537,13 +594,24 @@ export default function Home() {
                     selectedFormationId={selectedFormationId}
                     onFormationChange={handleFormationSelectionChange} 
                   />
-                  <Button onClick={handleGenerateTeam} className="mt-6" disabled={!selectedFormationId}>
-                    <Star className="mr-2 h-4 w-4" />
-                    Generar 11 Ideal
-                  </Button>
+                  <div className="flex items-center gap-4 mt-6">
+                    <Button onClick={handleGenerateTeam} disabled={!selectedFormationId}>
+                      <Star className="mr-2 h-4 w-4" />
+                      Generar 11 Ideal
+                    </Button>
+                     <Button 
+                        onClick={handleAnalyzeTeam} 
+                        disabled={!selectedFormationId || idealTeam.length === 0 || isAnalyzing}
+                        variant="outline"
+                      >
+                      <Bot className="mr-2 h-4 w-4" />
+                      {isAnalyzing ? "Analizando..." : "Analizar con IA"}
+                    </Button>
+                  </div>
                </CardContent>
              </Card>
             <IdealTeamDisplay teamSlots={idealTeam} />
+            <TeamAnalysisDisplay analysis={analysisResult} isLoading={isAnalyzing} />
           </TabsContent>
 
         </Tabs>

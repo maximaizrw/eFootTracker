@@ -156,3 +156,32 @@ export type EditTrainingGuideFormValues = {
   title: string;
   content: string;
 };
+
+// --- Tipos para el Flow de Análisis de IA ---
+const IdealTeamPlayerSchema = z.object({
+    playerName: z.string(),
+    cardName: z.string(),
+    position: z.string(),
+    style: z.string(),
+    average: z.number(),
+});
+
+const IdealTeamSlotForAnalysisSchema = z.object({
+    starter: IdealTeamPlayerSchema,
+    substitute: IdealTeamPlayerSchema.nullable(),
+});
+
+export const AnalyzeTeamInputSchema = z.object({
+  formationName: z.string().describe("El nombre de la formación táctica, ej: '4-3-3'."),
+  playStyle: z.string().describe("El estilo de juego global de la formación, ej: 'Contraataque rápido'."),
+  team: z.array(IdealTeamSlotForAnalysisSchema).describe("Una lista de 11 jugadores, con sus posiciones y estilos, que componen el equipo titular."),
+});
+export type AnalyzeTeamInput = z.infer<typeof AnalyzeTeamInputSchema>;
+
+export const AnalyzeTeamOutputSchema = z.object({
+  strengths: z.array(z.string()).describe("Una lista de 2 o 3 puntos fuertes clave del equipo."),
+  weaknesses: z.array(z.string()).describe("Una lista de 2 o 3 debilidades o vulnerabilidades potenciales del equipo."),
+  suggestions: z.array(z.string()).describe("Una lista de 2 o 3 sugerencias para mejorar el equipo, como qué tipo de jugador (posición y estilo) fichar."),
+  summary: z.string().describe("Un resumen táctico general de 2 o 3 frases sobre cómo se debería jugar con este equipo y formación."),
+});
+export type AnalyzeTeamOutput = z.infer<typeof AnalyzeTeamOutputSchema>;
