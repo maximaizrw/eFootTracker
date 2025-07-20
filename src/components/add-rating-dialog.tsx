@@ -104,79 +104,45 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
       };
       
       form.reset({ ...defaultValues, ...initialData });
-
-      if (initialData?.playerId) {
-        const existingPlayer = players.find(p => p.id === initialData.playerId);
-        if (existingPlayer) {
-          setCardNames(existingPlayer.cards.map(c => c.name));
-        }
-      } else {
-        setCardNames([]);
-      }
-
-      if (initialData?.cardName && initialData?.playerId) {
-          const player = players.find(p => p.id === initialData.playerId);
-          const card = player?.cards.find(c => c.name.toLowerCase() === initialData.cardName!.toLowerCase());
-          if (card) {
-            form.setValue('style', card.style);
-            setIsStyleDisabled(true);
-          } else {
-            setIsStyleDisabled(false);
-          }
-      } else {
-        setIsStyleDisabled(false);
-      }
     }
   }, [open, initialData, form, players]);
 
   
   useEffect(() => {
+    // Logic for when player selection changes
     const selectedPlayer = players.find(p => p.id === playerIdValue);
 
     if (selectedPlayer) {
-      if(form.getValues('playerName') !== selectedPlayer.name) {
-          form.setValue('playerName', selectedPlayer.name);
+      if (form.getValues('playerName') !== selectedPlayer.name) {
+        form.setValue('playerName', selectedPlayer.name);
       }
       const cards = selectedPlayer.cards.map(c => c.name);
       setCardNames(cards);
-      
-      const currentCardName = form.getValues('cardName');
-      if (currentCardName && !cards.map(c => c.toLowerCase()).includes(currentCardName.toLowerCase())) {
-        form.setValue('cardName', 'Carta Base');
-        form.setValue('style', 'Ninguno');
-        setIsStyleDisabled(false);
-      }
-
     } else {
       setCardNames([]);
-      if (!playerIdValue) { // Only reset card details if it's a truly new player
-        form.setValue('cardName', 'Carta Base');
-        form.setValue('style', 'Ninguno');
-        setIsStyleDisabled(false);
-      }
     }
-  }, [playerIdValue, players, form]);
 
-
-  useEffect(() => {
-    const player = players.find(p => p.id === playerIdValue);
-    const card = player?.cards.find(c => c.name.toLowerCase() === cardNameValue?.toLowerCase());
+    // Centralized logic for card and style
+    const playerForCardCheck = selectedPlayer || players.find(p => p.name.toLowerCase() === playerNameValue?.toLowerCase());
+    const card = playerForCardCheck?.cards.find(c => c.name.toLowerCase() === cardNameValue?.toLowerCase());
 
     if (card) {
-        // Card exists, so we lock its style
+      // Card exists, so we lock its style
+      if(form.getValues('style') !== card.style) {
         form.setValue('style', card.style, { shouldValidate: true });
-        setIsStyleDisabled(true);
+      }
+      setIsStyleDisabled(true);
     } else {
-        // It's a new card, so style is editable
-        setIsStyleDisabled(false);
-        const currentStyle = form.getValues('style');
-        const availableStyles = getAvailableStylesForPosition(positionValue, true);
-        if (!availableStyles.includes(currentStyle)) {
-            // If the current style is not valid for the new position, reset it
-            form.setValue('style', 'Ninguno', { shouldValidate: true });
-        }
+      // It's a new card, so style is editable
+      setIsStyleDisabled(false);
+      const currentStyle = form.getValues('style');
+      const availableStyles = getAvailableStylesForPosition(positionValue, true);
+      if (!availableStyles.includes(currentStyle)) {
+        // If the current style is not valid for the new position, reset it
+        form.setValue('style', 'Ninguno', { shouldValidate: true });
+      }
     }
-}, [playerIdValue, cardNameValue, positionValue, players, form]);
+  }, [playerIdValue, playerNameValue, cardNameValue, positionValue, players, form]);
 
 
   const availableStyles = useMemo(() => {
@@ -232,8 +198,6 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
                         <CommandInput 
                           placeholder="Busca o crea un jugador..."
                           onValueChange={(search) => {
-                            // This is the key change: only set the name, but clear the ID
-                            // so the app knows it might be a new player.
                             form.setValue('playerName', search);
                             form.setValue('playerId', undefined);
                           }}
@@ -248,7 +212,6 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
                                 key={player.id}
                                 value={player.name}
                                 onSelect={() => {
-                                  // When selecting from the list, we set BOTH id and name
                                   form.setValue("playerId", player.id, { shouldValidate: true });
                                   form.setValue("playerName", player.name, { shouldValidate: true });
                                   setPlayerPopoverOpen(false);
@@ -310,7 +273,7 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
                                 key={name}
                                 value={name}
                                 onSelect={(currentValue) => {
-                                  form.setValue("cardName", currentValue === field.value ? "" : currentValue, { shouldValidate: true });
+                                  form.setValue("cardName", currentValue, { shouldValidate: true });
                                   setCardPopoverOpen(false);
                                 }}
                               >
