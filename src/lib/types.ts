@@ -158,6 +158,7 @@ export type EditTrainingGuideFormValues = {
 };
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // --- Tipos para el Flow de Análisis de IA ---
 const IdealTeamPlayerSchema = z.object({
     playerName: z.string(),
@@ -177,6 +178,8 @@ export const AnalyzeTeamInputSchema = z.object({
   playStyle: z.string().describe("El estilo de juego global de la formación, ej: 'Contraataque rápido'."),
   team: z.array(IdealTeamSlotForAnalysisSchema).describe("Una lista de 11 jugadores, con sus posiciones y estilos, que componen el equipo titular."),
 =======
+=======
+>>>>>>> feccb5d (I see this error with the app, reported by NextJS, please fix it. The er)
 // --- Tipos para Análisis de IA ---
 export const AnalyzeTeamPlayerSchema = z.object({
     name: z.string(),
@@ -190,21 +193,30 @@ export const AnalyzeTeamInputSchema = z.object({
     formationName: z.string(),
     starters: z.array(AnalyzeTeamPlayerSchema),
     substitutes: z.array(AnalyzeTeamPlayerSchema),
+<<<<<<< HEAD
+>>>>>>> feccb5d (I see this error with the app, reported by NextJS, please fix it. The er)
+=======
 >>>>>>> feccb5d (I see this error with the app, reported by NextJS, please fix it. The er)
 });
 export type AnalyzeTeamInput = z.infer<typeof AnalyzeTeamInputSchema>;
 
 export const AnalyzeTeamOutputSchema = z.object({
 <<<<<<< HEAD
+<<<<<<< HEAD
   strengths: z.array(z.string()).describe("Una lista de 2 o 3 puntos fuertes clave del equipo."),
   weaknesses: z.array(z.string()).describe("Una lista de 2 o 3 debilidades o vulnerabilidades potenciales del equipo."),
   suggestions: z.array(z.string()).describe("Una lista de 2 o 3 sugerencias para mejorar el equipo, como qué tipo de jugador (posición y estilo) fichar."),
   summary: z.string().describe("Un resumen táctico general de 2 o 3 frases sobre cómo se debería jugar con este equipo y formación."),
 =======
+=======
+>>>>>>> feccb5d (I see this error with the app, reported by NextJS, please fix it. The er)
     strengths: z.array(z.string()).describe("A list of key strengths of the generated team."),
     weaknesses: z.array(z.string()).describe("A list of key weaknesses of the generated team."),
     signingSuggestion: z.string().describe("A suggestion for a new player (position and style) that would improve the team."),
     tacticalSummary: z.string().describe("A concise summary of the team's overall tactical approach."),
+<<<<<<< HEAD
+>>>>>>> feccb5d (I see this error with the app, reported by NextJS, please fix it. The er)
+=======
 >>>>>>> feccb5d (I see this error with the app, reported by NextJS, please fix it. The er)
 });
 export type AnalyzeTeamOutput = z.infer<typeof AnalyzeTeamOutputSchema>;
