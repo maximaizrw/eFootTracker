@@ -159,37 +159,29 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
 
 
   useEffect(() => {
-    if (!playerIdValue || !cardNameValue) {
-      setIsStyleDisabled(false);
-      form.setValue('style', 'Ninguno');
-      return;
-    }
+    const player = players.find(p => p.id === playerIdValue);
+    const card = player?.cards.find(c => c.name.toLowerCase() === cardNameValue?.toLowerCase());
 
-    const existingPlayer = players.find(p => p.id === playerIdValue);
-    if (existingPlayer) {
-      const existingCard = existingPlayer.cards.find(c => c.name.toLowerCase() === cardNameValue.toLowerCase());
-      if (existingCard) {
-        form.setValue('style', existingCard.style);
+    if (card) {
+        // Card exists, so we lock its style
+        form.setValue('style', card.style, { shouldValidate: true });
         setIsStyleDisabled(true);
-      } else {
-        form.setValue('style', 'Ninguno');
-        setIsStyleDisabled(false);
-      }
     } else {
-      setIsStyleDisabled(false);
+        // It's a new card, so style is editable
+        setIsStyleDisabled(false);
+        const currentStyle = form.getValues('style');
+        const availableStyles = getAvailableStylesForPosition(positionValue, true);
+        if (!availableStyles.includes(currentStyle)) {
+            // If the current style is not valid for the new position, reset it
+            form.setValue('style', 'Ninguno', { shouldValidate: true });
+        }
     }
-  }, [playerIdValue, cardNameValue, players, form]);
+}, [playerIdValue, cardNameValue, positionValue, players, form]);
+
 
   const availableStyles = useMemo(() => {
     return getAvailableStylesForPosition(positionValue, true);
   }, [positionValue]);
-
-  useEffect(() => {
-    const currentStyle = form.getValues('style');
-    if (!availableStyles.includes(currentStyle)) {
-      form.setValue('style', 'Ninguno', { shouldValidate: true });
-    }
-  }, [positionValue, form, availableStyles]);
 
 
   function onSubmit(values: FormValues) {
