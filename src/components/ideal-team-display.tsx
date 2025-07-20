@@ -5,7 +5,7 @@ import type { IdealTeamPlayer, IdealTeamSlot, Position } from '@/lib/types';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { formatAverage, cn } from '@/lib/utils';
-import { Users, Shield, Target, HandMetal, Shirt } from 'lucide-react';
+import { Users, Shirt, ArrowRight } from 'lucide-react';
 import { getCardStyle } from '@/lib/card-styles';
 import { PositionIcon } from './position-icon';
 
@@ -71,14 +71,10 @@ const PlayerDisplayCard = ({ player, isSubstitute = false }: { player: IdealTeam
           {formatAverage(player.average)}
         </div>
       </div>
-      <Badge variant="secondary" className={cn("mb-2 bg-white/5 border-white/10", isSubstitute && "text-xs px-1.5 py-0")}>
-        <PositionIcon position={player.position} className={cn("mr-1.5", isSubstitute ? "h-3 w-3" : "h-4 w-4")}/>
-        {player.position}
-      </Badge>
-      <p className={cn("font-semibold text-foreground truncate w-full", isSubstitute ? "text-xs" : "text-sm")} title={player.player.name}>
+       <p className={cn("font-semibold text-foreground truncate w-full", isSubstitute ? "text-sm" : "text-base")} title={player.player.name}>
         {player.player.name}
       </p>
-      <p className={cn("truncate w-full", isSubstitute ? "text-[11px]" : "text-xs", cardStyleInfo ? specialTextClasses : 'text-muted-foreground')} title={player.card.name}>
+      <p className={cn("truncate w-full", isSubstitute ? "text-xs" : "text-sm", cardStyleInfo ? specialTextClasses : 'text-muted-foreground')} title={player.card.name}>
         {player.card.name}
       </p>
     </div>
@@ -86,34 +82,36 @@ const PlayerDisplayCard = ({ player, isSubstitute = false }: { player: IdealTeam
 };
 
 
-const renderLine = (
-    title: string, 
-    icon: React.ReactNode,
-    teamSlots: IdealTeamSlot[], 
-    positions: Position[]
-) => {
-    const filteredSlots = teamSlots.filter(slot => slot.starter && positions.includes(slot.starter.position));
-    if (filteredSlots.length === 0) return null;
-
-    return (
-        <div className="space-y-4">
-            <h3 className="flex items-center gap-2 text-lg font-semibold text-muted-foreground">
-                {icon}
-                {title}
-                <span className="text-sm font-normal">({filteredSlots.length})</span>
-            </h3>
-            <div className="space-y-3">
-                {filteredSlots.map((slot, i) => (
-                    <div key={`${slot.starter?.player.id}-${slot.starter?.card.id}-${i}`} className="flex items-center gap-4">
-                       <PlayerDisplayCard player={slot.starter} />
-                       <div className="text-muted-foreground text-2xl font-thin">&rarr;</div>
-                       <PlayerDisplayCard player={slot.substitute} isSubstitute={true} />
-                    </div>
-                ))}
-            </div>
+const TeamSlotRow = ({ slot, index }: { slot: IdealTeamSlot; index: number }) => {
+  const position = slot.starter?.position || 'N/A';
+  
+  return (
+    <div className="flex items-stretch justify-center gap-3 md:gap-6 p-4 bg-card/40 rounded-lg border border-white/10">
+      {/* Posición y Titular */}
+      <div className="flex-1 flex items-center gap-4">
+        <div className="flex flex-col items-center justify-center w-16 text-center">
+            <Badge variant="secondary" className="mb-2 bg-white/5 border-white/10 text-xs">
+                {index + 1}
+            </Badge>
+            <PositionIcon position={position} className="h-6 w-6 text-primary" />
+            <p className="font-bold text-lg mt-1">{position}</p>
         </div>
-    );
+        <PlayerDisplayCard player={slot.starter} />
+      </div>
+
+      {/* Separador */}
+      <div className="flex items-center justify-center px-2">
+        <ArrowRight className="h-6 w-6 text-muted-foreground/50" />
+      </div>
+
+      {/* Suplente */}
+      <div className="flex-1 flex justify-start items-center">
+         <PlayerDisplayCard player={slot.substitute} isSubstitute />
+      </div>
+    </div>
+  );
 };
+
 
 export function IdealTeamDisplay({ teamSlots }: IdealTeamDisplayProps) {
   if (teamSlots.length === 0) {
@@ -126,14 +124,17 @@ export function IdealTeamDisplay({ teamSlots }: IdealTeamDisplayProps) {
 
   return (
     <div className="mt-8 space-y-6">
-      <div className='flex justify-between text-center font-semibold text-sm text-foreground mb-2 px-4'>
-        <p>Titulares</p>
-        <p>Suplentes</p>
+       <div className='flex justify-between items-center text-center font-semibold text-sm text-foreground mb-2 px-4'>
+        <p className="flex-1 text-center">Titular</p>
+        <div className="w-16 md:w-24" /> 
+        <p className="flex-1 text-center">Suplente</p>
       </div>
-      {renderLine("Delanteros", <Target className="h-5 w-5" />, teamSlots, ['DC', 'SD', 'EXI', 'EXD'])}
-      {renderLine("Mediocampistas", <Users className="h-5 w-5" />, teamSlots, ['MO', 'MC', 'MDI', 'MDD', 'MCD'])}
-      {renderLine("Defensas", <Shield className="h-5 w-5" />, teamSlots, ['LI', 'LD', 'DFC'])}
-      {renderLine("Portero", <HandMetal className="h-5 w-5" />, teamSlots, ['PT'])}
+
+      <div className="space-y-3">
+        {teamSlots.map((slot, index) => (
+          <TeamSlotRow key={`${slot.starter?.player.id}-${index}`} slot={slot} index={index} />
+        ))}
+      </div>
     </div>
   );
 }
