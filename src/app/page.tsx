@@ -71,6 +71,7 @@ export default function Home() {
     editFormation,
     addMatchResult,
     deleteFormation: deleteFormationFromDb,
+    deleteMatchResult,
     downloadBackup: downloadFormationsBackup,
   } = useFormations();
   
@@ -486,9 +487,10 @@ export default function Home() {
             <FormationsDisplay
               formations={formations}
               onAddMatch={handleOpenAddMatch}
-              onDelete={deleteFormationFromDb}
+              onDeleteFormation={deleteFormationFromDb}
               onEdit={handleOpenEditFormation}
               onViewImage={handleViewImage}
+              onDeleteMatchResult={deleteMatchResult}
             />
           </TabsContent>
 
@@ -619,3 +621,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

@@ -4,23 +4,30 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import type { FormationStats } from '@/lib/types';
+import type { FormationStats, MatchResult } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Trash2, Link as LinkIcon, Trophy, LayoutGrid, List, Pencil } from 'lucide-react';
+import { PlusCircle, Trash2, Link as LinkIcon, Trophy, LayoutGrid, List, Pencil, History } from 'lucide-react';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from '@/lib/utils';
 
 type FormationsDisplayProps = {
   formations: FormationStats[];
   onAddMatch: (formationId: string, formationName: string) => void;
-  onDelete: (formation: FormationStats) => void;
+  onDeleteFormation: (formation: FormationStats) => void;
+  onDeleteMatchResult: (formationId: string, matchId: string) => void;
   onEdit: (formation: FormationStats) => void;
   onViewImage: (url: string, name: string) => void;
 };
@@ -43,8 +50,65 @@ const calculateStats = (matches: FormationStats['matches']) => {
   return { wins, draws, losses, goalsFor, goalsAgainst, goalDifference, effectiveness, total };
 };
 
+const MatchHistory = ({ matches, formationId, onDeleteMatchResult }: { matches: MatchResult[], formationId: string, onDeleteMatchResult: (formationId: string, matchId: string) => void }) => {
+  if (matches.length === 0) return null;
 
-const FormationCard = ({ formation, onAddMatch, onDelete, onEdit, onViewImage }: Omit<FormationsDisplayProps, 'formations'> & { formation: FormationStats }) => {
+  const sortedMatches = [...matches].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10);
+
+  return (
+    <Accordion type="single" collapsible className="w-full mt-4">
+      <AccordionItem value="item-1">
+        <AccordionTrigger>
+          <div className="flex items-center text-sm">
+            <History className="mr-2 h-4 w-4" />
+            Historial Reciente
+          </div>
+        </AccordionTrigger>
+        <AccordionContent>
+          <div className="space-y-2 pr-1">
+            {sortedMatches.map(match => (
+              <div key={match.id} className="flex items-center justify-between text-sm p-2 rounded-md bg-muted/40">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={cn(
+                      "font-bold w-4 h-4 flex items-center justify-center rounded-sm",
+                       match.goalsFor > match.goalsAgainst ? "bg-green-500 text-white" :
+                       match.goalsFor < match.goalsAgainst ? "bg-red-500 text-white" :
+                       "bg-yellow-500 text-black"
+                    )}
+                  >
+                    {match.goalsFor > match.goalsAgainst ? "V" : match.goalsFor < match.goalsAgainst ? "D" : "E"}
+                  </span>
+                  <span>
+                    {match.goalsFor} - {match.goalsAgainst}
+                  </span>
+                </div>
+                 <span className="text-xs text-muted-foreground">{new Date(match.date).toLocaleDateString()}</span>
+                 <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                           <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => onDeleteMatchResult(formationId, match.id)}
+                            >
+                                <Trash2 className="h-3 w-3 text-destructive" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="left"><p>Eliminar resultado</p></TooltipContent>
+                    </Tooltip>
+                 </TooltipProvider>
+              </div>
+            ))}
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
+  )
+}
+
+const FormationCard = ({ formation, onAddMatch, onDeleteFormation, onEdit, onViewImage, onDeleteMatchResult }: Omit<FormationsDisplayProps, 'formations' | 'onDelete'> & { formation: FormationStats }) => {
     const stats = calculateStats(formation.matches);
     const effectivenessColor = 
       stats.effectiveness >= 66 ? 'text-green-400' :
@@ -156,6 +220,12 @@ const FormationCard = ({ formation, onAddMatch, onDelete, onEdit, onViewImage }:
               <p className="text-sm text-muted-foreground">Efectividad</p>
               <p className={`text-3xl font-bold ${effectivenessColor}`}>{stats.effectiveness.toFixed(0)}%</p>
             </div>
+            
+            <MatchHistory
+                matches={formation.matches}
+                formationId={formation.id}
+                onDeleteMatchResult={onDeleteMatchResult}
+            />
         </CardContent>
         <CardFooter className="p-4 border-t border-white/10 flex justify-between">
           <Button onClick={() => onAddMatch(formation.id, formation.name)}>
@@ -174,7 +244,7 @@ const FormationCard = ({ formation, onAddMatch, onDelete, onEdit, onViewImage }:
                 </Tooltip>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button variant="destructive" size="icon" onClick={() => onDelete(formation)}>
+                        <Button variant="destructive" size="icon" onClick={() => onDeleteFormation(formation)}>
                             <Trash2 className="h-4 w-4" />
                         </Button>
                     </TooltipTrigger>
@@ -187,7 +257,7 @@ const FormationCard = ({ formation, onAddMatch, onDelete, onEdit, onViewImage }:
     );
 };
 
-const FormationRow = ({ formation, onAddMatch, onEdit, onDelete }: Omit<FormationsDisplayProps, 'formations' | 'onViewImage'> & { formation: FormationStats }) => {
+const FormationRow = ({ formation, onAddMatch, onEdit, onDeleteFormation }: Omit<FormationsDisplayProps, 'formations' | 'onViewImage' | 'onDeleteMatchResult' | 'onDelete'> & { onDeleteFormation: FormationsDisplayProps['onDeleteFormation'] }) => {
     const stats = calculateStats(formation.matches);
      const effectivenessColor = 
       stats.effectiveness >= 66 ? 'text-green-400' :
@@ -226,7 +296,7 @@ const FormationRow = ({ formation, onAddMatch, onEdit, onDelete }: Omit<Formatio
                   </Tooltip>
                   <Tooltip>
                       <TooltipTrigger asChild>
-                          <Button variant="destructive" size="icon" onClick={() => onDelete(formation)}>
+                          <Button variant="destructive" size="icon" onClick={() => onDeleteFormation(formation)}>
                               <Trash2 className="h-4 w-4" />
                           </Button>
                       </TooltipTrigger>
@@ -238,7 +308,7 @@ const FormationRow = ({ formation, onAddMatch, onEdit, onDelete }: Omit<Formatio
     );
 };
 
-export function FormationsDisplay({ formations, onAddMatch, onDelete, onEdit, onViewImage }: FormationsDisplayProps) {
+export function FormationsDisplay({ formations, onAddMatch, onDeleteFormation, onEdit, onViewImage, onDeleteMatchResult }: FormationsDisplayProps) {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   if (formations.length === 0) {
@@ -271,9 +341,10 @@ export function FormationsDisplay({ formations, onAddMatch, onDelete, onEdit, on
                         key={formation.id}
                         formation={formation}
                         onAddMatch={onAddMatch}
-                        onDelete={onDelete}
+                        onDeleteFormation={onDeleteFormation}
                         onEdit={onEdit}
                         onViewImage={onViewImage}
+                        onDeleteMatchResult={onDeleteMatchResult}
                     />
                 ))}
             </div>
@@ -285,7 +356,7 @@ export function FormationsDisplay({ formations, onAddMatch, onDelete, onEdit, on
                         formation={formation}
                         onAddMatch={onAddMatch}
                         onEdit={onEdit}
-                        onDelete={onDelete}
+                        onDeleteFormation={onDeleteFormation}
                     />
                 ))}
             </div>
@@ -293,3 +364,5 @@ export function FormationsDisplay({ formations, onAddMatch, onDelete, onEdit, on
     </div>
   );
 }
+
+    

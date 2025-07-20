@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDocs, arrayUnion, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDocs, arrayUnion, query, orderBy, getDoc } from 'firebase/firestore';
 import { useToast } from './use-toast';
 import { v4 as uuidv4 } from 'uuid';
 import type { FormationStats, MatchResult, AddMatchFormValues, AddFormationFormValues, EditFormationFormValues } from '@/lib/types';
@@ -157,6 +157,27 @@ export function useFormations() {
     }
   };
 
+  const deleteMatchResult = async (formationId: string, matchId: string) => {
+    if (!db) return;
+    const formationRef = doc(db, 'formations', formationId);
+    try {
+        const formationSnap = await getDoc(formationRef);
+        if (formationSnap.exists()) {
+            const formationData = formationSnap.data() as FormationStats;
+            const updatedMatches = formationData.matches.filter(match => match.id !== matchId);
+            await updateDoc(formationRef, { matches: updatedMatches });
+            toast({ title: "Resultado Eliminado", description: "El resultado del partido ha sido eliminado." });
+        }
+    } catch (error) {
+        console.error("Error deleting match result: ", error);
+        toast({
+            variant: "destructive",
+            title: "Error al Eliminar",
+            description: "No se pudo eliminar el resultado del partido.",
+        });
+    }
+  };
+
   const downloadBackup = async () => {
     if (!db) return null;
     try {
@@ -172,5 +193,7 @@ export function useFormations() {
     }
   };
 
-  return { formations, loading, error, addFormation, editFormation, addMatchResult, deleteFormation, downloadBackup };
+  return { formations, loading, error, addFormation, editFormation, addMatchResult, deleteFormation, deleteMatchResult, downloadBackup };
 }
+
+    
