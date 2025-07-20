@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -158,30 +159,26 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
 
 
   useEffect(() => {
-    if (initialData?.cardName && form.getValues('cardName') === initialData.cardName) {
-       return;
+    if (!playerIdValue || !cardNameValue) {
+      setIsStyleDisabled(false);
+      form.setValue('style', 'Ninguno');
+      return;
     }
 
-    if (!playerIdValue || !cardNameValue) {
-       setIsStyleDisabled(false);
-       form.setValue('style', 'Ninguno');
-       return;
-    }
-    
     const existingPlayer = players.find(p => p.id === playerIdValue);
-    if(existingPlayer) {
-       const existingCard = existingPlayer.cards.find(c => c.name.toLowerCase() === cardNameValue.toLowerCase());
-       if(existingCard) {
-           form.setValue('style', existingCard.style);
-           setIsStyleDisabled(true);
-       } else {
-           form.setValue('style', 'Ninguno');
-           setIsStyleDisabled(false);
-       }
+    if (existingPlayer) {
+      const existingCard = existingPlayer.cards.find(c => c.name.toLowerCase() === cardNameValue.toLowerCase());
+      if (existingCard) {
+        form.setValue('style', existingCard.style);
+        setIsStyleDisabled(true);
+      } else {
+        form.setValue('style', 'Ninguno');
+        setIsStyleDisabled(false);
+      }
     } else {
-       setIsStyleDisabled(false);
+      setIsStyleDisabled(false);
     }
-  }, [playerIdValue, cardNameValue, players, form, initialData]);
+  }, [playerIdValue, cardNameValue, players, form]);
 
   const availableStyles = useMemo(() => {
     return getAvailableStylesForPosition(positionValue, true);
