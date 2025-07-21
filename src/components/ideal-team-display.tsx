@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import { formatAverage, cn, getPositionGroup } from '@/lib/utils';
 import { Users, Shirt } from 'lucide-react';
 import { getCardStyle } from '@/lib/card-styles';
-import { PositionIcon } from './position-icon';
 
 type IdealTeamDisplayProps = {
   teamSlots: IdealTeamSlot[];
@@ -158,7 +157,7 @@ export function IdealTeamDisplay({ teamSlots }: IdealTeamDisplayProps) {
   return (
     <div className="mt-8">
         {/* Campo de Juego con Titulares */}
-        <div className="bg-field-gradient p-4 rounded-lg border-2 border-white/20 shadow-2xl space-y-4">
+        <div className="bg-field-gradient p-4 rounded-lg border-2 border-white/20 shadow-2xl flex flex-col-reverse space-y-4 space-y-reverse">
             {Object.entries(groupedStarters).map(([group, players]) => (
                 <div key={group} className={`flex items-center gap-2 ${getPositionAlignment(group as any)}`}>
                     {players.map(player => (
