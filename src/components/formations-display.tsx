@@ -311,6 +311,12 @@ const FormationRow = ({ formation, onAddMatch, onEdit, onDeleteFormation }: Omit
 export function FormationsDisplay({ formations, onAddMatch, onDeleteFormation, onEdit, onViewImage, onDeleteMatchResult }: FormationsDisplayProps) {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
+  const sortedFormations = [...formations].sort((a, b) => {
+    const statsA = calculateStats(a.matches);
+    const statsB = calculateStats(b.matches);
+    return statsB.effectiveness - statsA.effectiveness;
+  });
+
   if (formations.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center text-center p-10 bg-card/80 rounded-lg shadow-sm border border-dashed border-white/10">
@@ -336,7 +342,7 @@ export function FormationsDisplay({ formations, onAddMatch, onDeleteFormation, o
         
         {viewMode === 'grid' ? (
              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {formations.map((formation) => (
+                {sortedFormations.map((formation) => (
                     <FormationCard 
                         key={formation.id}
                         formation={formation}
@@ -350,7 +356,7 @@ export function FormationsDisplay({ formations, onAddMatch, onDeleteFormation, o
             </div>
         ) : (
             <div className="space-y-3">
-                {formations.map((formation) => (
+                {sortedFormations.map((formation) => (
                      <FormationRow 
                         key={formation.id}
                         formation={formation}
@@ -364,5 +370,3 @@ export function FormationsDisplay({ formations, onAddMatch, onDeleteFormation, o
     </div>
   );
 }
-
-    
