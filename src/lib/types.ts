@@ -137,22 +137,3 @@ export type FlatPlayer = {
   card: PlayerCardType;
   ratingsForPos: number[];
 };
-
-// --- Tipos para Guías de Entrenamiento ---
-export type TrainingGuide = {
-  id: string;
-  title: string;
-  content: string; // Markdown content
-  createdAt: string; // ISO 8601 string
-};
-
-export type AddTrainingGuideFormValues = {
-  title: string;
-  content: string;
-};
-
-export type EditTrainingGuideFormValues = {
-  id: string;
-  title: string;
-  content: string;
-};

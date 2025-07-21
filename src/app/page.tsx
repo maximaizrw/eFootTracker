@@ -23,22 +23,18 @@ import { AddFormationDialog, type AddFormationFormValues } from '@/components/ad
 import { EditFormationDialog, type EditFormationFormValues } from '@/components/edit-formation-dialog';
 import { AddMatchDialog, type AddMatchFormValues } from '@/components/add-match-dialog';
 import { PlayerDetailDialog } from '@/components/player-detail-dialog';
-import { AddTrainingGuideDialog, type AddTrainingGuideFormValues } from '@/components/add-training-guide-dialog';
-import { EditTrainingGuideDialog, type EditTrainingGuideFormValues } from '@/components/edit-training-guide-dialog';
 
 import { FormationsDisplay } from '@/components/formations-display';
 import { IdealTeamDisplay } from '@/components/ideal-team-display';
 import { IdealTeamSetup } from '@/components/ideal-team-setup';
 import { PlayerTable } from '@/components/player-table';
 import { PositionIcon } from '@/components/position-icon';
-import { TrainingGuideDisplay } from '@/components/training-guide-display';
 
 import { usePlayers } from '@/hooks/usePlayers';
 import { useFormations } from '@/hooks/useFormations';
-import { useTrainings } from '@/hooks/useTrainings';
 import { useToast } from "@/hooks/use-toast";
 
-import type { Player, PlayerCard as PlayerCardType, FormationStats, IdealTeamSlot, FlatPlayer, Position, TrainingGuide } from '@/lib/types';
+import type { Player, PlayerCard as PlayerCardType, FormationStats, IdealTeamSlot, FlatPlayer, Position } from '@/lib/types';
 import { positions } from '@/lib/types';
 import { PlusCircle, Trash2, X, Star, Bot, Download, Search, Trophy, NotebookPen } from 'lucide-react';
 import { calculateAverage } from '@/lib/utils';
@@ -73,16 +69,6 @@ export default function Home() {
     downloadBackup: downloadFormationsBackup,
   } = useFormations();
   
-  const {
-    trainingGuides,
-    loading: trainingsLoading,
-    error: trainingsError,
-    addTrainingGuide,
-    editTrainingGuide,
-    deleteTrainingGuide,
-  } = useTrainings();
-
-
   const [activeTab, setActiveTab] = useState<string>('DC');
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddRatingDialogOpen, setAddRatingDialogOpen] = useState(false);
@@ -93,8 +79,6 @@ export default function Home() {
   const [isEditPlayerDialogOpen, setEditPlayerDialogOpen] = useState(false);
   const [isPlayerDetailDialogOpen, setPlayerDetailDialogOpen] = useState(false);
   const [isImageViewerOpen, setImageViewerOpen] = useState(false);
-  const [isAddTrainingGuideDialogOpen, setAddTrainingGuideDialogOpen] = useState(false);
-  const [isEditTrainingGuideDialogOpen, setEditTrainingGuideDialogOpen] = useState(false);
   const [viewingImageUrl, setViewingImageUrl] = useState<string | null>(null);
   const [viewingImageName, setViewingImageName] = useState<string | null>(null);
   const [addDialogInitialData, setAddDialogInitialData] = useState<Partial<AddRatingFormValues> | undefined>(undefined);
@@ -102,7 +86,6 @@ export default function Home() {
   const [editCardDialogInitialData, setEditCardDialogInitialData] = useState<EditCardFormValues | undefined>(undefined);
   const [editPlayerDialogInitialData, setEditPlayerDialogInitialData] = useState<EditPlayerFormValues | undefined>(undefined);
   const [editFormationDialogInitialData, setEditFormationDialogInitialData] = useState<FormationStats | undefined>(undefined);
-  const [editTrainingGuideInitialData, setEditTrainingGuideInitialData] = useState<EditTrainingGuideFormValues | undefined>(undefined);
   const [selectedPlayerForDetail, setSelectedPlayerForDetail] = useState<Player | null>(null);
   
   const [selectedFormationId, setSelectedFormationId] = useState<string | undefined>(undefined);
@@ -166,15 +149,6 @@ export default function Home() {
   const handleOpenAddMatch = (formationId: string, formationName: string) => {
     setAddMatchInitialData({ formationId, formationName });
     setAddMatchDialogOpen(true);
-  };
-
-  const handleOpenEditTrainingGuide = (guide: TrainingGuide) => {
-    setEditTrainingGuideInitialData({
-      id: guide.id,
-      title: guide.title,
-      content: guide.content,
-    });
-    setEditTrainingGuideDialogOpen(true);
   };
 
   const handleGenerateTeam = () => {
@@ -262,13 +236,6 @@ export default function Home() {
             Añadir Formación
           </Button>
         );
-      case 'trainings':
-        return (
-           <Button onClick={() => setAddTrainingGuideDialogOpen(true)}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Añadir Guía
-          </Button>
-        );
       case 'ideal-11':
         return null;
       default:
@@ -290,7 +257,7 @@ export default function Home() {
   };
 
 
-  const error = playersError || formationsError || trainingsError;
+  const error = playersError || formationsError;
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-screen text-center p-4">
@@ -302,7 +269,7 @@ export default function Home() {
     );
   }
 
-  if (playersLoading || formationsLoading || trainingsLoading) {
+  if (playersLoading || formationsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-xl font-semibold">Conectando a la base de datos...</div>
@@ -337,17 +304,6 @@ export default function Home() {
         onOpenChange={setAddMatchDialogOpen}
         onAddMatch={addMatchResult}
         initialData={addMatchInitialData}
-      />
-      <AddTrainingGuideDialog
-        open={isAddTrainingGuideDialogOpen}
-        onOpenChange={setAddTrainingGuideDialogOpen}
-        onAddGuide={addTrainingGuide}
-      />
-      <EditTrainingGuideDialog
-        open={isEditTrainingGuideDialogOpen}
-        onOpenChange={setEditTrainingGuideDialogOpen}
-        onEditGuide={editTrainingGuide}
-        initialData={editTrainingGuideInitialData}
       />
       <EditCardDialog
         open={isEditCardDialogOpen}
@@ -406,7 +362,7 @@ export default function Home() {
 
       <main className="container mx-auto p-4 md:p-8">
         <Tabs defaultValue="DC" className="w-full" onValueChange={handleTabChange} value={activeTab}>
-          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-9 h-auto gap-1 bg-white/5">
+          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-8 h-auto gap-1 bg-white/5">
             {positions.map((pos) => (
               <TabsTrigger key={pos} value={pos} className="py-2">
                 <PositionIcon position={pos} className="mr-2 h-5 w-5"/>
@@ -416,10 +372,6 @@ export default function Home() {
              <TabsTrigger value="formations" className="py-2 data-[state=active]:bg-accent/20 data-[state=active]:text-accent">
                 <Trophy className="mr-2 h-5 w-5"/>
                 Formaciones
-            </TabsTrigger>
-            <TabsTrigger value="trainings" className="py-2 data-[state=active]:bg-accent/20 data-[state=active]:text-accent">
-                <NotebookPen className="mr-2 h-5 w-5"/>
-                Entrenamientos
             </TabsTrigger>
             <TabsTrigger value="ideal-11" className="py-2 data-[state=active]:bg-accent/20 data-[state=active]:text-accent">
                 <Star className="mr-2 h-5 w-5"/>
@@ -435,14 +387,6 @@ export default function Home() {
               onEdit={handleOpenEditFormation}
               onViewImage={handleViewImage}
               onDeleteMatchResult={deleteMatchResult}
-            />
-          </TabsContent>
-
-          <TabsContent value="trainings" className="mt-6">
-            <TrainingGuideDisplay
-              guides={trainingGuides}
-              onEdit={handleOpenEditTrainingGuide}
-              onDelete={deleteTrainingGuide}
             />
           </TabsContent>
 
