@@ -234,17 +234,20 @@ export function EditFormationDialog({ open, onOpenChange, onEditFormation, initi
                                               <CommandInput placeholder="Buscar estilo..." />
                                               <CommandList>
                                                   <CommandEmpty>No se encontró el estilo.</CommandEmpty>
-                                                  {availableStyles.map((style) => (
+                                                  {availableStyles.map((style) => {
+                                                    const onSelect = () => {
+                                                      const currentValues = field.value || [];
+                                                      const isSelected = currentValues.includes(style);
+                                                      const newValues = isSelected
+                                                          ? currentValues.filter(s => s !== style)
+                                                          : [...currentValues, style];
+                                                      field.onChange(newValues);
+                                                    };
+                                                    return (
                                                       <CommandItem
                                                           key={style}
-                                                          onSelect={() => {
-                                                              const currentValues = field.value || [];
-                                                              const isSelected = currentValues.includes(style);
-                                                              const newValues = isSelected
-                                                                  ? currentValues.filter(s => s !== style)
-                                                                  : [...currentValues, style];
-                                                              field.onChange(newValues);
-                                                          }}
+                                                          onSelect={onSelect}
+                                                          onClick={onSelect}
                                                       >
                                                           <Check
                                                               className={cn(
@@ -256,7 +259,8 @@ export function EditFormationDialog({ open, onOpenChange, onEditFormation, initi
                                                           />
                                                           {style}
                                                       </CommandItem>
-                                                  ))}
+                                                    );
+                                                  })}
                                               </CommandList>
                                           </Command>
                                       </PopoverContent>
@@ -280,3 +284,5 @@ export function EditFormationDialog({ open, onOpenChange, onEditFormation, initi
     </Dialog>
   );
 }
+
+    
