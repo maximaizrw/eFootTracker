@@ -270,7 +270,7 @@ export function AddFormationDialog({ open, onOpenChange, onAddFormation }: AddFo
                                               <CommandList>
                                                   <CommandEmpty>No se encontró el estilo.</CommandEmpty>
                                                   {availableStyles.map((style) => {
-                                                    const onSelect = () => {
+                                                    const handleSelect = () => {
                                                       const currentValues = field.value || [];
                                                       const isSelected = currentValues.includes(style);
                                                       const newValues = isSelected
@@ -281,8 +281,8 @@ export function AddFormationDialog({ open, onOpenChange, onAddFormation }: AddFo
                                                     return (
                                                       <CommandItem
                                                           key={style}
-                                                          onSelect={onSelect}
-                                                          onClick={onSelect}
+                                                          onSelect={handleSelect}
+                                                          onClick={handleSelect}
                                                       >
                                                           <Check
                                                               className={cn(

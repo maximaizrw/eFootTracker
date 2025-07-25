@@ -169,7 +169,7 @@ export function EditFormationDialog({ open, onOpenChange, onEditFormation, initi
               <div className="space-y-4">
                 {fields.map((field, index) => {
                   const currentPosition = watchedSlots[index]?.position as Position;
-                  const availableStyles = getAvailableStylesForPosition(currentPosition, true);
+                  const availableStyles = getAvailableStylesForPosition(currentPosition, false);
 
                   return (
                     <div key={field.id} className="grid grid-cols-1 md:grid-cols-3 gap-2 items-start p-2 border-b">
@@ -235,7 +235,7 @@ export function EditFormationDialog({ open, onOpenChange, onEditFormation, initi
                                               <CommandList>
                                                   <CommandEmpty>No se encontró el estilo.</CommandEmpty>
                                                   {availableStyles.map((style) => {
-                                                    const onSelect = () => {
+                                                    const handleSelect = () => {
                                                       const currentValues = field.value || [];
                                                       const isSelected = currentValues.includes(style);
                                                       const newValues = isSelected
@@ -246,8 +246,8 @@ export function EditFormationDialog({ open, onOpenChange, onEditFormation, initi
                                                     return (
                                                       <CommandItem
                                                           key={style}
-                                                          onSelect={onSelect}
-                                                          onClick={onSelect}
+                                                          onSelect={handleSelect}
+                                                          onClick={handleSelect}
                                                       >
                                                           <Check
                                                               className={cn(
@@ -259,7 +259,7 @@ export function EditFormationDialog({ open, onOpenChange, onEditFormation, initi
                                                           />
                                                           {style}
                                                       </CommandItem>
-                                                    );
+                                                  );
                                                   })}
                                               </CommandList>
                                           </Command>
@@ -274,6 +274,47 @@ export function EditFormationDialog({ open, onOpenChange, onEditFormation, initi
                 })}
               </div>
             </ScrollArea>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                    control={form.control}
+                    name="imageUrl"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>URL Táctica Principal (Opcional)</FormLabel>
+                        <FormControl>
+                        <Input placeholder="https://ejemplo.com/tactica.png" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="secondaryImageUrl"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>URL Táctica Secundaria (Opcional)</FormLabel>
+                        <FormControl>
+                        <Input placeholder="https://ejemplo.com/tactica_sec.png" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="sourceUrl"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>URL Fuente (Opcional)</FormLabel>
+                        <FormControl>
+                        <Input placeholder="https://youtube.com/..." {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+            </div>
             
             <DialogFooter>
               <Button type="submit">Guardar Cambios</Button>
