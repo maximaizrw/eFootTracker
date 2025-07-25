@@ -124,16 +124,23 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
     }
 
     const card = selectedPlayer?.cards.find(c => c.name.toLowerCase() === cardNameValue?.toLowerCase());
+    const availableStyles = getAvailableStylesForPosition(positionValue, true);
 
     if (card) {
-      if (form.getValues('style') !== card.style) {
+      const isStyleValidForPosition = availableStyles.includes(card.style);
+      
+      if (isStyleValidForPosition) {
         form.setValue('style', card.style, { shouldValidate: true });
+        setIsStyleDisabled(true);
+      } else {
+        // The card's style is invalid for the new position, so we reset it.
+        form.setValue('style', 'Ninguno', { shouldValidate: true });
+        setIsStyleDisabled(false);
       }
-      setIsStyleDisabled(true);
     } else {
+      // It's a new card, so style is editable.
       setIsStyleDisabled(false);
       const currentStyle = form.getValues('style');
-      const availableStyles = getAvailableStylesForPosition(positionValue, true);
       if (!availableStyles.includes(currentStyle)) {
         form.setValue('style', 'Ninguno');
       }
@@ -363,5 +370,3 @@ export function AddRatingDialog({ open, onOpenChange, onAddRating, players, init
     </Dialog>
   );
 }
-
-    
