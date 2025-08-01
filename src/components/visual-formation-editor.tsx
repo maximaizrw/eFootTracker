@@ -46,14 +46,16 @@ const positionGrid: { [key in Position]?: { row: number; col: number } } = {
 const PlayerToken = ({
   slot,
   onSlotChange,
+  style,
 }: {
   slot: FormationSlot;
   onSlotChange: (newSlot: FormationSlot) => void;
+  style: React.CSSProperties;
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const availableStyles = getAvailableStylesForPosition(slot.position, false);
 
-  const handleStyleSelect = (style: PlayerStyle) => {
+  const handleStyleToggle = (style: PlayerStyle) => {
     const currentValues = slot.styles || [];
     const isSelected = currentValues.includes(style);
     const newValues = isSelected
@@ -71,10 +73,7 @@ const PlayerToken = ({
             "bg-primary/20 border-2 border-primary/80 text-primary-foreground",
             "hover:bg-primary/40 hover:scale-105"
           )}
-          style={{
-             top: `${positionGrid[slot.position]?.row * 10 + 5}%`,
-             left: `${positionGrid[slot.position]?.col * 20 + 10}%`,
-          }}
+          style={style}
         >
           <span className="font-bold text-lg text-white">{slot.position}</span>
           <Settings className="h-4 w-4 text-white/70" />
@@ -131,8 +130,8 @@ const PlayerToken = ({
                                 {availableStyles.map((style) => (
                                     <CommandItem
                                         key={style}
-                                        onSelect={() => handleStyleSelect(style)}
-                                        onClick={() => handleStyleSelect(style)}
+                                        onSelect={() => handleStyleToggle(style)}
+                                        onClick={() => handleStyleToggle(style)}
                                     >
                                         <Check
                                             className={cn(
@@ -162,8 +161,27 @@ export function VisualFormationEditor({ value, onChange }: VisualFormationEditor
     onChange(newSlots);
   };
   
-  // Create a map to track positions used to handle duplicates (like multiple DFCs)
-  const positionCount = new Map<Position, number>();
+  const getPlayerTokenStyle = (slot: FormationSlot, index: number): React.CSSProperties => {
+    const basePos = positionGrid[slot.position] || { row: 5, col: 2 };
+    
+    // Find all slots with the same position
+    const samePositionSlots = value
+        .map((s, i) => ({ ...s, originalIndex: i }))
+        .filter(s => s.position === slot.position);
+        
+    const slotIndexInGroup = samePositionSlots.findIndex(s => s.originalIndex === index);
+    
+    let col = basePos.col;
+    if (samePositionSlots.length > 1) {
+      const offset = slotIndexInGroup - (samePositionSlots.length - 1) / 2;
+      col = basePos.col + offset * 1.5;
+    }
+    
+    return {
+      top: `${basePos.row * 10 + 5}%`,
+      left: `${col * 20 + 10}%`,
+    };
+  };
 
   return (
     <div className="relative w-full aspect-video bg-field-gradient rounded-lg border border-white/10 overflow-hidden">
@@ -177,22 +195,12 @@ export function VisualFormationEditor({ value, onChange }: VisualFormationEditor
 
 
       {value.map((slot, index) => {
-        const count = positionCount.get(slot.position) || 0;
-        positionCount.set(slot.position, count + 1);
-
-        // Adjust column for duplicate positions to avoid overlap
-        let gridPos = positionGrid[slot.position] || { row: 5, col: 2 };
-        if (count > 0) {
-            // Simple logic to spread out duplicate positions horizontally
-            const offset = (count % 2 === 0 ? -1 : 1) * Math.ceil(count / 2) * 1;
-            gridPos = { ...gridPos, col: gridPos.col + offset };
-        }
-
         return (
           <PlayerToken
             key={index}
-            slot={{...slot}}
+            slot={slot}
             onSlotChange={(newSlot) => handleSlotChange(index, newSlot)}
+            style={getPlayerTokenStyle(slot, index)}
           />
         );
       })}
