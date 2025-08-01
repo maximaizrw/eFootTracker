@@ -81,7 +81,7 @@ export function EditFormationDialog({ open, onOpenChange, onEditFormation, initi
         name: initialData.name,
         creator: initialData.creator || "",
         playStyle: initialData.playStyle,
-        slots: initialData.slots && initialData.slots.length === 11 ? initialData.slots.map(s => ({...s, styles: s.styles || []})) : defaultSlots,
+        slots: initialData.slots && initialData.slots.length === 11 ? initialData.slots.map(s => ({...s, styles: s.styles || [], top: s.top || 50, left: s.left || 50 })) : defaultSlots,
         imageUrl: initialData.imageUrl || "",
         secondaryImageUrl: initialData.secondaryImageUrl || "",
         sourceUrl: initialData.sourceUrl || "",
@@ -96,132 +96,134 @@ export function EditFormationDialog({ open, onOpenChange, onEditFormation, initi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh]">
+      <DialogContent className="max-w-4xl h-full flex flex-col md:h-auto">
         <DialogHeader>
           <DialogTitle>Editar Formación Táctica</DialogTitle>
           <DialogDescription>
             Modifica la plantilla, especificando posición y estilo de juego para cada puesto.
           </DialogDescription>
         </DialogHeader>
-         <ScrollArea className="pr-6">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nombre de la Formación</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ej: 4-3-3 de Klopp" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="creator"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nombre del Creador (Opcional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ej: Zeitzler" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="playStyle"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Estilo de Juego Global</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+        <div className="flex-grow overflow-hidden">
+          <ScrollArea className="h-full pr-6">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nombre de la Formación</FormLabel>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecciona un estilo de juego" />
-                          </SelectTrigger>
+                          <Input placeholder="Ej: 4-3-3 de Klopp" {...field} />
                         </FormControl>
-                        <SelectContent>
-                          {formationPlayStyles.map((style) => (
-                            <SelectItem key={style} value={style}>{style}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="creator"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nombre del Creador (Opcional)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ej: Zeitzler" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="playStyle"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Estilo de Juego Global</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecciona un estilo de juego" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {formationPlayStyles.map((style) => (
+                              <SelectItem key={style} value={style}>{style}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField 
+                    control={form.control}
+                    name="slots"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Editor Visual</FormLabel>
+                            <FormControl>
+                                <VisualFormationEditor 
+                                    value={field.value as FormationSlot[]} 
+                                    onChange={field.onChange} 
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
                 />
-              </div>
 
-              <FormField 
-                  control={form.control}
-                  name="slots"
-                  render={({ field }) => (
-                      <FormItem>
-                          <FormLabel>Editor Visual</FormLabel>
-                          <FormControl>
-                              <VisualFormationEditor 
-                                  value={field.value as FormationSlot[]} 
-                                  onChange={field.onChange} 
-                              />
-                          </FormControl>
-                          <FormMessage />
-                      </FormItem>
-                  )}
-              />
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                      control={form.control}
-                      name="imageUrl"
-                      render={({ field }) => (
-                      <FormItem>
-                          <FormLabel>URL Táctica Principal (Opcional)</FormLabel>
-                          <FormControl>
-                          <Input placeholder="https://ejemplo.com/tactica.png" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                      </FormItem>
-                      )}
-                  />
-                  <FormField
-                      control={form.control}
-                      name="secondaryImageUrl"
-                      render={({ field }) => (
-                      <FormItem>
-                          <FormLabel>URL Táctica Secundaria (Opcional)</FormLabel>
-                          <FormControl>
-                          <Input placeholder="https://ejemplo.com/tactica_sec.png" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                      </FormItem>
-                      )}
-                  />
-                  <FormField
-                      control={form.control}
-                      name="sourceUrl"
-                      render={({ field }) => (
-                      <FormItem>
-                          <FormLabel>URL Fuente (Opcional)</FormLabel>
-                          <FormControl>
-                          <Input placeholder="https://youtube.com/..." {...field} />
-                          </FormControl>
-                          <FormMessage />
-                      </FormItem>
-                      )}
-                  />
-              </div>
-              
-              <DialogFooter className="sticky bottom-0 bg-background/95 py-4 -mx-6 px-6">
-                <Button type="submit">Guardar Cambios</Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </ScrollArea>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="imageUrl"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>URL Táctica Principal (Opcional)</FormLabel>
+                            <FormControl>
+                            <Input placeholder="https://ejemplo.com/tactica.png" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="secondaryImageUrl"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>URL Táctica Secundaria (Opcional)</FormLabel>
+                            <FormControl>
+                            <Input placeholder="https://ejemplo.com/tactica_sec.png" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="sourceUrl"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>URL Fuente (Opcional)</FormLabel>
+                            <FormControl>
+                            <Input placeholder="https://youtube.com/..." {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                </div>
+                
+                <DialogFooter className="md:sticky bottom-0 bg-background/95 py-4 md:-mx-6 md:px-6">
+                  <Button type="submit">Guardar Cambios</Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );
