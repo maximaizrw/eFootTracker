@@ -11,7 +11,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -96,8 +95,8 @@ export function EditFormationDialog({ open, onOpenChange, onEditFormation, initi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-full flex flex-col md:h-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Editar Formación Táctica</DialogTitle>
           <DialogDescription>
             Modifica la plantilla, especificando posición y estilo de juego para cada puesto.
@@ -134,6 +133,7 @@ export function EditFormationDialog({ open, onOpenChange, onEditFormation, initi
                       </FormItem>
                     )}
                   />
+                  </div>
                   <FormField
                     control={form.control}
                     name="playStyle"
@@ -156,7 +156,6 @@ export function EditFormationDialog({ open, onOpenChange, onEditFormation, initi
                       </FormItem>
                     )}
                   />
-                </div>
 
                 <FormField 
                     control={form.control}
@@ -202,7 +201,8 @@ export function EditFormationDialog({ open, onOpenChange, onEditFormation, initi
                         </FormItem>
                         )}
                     />
-                    <FormField
+                    </div>
+                     <FormField
                         control={form.control}
                         name="sourceUrl"
                         render={({ field }) => (
@@ -215,9 +215,8 @@ export function EditFormationDialog({ open, onOpenChange, onEditFormation, initi
                         </FormItem>
                         )}
                     />
-                </div>
                 
-                <DialogFooter className="md:sticky bottom-0 bg-background/95 py-4 md:-mx-6 md:px-6">
+                 <DialogFooter className="sticky bottom-0 bg-background/95 py-4 -mx-6 px-6 -mb-4 border-t border-border">
                   <Button type="submit">Guardar Cambios</Button>
                 </DialogFooter>
               </form>

@@ -97,8 +97,8 @@ export function AddFormationDialog({ open, onOpenChange, onAddFormation }: AddFo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-full flex flex-col md:h-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Añadir Nueva Formación Táctica</DialogTitle>
           <DialogDescription>
             Elige una plantilla, ajusta las posiciones y estilos de juego en el campo visual.
@@ -233,8 +233,7 @@ export function AddFormationDialog({ open, onOpenChange, onAddFormation }: AddFo
                         )}
                     />
                 </div>
-                
-                <DialogFooter className="md:sticky bottom-0 bg-background/95 py-4 md:-mx-6 md:px-6">
+                 <DialogFooter className="sticky bottom-0 bg-background/95 py-4 -mx-6 px-6 -mb-4 border-t border-border">
                   <Button type="submit">Guardar Formación</Button>
                 </DialogFooter>
               </form>
