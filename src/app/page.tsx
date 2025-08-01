@@ -278,6 +278,9 @@ export default function Home() {
   }
   
   const allPlayers = players || [];
+  const selectedFormation = useMemo(() => {
+    return formations.find(f => f.id === selectedFormationId);
+  }, [formations, selectedFormationId]);
 
   return (
     <div className="min-h-screen bg-transparent">
@@ -492,7 +495,7 @@ export default function Home() {
                   </div>
                </CardContent>
              </Card>
-            <IdealTeamDisplay teamSlots={idealTeam} />
+            <IdealTeamDisplay teamSlots={idealTeam} formation={selectedFormation} />
           </TabsContent>
 
         </Tabs>
