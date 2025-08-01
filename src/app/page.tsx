@@ -98,6 +98,11 @@ export default function Home() {
   
   const { toast } = useToast();
 
+  const allPlayers = players || [];
+  const selectedFormation = useMemo(() => {
+    return formations.find(f => f.id === selectedFormationId);
+  }, [formations, selectedFormationId]);
+
   useEffect(() => {
     // Select first formation by default if available
     if (!selectedFormationId && formations && formations.length > 0) {
@@ -276,11 +281,6 @@ export default function Home() {
       </div>
     );
   }
-  
-  const allPlayers = players || [];
-  const selectedFormation = useMemo(() => {
-    return formations.find(f => f.id === selectedFormationId);
-  }, [formations, selectedFormationId]);
 
   return (
     <div className="min-h-screen bg-transparent">
