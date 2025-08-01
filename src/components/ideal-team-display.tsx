@@ -37,29 +37,29 @@ const PlayerToken = ({ player, style }: { player: IdealTeamPlayer | null, style:
   return (
     <div 
       className={cn(
-        "absolute -translate-x-1/2 -translate-y-1/2 w-20 h-24 rounded-lg flex flex-col items-center justify-center text-center transition-all duration-200 p-1",
+        "absolute -translate-x-1/2 -translate-y-1/2 w-24 h-28 rounded-lg flex flex-col items-center justify-between text-center transition-all duration-200 p-1",
         "bg-card/80 backdrop-blur-sm border",
         cardStyleInfo ? "bg-[--card-color]/10 border-[--card-color]/40" : "border-white/10"
       )}
       style={{...style, ...cardColorStyle}}
     >
-      <div className="relative w-12 h-12 flex-shrink-0">
+      <div className="relative w-14 h-14 flex-shrink-0 mt-1">
         {player.card.imageUrl ? (
           <Image
             src={player.card.imageUrl}
             alt={player.card.name}
             fill
-            sizes="48px"
+            sizes="56px"
             className="object-contain"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-muted/40 rounded-full">
-            <Users className="w-6 h-6 text-muted-foreground/60" />
+            <Users className="w-8 h-8 text-muted-foreground/60" />
           </div>
         )}
         <div 
             className={cn(
-                "absolute -top-1 -right-1 font-bold text-white rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center border-2 text-xs h-6 w-6",
+                "absolute -top-1.5 -right-1.5 font-bold text-white rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center border-2 text-sm h-7 w-7",
                 cardStyleInfo ? "border-[--card-color]" : "border-primary"
             )}
             style={scoreGlowStyle}
@@ -67,10 +67,12 @@ const PlayerToken = ({ player, style }: { player: IdealTeamPlayer | null, style:
            {formatAverage(player.average)}
         </div>
       </div>
-      <p className="font-semibold text-xs text-foreground truncate w-full mt-1" title={player.player.name}>
-        {player.player.name}
-      </p>
-      <p className="font-bold text-lg -mt-1">{player.position}</p>
+      <div className="w-full mb-1">
+        <p className="font-semibold text-xs text-foreground truncate w-full" title={player.player.name}>
+          {player.player.name}
+        </p>
+        <p className="font-bold text-lg leading-tight -mt-0.5">{player.position}</p>
+      </div>
     </div>
   );
 };
