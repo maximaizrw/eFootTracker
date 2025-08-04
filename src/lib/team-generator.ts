@@ -1,6 +1,14 @@
 
-import type { Player, FormationStats, IdealTeamPlayer, Position, IdealTeamSlot } from './types';
+import type { Player, FormationStats, IdealTeamPlayer, Position, IdealTeamSlot, PlayerCard } from './types';
 import { calculateAverage } from './utils';
+
+type CandidatePlayer = {
+  player: Player;
+  card: PlayerCard;
+  average: number; // The highest average rating for this card, regardless of position
+  position: Position; // The position where the highest average was achieved
+};
+
 
 /**
  * Generates the ideal team (starters and substitutes) based on a given formation.
@@ -13,21 +21,37 @@ export function generateIdealTeam(
   players: Player[],
   formation: FormationStats
 ): IdealTeamSlot[] {
-  // 1. Create a flat list of all possible player-card-position combinations.
-  const allRatedPlayers: IdealTeamPlayer[] = players.flatMap(player =>
-    (player.cards || []).flatMap(card =>
-      Object.keys(card.ratingsByPosition || {}).map(posStr => {
-        const position = posStr as Position;
-        const ratings = card.ratingsByPosition![position];
-        if (!ratings || ratings.length === 0) return null;
-        return {
-          player,
-          card,
-          position,
-          average: calculateAverage(ratings),
-        };
-      }).filter((p): p is IdealTeamPlayer => p !== null)
-    )
+  
+  // 1. Create a flat list of all possible player-card combinations with their best performance.
+  const allPlayerCandidates: CandidatePlayer[] = players.flatMap(player =>
+    (player.cards || []).map(card => {
+      let bestAvg = -1;
+      let bestPos: Position | null = null;
+      
+      const positionsWithRatings = Object.keys(card.ratingsByPosition || {}) as Position[];
+
+      if (positionsWithRatings.length === 0) return null;
+
+      for (const pos of positionsWithRatings) {
+        const ratings = card.ratingsByPosition![pos];
+        if (ratings && ratings.length > 0) {
+          const avg = calculateAverage(ratings);
+          if (avg > bestAvg) {
+            bestAvg = avg;
+            bestPos = pos;
+          }
+        }
+      }
+
+      if (bestPos === null) return null;
+
+      return {
+        player,
+        card,
+        average: bestAvg,
+        position: bestPos,
+      };
+    }).filter((p): p is CandidatePlayer => p !== null)
   ).sort((a, b) => b.average - a.average); // Sort once by highest average rating.
 
   const usedCardIds = new Set<string>();
@@ -35,37 +59,64 @@ export function generateIdealTeam(
 
   // 2. Iterate through each required slot in the formation.
   formation.slots.forEach((slot, index) => {
+    
+    // Determine the filtering logic based on whether styles are specified for the slot.
+    const findBestPlayer = (candidates: CandidatePlayer[]): CandidatePlayer | undefined => {
+      // Logic if a specific style is required for the slot
+      if (slot.styles && slot.styles.length > 0) {
+        return candidates.find(p => 
+          !usedCardIds.has(p.card.id) &&
+          slot.styles.includes(p.card.style)
+        );
+      }
+      // Default logic: find the best player for the specified position
+      return candidates.find(p =>
+        !usedCardIds.has(p.card.id) &&
+        p.card.ratingsByPosition?.[slot.position] &&
+        p.card.ratingsByPosition[slot.position]!.length > 0
+      );
+    };
+
     // 3. Find the best available player for the starter.
-    const starter = allRatedPlayers.find(p => 
-      !usedCardIds.has(p.card.id) &&
-      p.position === slot.position &&
-      (slot.styles.length === 0 || slot.styles.includes(p.card.style))
-    );
+    const starter = findBestPlayer(allPlayerCandidates);
     
     if (starter) {
       usedCardIds.add(starter.card.id); // Mark starter card as used
     }
     
     // 4. Find the best available player for the substitute.
-    const substitute = allRatedPlayers.find(p =>
-      !usedCardIds.has(p.card.id) &&
-      p.position === slot.position &&
-      (slot.styles.length === 0 || slot.styles.includes(p.card.style))
-    );
+    const substitute = findBestPlayer(allPlayerCandidates);
 
     if (substitute) {
       usedCardIds.add(substitute.card.id); // Mark substitute card as used
     }
+    
+    const createTeamPlayer = (player: CandidatePlayer | undefined, assignedPosition: Position): IdealTeamPlayer | null => {
+        if (!player) return null;
+
+        // If styles were specified, the average is the player's best overall.
+        // If not, we should calculate the average for the specific slot position.
+        const average = (slot.styles && slot.styles.length > 0)
+            ? player.average
+            : calculateAverage(player.card.ratingsByPosition![assignedPosition]!);
+
+        return {
+            ...player,
+            position: assignedPosition, // The position is the one from the formation slot
+            average: average,
+        }
+    }
+
 
     // 5. Add the pair (or placeholders) to the team.
     newTeam.push({
-        starter: starter || {
+        starter: createTeamPlayer(starter, slot.position) || {
             player: { id: `placeholder-S-${slot.position}-${index}`, name: `Vacante`, cards: [] },
             card: { id: `placeholder-card-S-${slot.position}-${index}`, name: 'N/A', style: 'Ninguno', ratingsByPosition: {} },
             position: slot.position,
             average: 0,
         },
-        substitute: substitute || {
+        substitute: createTeamPlayer(substitute, slot.position) || {
              player: { id: `placeholder-SUB-${slot.position}-${index}`, name: `Vacante`, cards: [] },
             card: { id: `placeholder-card-SUB-${slot.position}-${index}`, name: 'N/A', style: 'Ninguno', ratingsByPosition: {} },
             position: slot.position,
