@@ -13,10 +13,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check, ChevronsUpDown, Settings, Move } from "lucide-react";
+import { Check, ChevronsUpDown, Settings } from "lucide-react";
 import type { FormationSlot, Position, PlayerStyle } from "@/lib/types";
-import { positions } from "@/lib/types";
-import { cn, getAvailableStylesForPosition } from "@/lib/utils";
+import { positions, playerStyles } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 type VisualFormationEditorProps = {
   value: FormationSlot[];
@@ -29,24 +29,21 @@ const PlayerToken = ({
   style,
   isSelected,
   onClick,
-  onMoveClick
 }: {
   slot: FormationSlot;
   onSlotChange: (newSlot: FormationSlot) => void;
   style: React.CSSProperties;
   isSelected: boolean;
   onClick: () => void;
-  onMoveClick: (e: React.MouseEvent) => void;
 }) => {
   const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
-  const availableStyles = getAvailableStylesForPosition(slot.position, false);
 
-  const handleStyleToggle = (style: PlayerStyle) => {
+  const handleStyleToggle = (styleToToggle: PlayerStyle) => {
     const currentValues = slot.styles || [];
-    const isSelected = currentValues.includes(style);
+    const isSelected = currentValues.includes(styleToToggle);
     const newValues = isSelected
-      ? currentValues.filter((s) => s !== style)
-      : [...currentValues, style];
+      ? currentValues.filter((s) => s !== styleToToggle)
+      : [...currentValues, styleToToggle];
     onSlotChange({ ...slot, styles: newValues });
   };
   
@@ -94,7 +91,7 @@ const PlayerToken = ({
                     </Select>
                   </div>
                   <div>
-                      <label className="text-sm font-medium mb-2 block">Estilos de Juego</label>
+                      <label className="text-sm font-medium mb-2 block">Estilos de Juego (Opcional)</label>
                       <Popover>
                           <PopoverTrigger asChild>
                               <Button
@@ -121,11 +118,11 @@ const PlayerToken = ({
                                   <CommandInput placeholder="Buscar estilo..." />
                                   <CommandList>
                                       <CommandEmpty>No se encontró el estilo.</CommandEmpty>
-                                      {availableStyles.map((style) => (
+                                      {playerStyles.map((style) => (
                                           <CommandItem
                                               key={style}
+                                              value={style}
                                               onSelect={() => handleStyleToggle(style)}
-                                              onClick={() => handleStyleToggle(style)}
                                           >
                                               <Check
                                                   className={cn(
@@ -154,7 +151,7 @@ export function VisualFormationEditor({ value, onChange }: VisualFormationEditor
   const editorRef = React.useRef<HTMLDivElement>(null);
   const [movingTokenIndex, setMovingTokenIndex] = React.useState<number | null>(null);
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleMouseMove = React.useCallback((e: MouseEvent) => {
     if (movingTokenIndex === null) return;
 
     const fieldRect = editorRef.current?.getBoundingClientRect();
@@ -171,14 +168,24 @@ export function VisualFormationEditor({ value, onChange }: VisualFormationEditor
     newSlots[movingTokenIndex].top = Math.max(0, Math.min(100, topPercent));
 
     onChange(newSlots);
-  };
+  }, [movingTokenIndex, onChange, value]);
   
-  const handleTokenClick = (index: number) => {
-    if (movingTokenIndex === index) {
-      setMovingTokenIndex(null); // Click again to place it
-    } else {
-      setMovingTokenIndex(index);
-    }
+  const handleMouseUp = React.useCallback(() => {
+    setMovingTokenIndex(null);
+  }, []);
+
+  React.useEffect(() => {
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [handleMouseMove, handleMouseUp]);
+  
+  const handleTokenMouseDown = (e: React.MouseEvent, index: number) => {
+    e.stopPropagation();
+    setMovingTokenIndex(index);
   };
 
   const handleSlotChange = (index: number, newSlot: FormationSlot) => {
@@ -190,11 +197,9 @@ export function VisualFormationEditor({ value, onChange }: VisualFormationEditor
   return (
     <div 
         ref={editorRef}
-        onMouseMove={handleMouseMove}
-        onClick={() => movingTokenIndex !== null && setMovingTokenIndex(null)}
         className={cn(
             "relative w-full aspect-video bg-field-gradient rounded-lg border border-white/10 overflow-hidden",
-            movingTokenIndex !== null && "cursor-move"
+            movingTokenIndex !== null && "cursor-grabbing"
         )}
     >
       {/* Field markings */}
@@ -205,30 +210,29 @@ export function VisualFormationEditor({ value, onChange }: VisualFormationEditor
          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-14 w-28 md:h-20 md:w-40 border-t-2 border-l-2 border-r-2 border-white/20 rounded-t-lg md:rounded-t-xl pointer-events-none" />
       </div>
 
-
       {value.map((slot, index) => {
         const style: React.CSSProperties = {
             top: `${slot.top || 50}%`,
             left: `${slot.left || 50}%`,
         };
         return (
-          <PlayerToken
+          <div
             key={index}
-            slot={slot}
-            onSlotChange={(newSlot) => handleSlotChange(index, newSlot)}
+            onMouseDown={(e) => handleTokenMouseDown(e, index)}
+            className="absolute" // Wrapper for positioning
             style={style}
-            isSelected={movingTokenIndex === index}
-            onClick={(e) => { 
-                e.stopPropagation(); 
-                handleTokenClick(index);
-            }}
-            onMoveClick={(e) => { 
-                e.stopPropagation(); 
-                setMovingTokenIndex(movingTokenIndex === index ? null : index);
-            }}
-          />
+          >
+            <PlayerToken
+              slot={slot}
+              onSlotChange={(newSlot) => handleSlotChange(index, newSlot)}
+              style={{}} // Style is handled by the wrapper
+              isSelected={movingTokenIndex === index}
+              onClick={(e) => e.stopPropagation()} // Prevent editor click from firing
+            />
+          </div>
         );
       })}
     </div>
   );
 }
+

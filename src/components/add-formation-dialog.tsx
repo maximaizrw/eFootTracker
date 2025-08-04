@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -71,24 +71,32 @@ export function AddFormationDialog({ open, onOpenChange, onAddFormation }: AddFo
     },
   });
   
-  const { setValue } = form;
+  const { setValue, getValues, reset } = form;
 
   useEffect(() => {
       const selectedPreset = formationPresets.find(p => p.name === preset);
       if (selectedPreset) {
           setValue('slots', selectedPreset.slots, { shouldValidate: true });
-          if(!form.getValues('name')) {
+          if(!getValues('name')) {
             setValue('name', selectedPreset.name);
           }
       }
-  }, [preset, setValue, form]);
+  }, [preset, setValue, getValues]);
 
   useEffect(() => {
     if (!open) {
-      form.reset();
+      reset({
+        name: "",
+        creator: "",
+        playStyle: "Contraataque rápido",
+        slots: defaultSlots,
+        imageUrl: "",
+        secondaryImageUrl: "",
+        sourceUrl: "",
+      });
       setPreset('4-3-3');
     }
-  }, [open, form]);
+  }, [open, reset]);
 
   function onSubmit(values: AddFormationFormValues) {
     onAddFormation(values);
