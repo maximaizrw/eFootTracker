@@ -8,6 +8,8 @@ import { useToast } from './use-toast';
 import { v4 as uuidv4 } from 'uuid';
 import type { Player, PlayerCard, Position, PlayersByPosition, AddRatingFormValues, EditCardFormValues, EditPlayerFormValues } from '@/lib/types';
 import { positions } from '@/lib/types';
+import { normalizeText } from '@/lib/utils';
+
 
 export function usePlayers() {
   const [players, setPlayers] = useState<Player[]>([]);
@@ -95,8 +97,19 @@ export function usePlayers() {
   }, [players]);
 
   const addRating = async (values: AddRatingFormValues) => {
-    const { playerId, playerName, cardName, position, rating, style } = values;
+    const { playerName, cardName, position, rating, style } = values;
+    let { playerId } = values;
+
     try {
+      // Find player ignoring case and accents
+      if (!playerId) {
+        const normalizedPlayerName = normalizeText(playerName);
+        const existingPlayer = players.find(p => normalizeText(p.name) === normalizedPlayerName);
+        if (existingPlayer) {
+          playerId = existingPlayer.id;
+        }
+      }
+
       if (playerId) {
         const playerRef = doc(db, 'players', playerId);
         const playerDoc = await getDoc(playerRef);
@@ -104,7 +117,7 @@ export function usePlayers() {
         
         const playerData = playerDoc.data() as Player;
         const newCards: PlayerCard[] = JSON.parse(JSON.stringify(playerData.cards || []));
-        let card = newCards.find(c => c.name.toLowerCase() === cardName.toLowerCase());
+        let card = newCards.find(c => normalizeText(c.name) === normalizeText(cardName));
 
         if (card) {
           if (!card.ratingsByPosition) card.ratingsByPosition = {};

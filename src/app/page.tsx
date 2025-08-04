@@ -37,7 +37,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Player, PlayerCard as PlayerCardType, FormationStats, IdealTeamSlot, FlatPlayer, Position } from '@/lib/types';
 import { positions } from '@/lib/types';
 import { PlusCircle, Trash2, X, Star, Bot, Download, Search, Trophy, NotebookPen } from 'lucide-react';
-import { calculateAverage } from '@/lib/utils';
+import { calculateAverage, normalizeText } from '@/lib/utils';
 import { generateIdealTeam } from '@/lib/team-generator';
 
 const ITEMS_PER_PAGE = 10;
@@ -407,7 +407,7 @@ export default function Home() {
             );
             
             const filteredPlayerList = flatPlayerList.filter(({ player, card }) => {
-                const searchMatch = player.name.toLowerCase().includes(searchTerm.toLowerCase());
+                const searchMatch = normalizeText(player.name).includes(normalizeText(searchTerm));
                 const styleMatch = styleFilter === 'all' || card.style === styleFilter;
                 const cardMatch = cardFilter === 'all' || card.name === cardFilter;
                 return searchMatch && styleMatch && cardMatch;
