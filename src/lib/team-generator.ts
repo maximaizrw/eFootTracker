@@ -52,7 +52,7 @@ export function generateIdealTeam(
         position: bestPos,
       };
     }).filter((p): p is CandidatePlayer => p !== null)
-  ).sort((a, b) => b.average - a.average); // Sort once by highest average rating.
+  );
 
   const usedCardIds = new Set<string>();
   const newTeam: IdealTeamSlot[] = [];
@@ -77,16 +77,24 @@ export function generateIdealTeam(
   formation.slots.forEach((slot, index) => {
     
     const hasStylePreference = slot.styles && slot.styles.length > 0;
+    
+    let eligibleCandidates: CandidatePlayer[];
 
-    // Filter candidates based on the slot requirements.
-    const eligibleCandidates = allPlayerCandidates.filter(p => {
-        if (hasStylePreference) {
-            // If style is required, just check for the style.
-            return slot.styles.includes(p.card.style);
-        }
-        // If no style is required, the player must have ratings for the specific position.
-        return p.card.ratingsByPosition?.[slot.position] && p.card.ratingsByPosition[slot.position]!.length > 0;
-    });
+    if (hasStylePreference) {
+      // Filter by style and sort by the candidate's best overall average.
+      eligibleCandidates = allPlayerCandidates
+        .filter(p => slot.styles!.includes(p.card.style))
+        .sort((a, b) => b.average - a.average);
+    } else {
+      // Filter by position and sort by the average IN THAT SPECIFIC POSITION.
+      eligibleCandidates = allPlayerCandidates
+        .filter(p => p.card.ratingsByPosition?.[slot.position] && p.card.ratingsByPosition[slot.position]!.length > 0)
+        .sort((a, b) => {
+            const avgA = calculateAverage(a.card.ratingsByPosition![slot.position]!);
+            const avgB = calculateAverage(b.card.ratingsByPosition![slot.position]!);
+            return avgB - avgA;
+        });
+    }
 
     const findBestPlayer = (candidates: CandidatePlayer[]): CandidatePlayer | undefined => {
       return candidates.find(p => !usedCardIds.has(p.card.id));
