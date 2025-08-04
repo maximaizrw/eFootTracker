@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Check, ChevronsUpDown, Settings } from "lucide-react";
 import type { FormationSlot, Position, PlayerStyle } from "@/lib/types";
 import { positions, playerStyles } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, getAvailableStylesForPosition } from "@/lib/utils";
 
 type VisualFormationEditorProps = {
   value: FormationSlot[];
@@ -235,4 +235,3 @@ export function VisualFormationEditor({ value, onChange }: VisualFormationEditor
     </div>
   );
 }
-

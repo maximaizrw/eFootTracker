@@ -17,7 +17,7 @@ const PlayerToken = ({ player, style }: { player: IdealTeamPlayer | null, style:
   if (!player || player.player.id.startsWith('placeholder')) {
     return (
       <div 
-        className="absolute -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full flex flex-col items-center justify-center transition-all duration-200 border-2 border-dashed border-white/30 bg-black/20"
+        className="absolute -translate-x-1/2 -translate-y-1/2 w-24 h-28 rounded-lg flex flex-col items-center justify-center transition-all duration-200 border-2 border-dashed border-white/30 bg-black/20"
         style={style}
       >
         <Shirt className="w-8 h-8 text-white/40" />
