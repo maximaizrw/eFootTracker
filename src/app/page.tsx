@@ -36,7 +36,7 @@ import { useToast } from "@/hooks/use-toast";
 
 import type { Player, PlayerCard as PlayerCardType, FormationStats, IdealTeamSlot, FlatPlayer, Position } from '@/lib/types';
 import { positions } from '@/lib/types';
-import { PlusCircle, Trash2, X, Star, Bot, Download, Search, Trophy, NotebookPen } from 'lucide-react';
+import { PlusCircle, Trash2, X, Star, Bot, Download, Search, Trophy, NotebookPen, RotateCcw } from 'lucide-react';
 import { calculateAverage, normalizeText } from '@/lib/utils';
 import { generateIdealTeam } from '@/lib/team-generator';
 
@@ -69,6 +69,8 @@ export default function Home() {
     downloadBackup: downloadFormationsBackup,
   } = useFormations();
   
+  const allPlayers = players || [];
+
   const [activeTab, setActiveTab] = useState<string>('DC');
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddRatingDialogOpen, setAddRatingDialogOpen] = useState(false);
@@ -90,6 +92,7 @@ export default function Home() {
   
   const [selectedFormationId, setSelectedFormationId] = useState<string | undefined>(undefined);
   const [idealTeam, setIdealTeam] = useState<IdealTeamSlot[]>([]);
+  const [discardedCardIds, setDiscardedCardIds] = useState<Set<string>>(new Set());
 
   // State for filters and pagination
   const [styleFilter, setStyleFilter] = useState<string>('all');
@@ -98,7 +101,6 @@ export default function Home() {
   
   const { toast } = useToast();
 
-  const allPlayers = players || [];
   const selectedFormation = useMemo(() => {
     return formations.find(f => f.id === selectedFormationId);
   }, [formations, selectedFormationId]);
@@ -109,6 +111,14 @@ export default function Home() {
       setSelectedFormationId(formations[0].id);
     }
   }, [formations, selectedFormationId]);
+
+  // Regenerate team if discarded players change
+  useEffect(() => {
+    if (idealTeam.length > 0) {
+      handleGenerateTeam();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [discardedCardIds]);
 
 
   const handleOpenAddRating = (initialData?: Partial<AddRatingFormValues>) => {
@@ -176,9 +186,12 @@ export default function Home() {
       return;
     }
     
-    const newTeam = generateIdealTeam(players, formation);
+    const newTeam = generateIdealTeam(players, formation, discardedCardIds);
 
     setIdealTeam(newTeam);
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
     toast({
       title: "11 Ideal Generado",
       description: `Se ha generado un equipo para la formación "${formation.name}".`,
@@ -188,6 +201,19 @@ export default function Home() {
   const handleFormationSelectionChange = (id: string) => {
     setSelectedFormationId(id);
     setIdealTeam([]); // Clear team when formation changes
+    setDiscardedCardIds(new Set()); // Clear discarded players when formation changes
+  };
+
+  const handleDiscardPlayer = (cardId: string) => {
+    setDiscardedCardIds(prev => new Set(prev).add(cardId));
+  };
+  
+  const handleResetDiscards = () => {
+    setDiscardedCardIds(new Set());
+    toast({
+        title: "Lista de Descartados Reiniciada",
+        description: "Se volverán a considerar todos los jugadores.",
+    });
   };
   
   const handleDownloadBackup = async () => {
@@ -492,10 +518,22 @@ export default function Home() {
                       <Star className="mr-2 h-4 w-4" />
                       Generar 11 Ideal
                     </Button>
+                    <Button
+                        onClick={handleResetDiscards}
+                        variant="outline"
+                        disabled={discardedCardIds.size === 0}
+                        >
+                        <RotateCcw className="mr-2 h-4 w-4" />
+                        Reiniciar Descartados ({discardedCardIds.size})
+                    </Button>
                   </div>
                </CardContent>
              </Card>
-            <IdealTeamDisplay teamSlots={idealTeam} formation={selectedFormation} />
+            <IdealTeamDisplay 
+                teamSlots={idealTeam} 
+                formation={selectedFormation} 
+                onDiscardPlayer={handleDiscardPlayer}
+            />
           </TabsContent>
 
         </Tabs>

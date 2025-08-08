@@ -15,11 +15,13 @@ type CandidatePlayer = {
  * 
  * @param players - The list of all available players.
  * @param formation - The selected formation with defined slots.
+ * @param discardedCardIds - A set of card IDs to exclude from the selection.
  * @returns An array of 11 slots, each with a starter and a substitute.
  */
 export function generateIdealTeam(
   players: Player[],
-  formation: FormationStats
+  formation: FormationStats,
+  discardedCardIds: Set<string> = new Set()
 ): IdealTeamSlot[] {
   
   // 1. Create a flat list of all possible player-card combinations with their best performance.
@@ -57,21 +59,32 @@ export function generateIdealTeam(
   const usedCardIds = new Set<string>();
   const newTeam: IdealTeamSlot[] = [];
 
-  const createTeamPlayer = (player: CandidatePlayer | undefined, assignedPosition: Position, hasStylePreference: boolean): IdealTeamPlayer | null => {
+  const createTeamPlayer = (player: CandidatePlayer | undefined, assignedPosition: Position): IdealTeamPlayer | null => {
       if (!player) return null;
+      
+      const averageInPosition = calculateAverage(player.card.ratingsByPosition![assignedPosition] ?? []);
 
-      // If styles were specified, the average is the player's best overall.
-      // If not, we MUST calculate the average for the specific slot position.
-      const average = hasStylePreference
-          ? player.average
-          : calculateAverage(player.card.ratingsByPosition![assignedPosition]!);
+      // If the player has no ratings in the assigned position, something is wrong with the selection logic.
+      // However, we should still show the best average to avoid confusion.
+      const displayAverage = averageInPosition > 0 ? averageInPosition : player.average;
 
       return {
           ...player,
           position: assignedPosition, // The position is the one from the formation slot
-          average: average,
+          average: displayAverage,
       }
   }
+  
+  const createTeamPlayerByStyle = (player: CandidatePlayer | undefined, assignedPosition: Position): IdealTeamPlayer | null => {
+      if (!player) return null;
+      // When selected by style, the average shown is the player's best overall average.
+      return {
+          ...player,
+          position: assignedPosition,
+          average: player.average,
+      }
+  }
+
 
   // 2. Iterate through each required slot in the formation.
   formation.slots.forEach((slot, index) => {
@@ -92,12 +105,16 @@ export function generateIdealTeam(
         .sort((a, b) => {
             const avgA = calculateAverage(a.card.ratingsByPosition![slot.position]!);
             const avgB = calculateAverage(b.card.ratingsByPosition![slot.position]!);
-            return avgB - avgA;
+            if (avgB !== avgA) {
+              return avgB - avgA;
+            }
+            // As a tie-breaker, prefer the player with more matches in that position
+            return (b.card.ratingsByPosition![slot.position]!.length || 0) - (a.card.ratingsByPosition![slot.position]!.length || 0);
         });
     }
 
     const findBestPlayer = (candidates: CandidatePlayer[]): CandidatePlayer | undefined => {
-      return candidates.find(p => !usedCardIds.has(p.card.id));
+      return candidates.find(p => !usedCardIds.has(p.card.id) && !discardedCardIds.has(p.card.id));
     };
 
     // 3. Find the best available player for the starter.
@@ -115,14 +132,16 @@ export function generateIdealTeam(
     }
     
     // 5. Add the pair (or placeholders) to the team.
+    const createFn = hasStylePreference ? createTeamPlayerByStyle : createTeamPlayer;
+
     newTeam.push({
-        starter: createTeamPlayer(starter, slot.position, hasStylePreference) || {
+        starter: createFn(starter, slot.position) || {
             player: { id: `placeholder-S-${slot.position}-${index}`, name: `Vacante`, cards: [] },
             card: { id: `placeholder-card-S-${slot.position}-${index}`, name: 'N/A', style: 'Ninguno', ratingsByPosition: {} },
             position: slot.position,
             average: 0,
         },
-        substitute: createTeamPlayer(substitute, slot.position, hasStylePreference) || {
+        substitute: createFn(substitute, slot.position) || {
              player: { id: `placeholder-SUB-${slot.position}-${index}`, name: `Vacante`, cards: [] },
             card: { id: `placeholder-card-SUB-${slot.position}-${index}`, name: 'N/A', style: 'Ninguno', ratingsByPosition: {} },
             position: slot.position,

@@ -5,15 +5,18 @@ import type { IdealTeamPlayer, IdealTeamSlot, FormationStats } from '@/lib/types
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { formatAverage, cn } from '@/lib/utils';
-import { Users, Shirt } from 'lucide-react';
+import { Users, Shirt, X } from 'lucide-react';
 import { getCardStyle } from '@/lib/card-styles';
+import { Button } from './ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 type IdealTeamDisplayProps = {
   teamSlots: IdealTeamSlot[];
   formation?: FormationStats;
+  onDiscardPlayer: (cardId: string) => void;
 };
 
-const PlayerToken = ({ player, style }: { player: IdealTeamPlayer | null, style: React.CSSProperties }) => {
+const PlayerToken = ({ player, style, onDiscard }: { player: IdealTeamPlayer | null, style: React.CSSProperties, onDiscard: (cardId: string) => void }) => {
   if (!player || player.player.id.startsWith('placeholder')) {
     return (
       <div 
@@ -29,7 +32,7 @@ const PlayerToken = ({ player, style }: { player: IdealTeamPlayer | null, style:
   const cardColorStyle = cardStyleInfo
     ? ({ '--card-color': `hsl(var(--tw-${cardStyleInfo.tailwindClass}))` } as React.CSSProperties)
     : {};
-  const specialTextClasses = cardStyleInfo ? `text-[--card-color]` : "text-primary";
+  
   const scoreGlowStyle = cardStyleInfo
     ? { textShadow: `0 0 8px var(--card-color)` }
     : { textShadow: '0 0 8px hsl(var(--primary))' };
@@ -37,12 +40,30 @@ const PlayerToken = ({ player, style }: { player: IdealTeamPlayer | null, style:
   return (
     <div 
       className={cn(
-        "absolute -translate-x-1/2 -translate-y-1/2 w-24 h-28 rounded-lg flex flex-col items-center justify-between text-center transition-all duration-200 p-1",
+        "absolute -translate-x-1/2 -translate-y-1/2 w-24 h-28 rounded-lg flex flex-col items-center justify-between text-center transition-all duration-200 p-1 group",
         "bg-card/80 backdrop-blur-sm border",
         cardStyleInfo ? "bg-[--card-color]/10 border-[--card-color]/40" : "border-white/10"
       )}
       style={{...style, ...cardColorStyle}}
     >
+        <TooltipProvider>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute -top-2 -right-2 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                        onClick={() => onDiscard(player.card.id)}
+                    >
+                        <X className="h-3 w-3" />
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                    <p>Descartar jugador</p>
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
+
       <div className="relative w-14 h-14 flex-shrink-0 mt-1">
         {player.card.imageUrl ? (
           <Image
@@ -59,7 +80,7 @@ const PlayerToken = ({ player, style }: { player: IdealTeamPlayer | null, style:
         )}
         <div 
             className={cn(
-                "absolute -top-1.5 -right-1.5 font-bold text-white rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center border-2 text-sm h-7 w-7",
+                "absolute -top-1.5 -left-1.5 font-bold text-white rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center border-2 text-sm h-7 w-7",
                 cardStyleInfo ? "border-[--card-color]" : "border-primary"
             )}
             style={scoreGlowStyle}
@@ -129,7 +150,7 @@ const SubstitutePlayerRow = ({ player }: { player: IdealTeamPlayer | null }) => 
   );
 };
 
-export function IdealTeamDisplay({ teamSlots, formation }: IdealTeamDisplayProps) {
+export function IdealTeamDisplay({ teamSlots, formation, onDiscardPlayer }: IdealTeamDisplayProps) {
   if (teamSlots.length === 0 || !formation) {
     return (
       <div className="mt-8 text-center text-muted-foreground p-8 bg-card/60 rounded-lg border border-dashed border-white/10">
@@ -160,7 +181,7 @@ export function IdealTeamDisplay({ teamSlots, formation }: IdealTeamDisplayProps
                 top: `${formationSlot?.top || 50}%`,
                 left: `${formationSlot?.left || 50}%`,
              };
-             return <PlayerToken key={index} player={slot.starter} style={style} />;
+             return <PlayerToken key={slot.starter?.card.id || `starter-${index}`} player={slot.starter} style={style} onDiscard={onDiscardPlayer} />;
           })}
         </div>
       </div>
@@ -169,7 +190,7 @@ export function IdealTeamDisplay({ teamSlots, formation }: IdealTeamDisplayProps
         <h3 className="text-xl font-semibold mb-4 text-center">Banquillo de Suplentes</h3>
         <div className="space-y-2">
           {substitutes.map((sub, index) => (
-             <SubstitutePlayerRow key={sub?.player.id || `sub-${index}`} player={sub} />
+             <SubstitutePlayerRow key={sub?.card.id || `sub-${index}`} player={sub} />
           ))}
         </div>
       </div>
