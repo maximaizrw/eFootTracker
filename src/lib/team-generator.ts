@@ -155,11 +155,15 @@ export function generateIdealTeam(
       usedCardIds.add(starter.card.id); // Mark starter card as used
     }
     
-    // 4. Find the best available player for the substitute, giving priority to promises.
+    // 4. Find the best available player for the substitute, with a specific priority.
+    const hotStreaks = eligibleCandidates.filter(p => p.performance.isHotStreak);
     const promises = eligibleCandidates.filter(p => p.performance.stats.matches < 10);
     const experienced = eligibleCandidates.filter(p => p.performance.stats.matches >= 10);
     
-    let substitute = findBestPlayer(promises); // Try to find a promise first
+    let substitute = findBestPlayer(hotStreaks);
+    if (!substitute) {
+        substitute = findBestPlayer(promises); // Try to find a promise second
+    }
     if (!substitute) {
         substitute = findBestPlayer(experienced); // If no promise, find an experienced player
     }
