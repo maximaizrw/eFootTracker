@@ -8,10 +8,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PlusCircle, Trash2, X, Wrench, Pencil, LineChart, Search } from 'lucide-react';
-import { calculateAverage, cn, formatAverage, getAverageColorClass } from '@/lib/utils';
+import { PlusCircle, Trash2, X, Wrench, Pencil, LineChart, Search, Zap, TrendingUp, Gem, Repeat } from 'lucide-react';
+import { cn, formatAverage, getAverageColorClass } from '@/lib/utils';
 import { getCardStyle } from '@/lib/card-styles';
-import type { Player, PlayerCard, Position, FlatPlayer, PlayerStyle } from '@/lib/types';
+import type { Player, PlayerCard, Position, FlatPlayer, PlayerPerformance } from '@/lib/types';
 import type { FormValues as AddRatingFormValues } from '@/components/add-rating-dialog';
 
 type PlayerTableProps = {
@@ -118,6 +118,54 @@ const Pagination = ({ currentPage, totalPages, onPageChange }: PaginationProps) 
     );
 };
 
+const PerformanceBadges = ({ performance }: { performance: PlayerPerformance }) => {
+    if (!performance) return null;
+
+    return (
+        <div className="flex items-center gap-1.5">
+            {performance.isHotStreak && (
+                 <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <TrendingUp className="h-4 w-4 text-orange-400" />
+                        </TooltipTrigger>
+                        <TooltipContent><p>En Racha (Mejor rendimiento reciente)</p></TooltipContent>
+                    </Tooltip>
+                 </TooltipProvider>
+            )}
+            {performance.isConsistent && (
+                 <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <Repeat className="h-4 w-4 text-cyan-400" />
+                        </TooltipTrigger>
+                        <TooltipContent><p>Consistente (Valoraciones muy estables)</p></TooltipContent>
+                    </Tooltip>
+                 </TooltipProvider>
+            )}
+            {performance.isVersatile && (
+                 <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger>
+                           <Gem className="h-4 w-4 text-purple-400" />
+                        </TooltipTrigger>
+                        <TooltipContent><p>Versátil (Rinde bien en múltiples posiciones)</p></TooltipContent>
+                    </Tooltip>
+                 </TooltipProvider>
+            )}
+             {performance.isPromising && (
+                 <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <Zap className="h-4 w-4 text-yellow-400" />
+                        </TooltipTrigger>
+                        <TooltipContent><p>Promesa (Pocos partidos, gran promedio)</p></TooltipContent>
+                    </Tooltip>
+                 </TooltipProvider>
+            )}
+        </div>
+    );
+}
 
 export function PlayerTable({
   players,
@@ -159,9 +207,9 @@ export function PlayerTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {players.map(({ player, card, ratingsForPos }) => {
-          const cardAverage = calculateAverage(ratingsForPos);
-          const cardMatches = ratingsForPos.length;
+        {players.map(({ player, card, ratingsForPos, performance }) => {
+          const cardAverage = performance.stats.average;
+          const cardMatches = performance.stats.matches;
           const cardStyle = getCardStyle(card.name);
 
           const rowStyle = cardStyle
@@ -209,6 +257,7 @@ export function PlayerTable({
                         >
                             {player.name}
                         </button>
+                        <PerformanceBadges performance={performance} />
                         <TooltipProvider>
                            <Tooltip>
                                 <TooltipTrigger asChild>

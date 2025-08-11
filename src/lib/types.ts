@@ -134,8 +134,24 @@ export type AddMatchFormValues = {
 }
 
 // --- Tipos para componentes refactorizados
+
+export type PlayerStats = {
+    average: number;
+    matches: number;
+    stdDev: number;
+};
+
+export type PlayerPerformance = {
+    stats: PlayerStats;
+    isHotStreak: boolean;
+    isConsistent: boolean;
+    isPromising: boolean;
+    isVersatile: boolean;
+};
+
 export type FlatPlayer = {
   player: PlayerType;
   card: PlayerCardType;
   ratingsForPos: number[];
+  performance: PlayerPerformance;
 };

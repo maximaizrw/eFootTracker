@@ -34,10 +34,10 @@ import { usePlayers } from '@/hooks/usePlayers';
 import { useFormations } from '@/hooks/useFormations';
 import { useToast } from "@/hooks/use-toast";
 
-import type { Player, PlayerCard as PlayerCardType, FormationStats, IdealTeamSlot, FlatPlayer, Position } from '@/lib/types';
+import type { Player, PlayerCard as PlayerCardType, FormationStats, IdealTeamSlot, FlatPlayer, Position, PlayerPerformance } from '@/lib/types';
 import { positions } from '@/lib/types';
 import { PlusCircle, Trash2, X, Star, Bot, Download, Search, Trophy, NotebookPen, RotateCcw } from 'lucide-react';
-import { calculateAverage, normalizeText } from '@/lib/utils';
+import { calculateStats, normalizeText } from '@/lib/utils';
 import { generateIdealTeam } from '@/lib/team-generator';
 
 const ITEMS_PER_PAGE = 10;
@@ -422,29 +422,61 @@ export default function Home() {
           {positions.map((pos) => {
             const playersForPosition = playersByPosition?.[pos] || [];
             
+            // 1. Calculate detailed stats for each player/card combination
             const flatPlayerList: FlatPlayer[] = playersForPosition.flatMap(player => 
                 (player.cards || [])
                 .filter(card => card.ratingsByPosition?.[pos] && card.ratingsByPosition[pos]!.length > 0)
-                .map(card => ({ 
-                    player, 
-                    card,
-                    ratingsForPos: card.ratingsByPosition![pos]!
-                }))
+                .map(card => {
+                    const ratingsForPos = card.ratingsByPosition![pos]!;
+                    const stats = calculateStats(ratingsForPos);
+                    const recentRatings = ratingsForPos.slice(-3);
+                    const recentStats = calculateStats(recentRatings);
+
+                    // Versatility check
+                    const highPerfPositions = new Set<Position>();
+                    for (const p in card.ratingsByPosition) {
+                        const positionKey = p as Position;
+                        const posRatings = card.ratingsByPosition[positionKey];
+                        if (posRatings && posRatings.length > 0) {
+                           const posAvg = calculateStats(posRatings).average;
+                           if (posAvg >= 7.5) {
+                            highPerfPositions.add(positionKey);
+                           }
+                        }
+                    }
+
+                    const performance: PlayerPerformance = {
+                        stats,
+                        isHotStreak: stats.matches >= 3 && recentStats.average > stats.average + 0.5,
+                        isConsistent: stats.matches >= 5 && stats.stdDev < 0.5,
+                        isPromising: stats.matches < 5 && stats.average >= 8.0,
+                        isVersatile: highPerfPositions.size >= 3,
+                    };
+
+                    return { 
+                        player, 
+                        card,
+                        ratingsForPos,
+                        performance,
+                    };
+                })
             );
             
+            // 2. Filter the list
             const filteredPlayerList = flatPlayerList.filter(({ player, card }) => {
                 const searchMatch = normalizeText(player.name).includes(normalizeText(searchTerm));
                 const styleMatch = styleFilter === 'all' || card.style === styleFilter;
                 const cardMatch = cardFilter === 'all' || card.name === cardFilter;
                 return searchMatch && styleMatch && cardMatch;
             }).sort((a, b) => {
-              const avgA = calculateAverage(a.ratingsForPos);
-              const avgB = calculateAverage(b.ratingsForPos);
+              // 3. Sort the list
+              const avgA = a.performance.stats.average;
+              const avgB = b.performance.stats.average;
 
               if (avgB !== avgA) {
                 return avgB - avgA;
               }
-              return b.ratingsForPos.length - a.ratingsForPos.length;
+              return b.performance.stats.matches - a.performance.stats.matches;
             });
 
             const currentPage = pagination[pos] || 0;
