@@ -8,28 +8,28 @@ export type FormationPreset = {
 
 // Field coordinate system:
 // top: 0% is attacking goal, 100% is defending goal
-// left: 0% is right side of field, 100% is left side of field (from player's perspective)
+// left: 0% is the left side of the field, 100% is the right side
 const positionGrid: { [key: string]: { top: number; left: number } } = {
   'PT': { top: 90, left: 50 },
   
-  'LD': { top: 75, left: 15 },
-  'DFC-L': { top: 78, left: 65 }, // Left Center Back
-  'DFC-R': { top: 78, left: 35 }, // Right Center Back
-  'LI': { top: 75, left: 85 },
+  'LD': { top: 75, left: 85 }, // Right Back
+  'DFC-L': { top: 78, left: 35 }, // Left Center Back
+  'DFC-R': { top: 78, left: 65 }, // Right Center Back
+  'LI': { top: 75, left: 15 }, // Left Back
   
-  'MDD': { top: 50, left: 20 },
-  'MCD': { top: 60, left: 50 },
-  'MC-L': { top: 50, left: 65 }, // Left Center Mid
-  'MC-R': { top: 50, left: 35 }, // Right Center Mid
-  'MDI': { top: 50, left: 80 },
+  'MDD': { top: 50, left: 80 }, // Right Mid
+  'MCD': { top: 60, left: 50 }, // Center Defensive Mid
+  'MC-L': { top: 50, left: 35 }, // Left Center Mid
+  'MC-R': { top: 50, left: 65 }, // Right Center Mid
+  'MDI': { top: 50, left: 20 }, // Left Mid
   
-  'EXD': { top: 25, left: 15 },
-  'MO': { top: 35, left: 50 },
-  'SD': { top: 28, left: 50 },
-  'EXI': { top: 25, left: 85 },
+  'EXD': { top: 25, left: 85 }, // Right Winger
+  'MO': { top: 35, left: 50 }, // Attacking Mid
+  'SD': { top: 28, left: 50 }, // Second Striker
+  'EXI': { top: 25, left: 15 }, // Left Winger
   
-  'DC-L': { top: 15, left: 60 }, // Left Striker
-  'DC-R': { top: 15, left: 40 }, // Right Striker
+  'DC-L': { top: 15, left: 40 }, // Left Striker
+  'DC-R': { top: 15, left: 60 }, // Right Striker
 };
 
 const getPos = (key: string) => positionGrid[key] || { top: 50, left: 50 };
@@ -44,8 +44,8 @@ export const formationPresets: FormationPreset[] = [
       { position: 'DFC', styles: [], ...getPos('DFC-R') },
       { position: 'LD', styles: [], ...getPos('LD') },
       { position: 'MCD', styles: [], ...getPos('MCD') },
-      { position: 'MC', styles: [], top: 50, left: 70 }, // Left MC
-      { position: 'MC', styles: [], top: 50, left: 30 }, // Right MC
+      { position: 'MC', styles: [], top: 50, left: 30 }, // Left MC
+      { position: 'MC', styles: [], top: 50, left: 70 }, // Right MC
       { position: 'EXI', styles: [], ...getPos('EXI') },
       { position: 'DC', styles: [], top: 15, left: 50 },
       { position: 'EXD', styles: [], ...getPos('EXD') },
@@ -75,11 +75,11 @@ export const formationPresets: FormationPreset[] = [
       { position: 'DFC', styles: [], ...getPos('DFC-L') },
       { position: 'DFC', styles: [], ...getPos('DFC-R') },
       { position: 'LD', styles: [], ...getPos('LD') },
-      { position: 'MCD', styles: [], top: 60, left: 65 }, // Left MCD
-      { position: 'MCD', styles: [], top: 60, left: 35 }, // Right MCD
-      { position: 'MDI', styles: [], top: 45, left: 85 },
+      { position: 'MCD', styles: [], top: 60, left: 35 }, // Left MCD
+      { position: 'MCD', styles: [], top: 60, left: 65 }, // Right MCD
+      { position: 'MDI', styles: [], top: 45, left: 15 },
       { position: 'MO', styles: [], ...getPos('MO') },
-      { position: 'MDD', styles: [], top: 45, left: 15 },
+      { position: 'MDD', styles: [], top: 45, left: 85 },
       { position: 'DC', styles: [], top: 15, left: 50 },
     ],
   },
@@ -87,9 +87,9 @@ export const formationPresets: FormationPreset[] = [
     name: '3-4-3',
     slots: [
       { position: 'PT', styles: [], ...getPos('PT') },
-      { position: 'DFC', styles: [], top: 78, left: 80 }, // Left DFC
+      { position: 'DFC', styles: [], top: 78, left: 20 }, // Left DFC
       { position: 'DFC', styles: [], top: 80, left: 50 }, // Center DFC
-      { position: 'DFC', styles: [], top: 78, left: 20 }, // Right DFC
+      { position: 'DFC', styles: [], top: 78, left: 80 }, // Right DFC
       { position: 'MDI', styles: [], ...getPos('MDI') },
       { position: 'MC', styles: [], ...getPos('MC-L') },
       { position: 'MC', styles: [], ...getPos('MC-R') },
@@ -103,14 +103,14 @@ export const formationPresets: FormationPreset[] = [
     name: '5-3-2',
     slots: [
       { position: 'PT', styles: [], ...getPos('PT') },
-      { position: 'LI', styles: [], top: 70, left: 90 }, // Wing-back
-      { position: 'DFC', styles: [], top: 78, left: 65 }, // Left DFC
+      { position: 'LI', styles: [], top: 70, left: 10 }, // Wing-back
+      { position: 'DFC', styles: [], top: 78, left: 35 }, // Left DFC
       { position: 'DFC', styles: [], top: 80, left: 50 }, // Center DFC
-      { position: 'DFC', styles: [], top: 78, left: 35 }, // Right DFC
-      { position: 'LD', styles: [], top: 70, left: 10 }, // Wing-back
-      { position: 'MC', styles: [], top: 50, left: 75 }, // Left MC
+      { position: 'DFC', styles: [], top: 78, left: 65 }, // Right DFC
+      { position: 'LD', styles: [], top: 70, left: 90 }, // Wing-back
+      { position: 'MC', styles: [], top: 50, left: 25 }, // Left MC
       { position: 'MCD', styles: [], ...getPos('MCD') },
-      { position: 'MC', styles: [], top: 50, left: 25 }, // Right MC
+      { position: 'MC', styles: [], top: 50, left: 75 }, // Right MC
       { position: 'DC', styles: [], ...getPos('DC-L') },
       { position: 'DC', styles: [], ...getPos('DC-R') },
     ],
