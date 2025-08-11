@@ -41,8 +41,8 @@ export function generateIdealTeam(
       for (const pos of positionsWithRatings) {
         const ratings = card.ratingsByPosition![pos];
         if (ratings && ratings.length > 0) {
-          allRatings = allRatings.concat(ratings);
-          const avg = calculateAverage(ratings);
+          const sum = ratings.reduce((a, b) => a + b, 0);
+          const avg = sum / ratings.length;
            if (avg >= 7.5) {
             highPerfPositions.add(pos);
            }
@@ -50,6 +50,7 @@ export function generateIdealTeam(
             bestAvg = avg;
             bestPos = pos;
           }
+          allRatings = allRatings.concat(ratings);
         }
       }
 
@@ -118,12 +119,15 @@ export function generateIdealTeam(
     const hasStylePreference = slot.styles && slot.styles.length > 0;
     
     let eligibleCandidates: CandidatePlayer[];
+    let createFn: (player: CandidatePlayer | undefined, assignedPosition: Position) => IdealTeamPlayer | null;
+
 
     if (hasStylePreference) {
       // Filter by style and sort by the candidate's best overall average.
       eligibleCandidates = allPlayerCandidates
         .filter(p => slot.styles!.includes(p.card.style))
         .sort((a, b) => b.average - a.average);
+      createFn = createTeamPlayerByStyle;
     } else {
       // Filter by position and sort by the average IN THAT SPECIFIC POSITION.
       eligibleCandidates = allPlayerCandidates
@@ -137,6 +141,7 @@ export function generateIdealTeam(
             // As a tie-breaker, prefer the player with more matches in that position
             return (b.card.ratingsByPosition![slot.position]!.length || 0) - (a.card.ratingsByPosition![slot.position]!.length || 0);
         });
+      createFn = createTeamPlayer;
     }
 
     const findBestPlayer = (candidates: CandidatePlayer[]): CandidatePlayer | undefined => {
@@ -150,16 +155,20 @@ export function generateIdealTeam(
       usedCardIds.add(starter.card.id); // Mark starter card as used
     }
     
-    // 4. Find the best available player for the substitute.
-    const substitute = findBestPlayer(eligibleCandidates);
+    // 4. Find the best available player for the substitute, giving priority to promises.
+    const promises = eligibleCandidates.filter(p => p.performance.stats.matches < 10);
+    const experienced = eligibleCandidates.filter(p => p.performance.stats.matches >= 10);
+    
+    let substitute = findBestPlayer(promises); // Try to find a promise first
+    if (!substitute) {
+        substitute = findBestPlayer(experienced); // If no promise, find an experienced player
+    }
 
     if (substitute) {
       usedCardIds.add(substitute.card.id); // Mark substitute card as used
     }
     
     // 5. Add the pair (or placeholders) to the team.
-    const createFn = hasStylePreference ? createTeamPlayerByStyle : createTeamPlayer;
-    
     const placeholderPerformance: PlayerPerformance = {
         stats: { average: 0, matches: 0, stdDev: 0 },
         isHotStreak: false, isConsistent: false, isPromising: false, isVersatile: false
