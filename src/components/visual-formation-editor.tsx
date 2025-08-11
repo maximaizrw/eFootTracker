@@ -28,13 +28,13 @@ const PlayerToken = ({
   onSlotChange,
   style,
   isSelected,
-  onClick,
+  onMouseDown,
 }: {
   slot: FormationSlot;
   onSlotChange: (newSlot: FormationSlot) => void;
   style: React.CSSProperties;
   isSelected: boolean;
-  onClick: () => void;
+  onMouseDown: (e: React.MouseEvent) => void;
 }) => {
   const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
 
@@ -50,13 +50,13 @@ const PlayerToken = ({
   return (
     <div
         className={cn(
-            "absolute -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full flex flex-col items-center justify-center transition-all duration-200 cursor-pointer",
+            "absolute -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full flex flex-col items-center justify-center transition-all duration-200 cursor-grab",
             "bg-primary/20 border-2 border-primary/80 text-primary-foreground",
             "hover:bg-primary/40 hover:scale-105",
-             isSelected && "ring-4 ring-accent scale-110 z-10"
+             isSelected && "ring-4 ring-accent scale-110 z-10 cursor-grabbing"
         )}
         style={style}
-        onClick={onClick}
+        onMouseDown={onMouseDown}
     >
       <span className="font-bold text-lg text-white">{slot.position}</span>
       <div className="absolute top-0.5 right-0.5 flex gap-0.5">
@@ -65,12 +65,13 @@ const PlayerToken = ({
               <button
                 className="p-1 rounded-full bg-background/60 hover:bg-accent backdrop-blur-sm"
                 onClick={(e) => { e.stopPropagation(); setIsPopoverOpen(true); }}
+                onMouseDown={(e) => e.stopPropagation()} // Prevent drag from starting here
                 aria-label="Configurar posición"
               >
                 <Settings className="h-3 w-3 text-white/70" />
               </button>
             </PopoverTrigger>
-            <PopoverContent className="w-64 p-0" onClick={(e) => e.stopPropagation()}>
+            <PopoverContent className="w-64 p-0" onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
               <div className="p-4 space-y-4">
                   <div>
                     <label className="text-sm font-medium">Posición</label>
@@ -157,17 +158,24 @@ export function VisualFormationEditor({ value, onChange }: VisualFormationEditor
     const fieldRect = editorRef.current?.getBoundingClientRect();
     if (!fieldRect) return;
 
+    // Use movementX/Y for smoother dragging, but fall back to clientX/Y
     const x = e.clientX - fieldRect.left;
     const y = e.clientY - fieldRect.top;
     
-    const leftPercent = (x / fieldRect.width) * 100;
-    const topPercent = (y / fieldRect.height) * 100;
+    let leftPercent = (x / fieldRect.width) * 100;
+    let topPercent = (y / fieldRect.height) * 100;
+    
+    // Clamp values to stay within the field
+    leftPercent = Math.max(0, Math.min(100, leftPercent));
+    topPercent = Math.max(0, Math.min(100, topPercent));
 
-    const newSlots = [...value];
-    newSlots[movingTokenIndex].left = Math.max(0, Math.min(100, leftPercent));
-    newSlots[movingTokenIndex].top = Math.max(0, Math.min(100, topPercent));
-
-    onChange(newSlots);
+    onChange(
+      value.map((slot, index) => 
+        index === movingTokenIndex 
+          ? { ...slot, left: leftPercent, top: topPercent } 
+          : slot
+      )
+    );
   }, [movingTokenIndex, onChange, value]);
   
   const handleMouseUp = React.useCallback(() => {
@@ -175,16 +183,17 @@ export function VisualFormationEditor({ value, onChange }: VisualFormationEditor
   }, []);
 
   React.useEffect(() => {
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    // Attach listeners to the window to capture mouse events anywhere on the page
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
     };
   }, [handleMouseMove, handleMouseUp]);
   
   const handleTokenMouseDown = (e: React.MouseEvent, index: number) => {
-    e.stopPropagation();
+    e.preventDefault(); // Prevent text selection during drag
     setMovingTokenIndex(index);
   };
 
@@ -216,20 +225,14 @@ export function VisualFormationEditor({ value, onChange }: VisualFormationEditor
             left: `${slot.left || 50}%`,
         };
         return (
-          <div
-            key={index}
-            onMouseDown={(e) => handleTokenMouseDown(e, index)}
-            className="absolute" // Wrapper for positioning
-            style={style}
-          >
             <PlayerToken
+              key={index}
               slot={slot}
               onSlotChange={(newSlot) => handleSlotChange(index, newSlot)}
-              style={{}} // Style is handled by the wrapper
+              style={style}
               isSelected={movingTokenIndex === index}
-              onClick={(e) => e.stopPropagation()} // Prevent editor click from firing
+              onMouseDown={(e) => handleTokenMouseDown(e, index)}
             />
-          </div>
         );
       })}
     </div>
