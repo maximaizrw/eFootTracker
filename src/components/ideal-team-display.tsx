@@ -1,11 +1,11 @@
 
 "use client";
 
-import type { IdealTeamPlayer, IdealTeamSlot, FormationStats } from '@/lib/types';
+import type { IdealTeamPlayer, IdealTeamSlot, FormationStats, PlayerPerformance } from '@/lib/types';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { formatAverage, cn } from '@/lib/utils';
-import { Users, Shirt, X } from 'lucide-react';
+import { Users, Shirt, X, TrendingUp, Repeat, Gem, Zap } from 'lucide-react';
 import { getCardStyle } from '@/lib/card-styles';
 import { Button } from './ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
@@ -15,6 +15,55 @@ type IdealTeamDisplayProps = {
   formation?: FormationStats;
   onDiscardPlayer: (cardId: string) => void;
 };
+
+const PerformanceBadges = ({ performance }: { performance: PlayerPerformance }) => {
+    if (!performance) return null;
+
+    return (
+        <div className="flex items-center gap-1.5">
+            {performance.isHotStreak && (
+                 <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <TrendingUp className="h-4 w-4 text-orange-400" />
+                        </TooltipTrigger>
+                        <TooltipContent><p>En Racha (Mejor rendimiento reciente)</p></TooltipContent>
+                    </Tooltip>
+                 </TooltipProvider>
+            )}
+            {performance.isConsistent && (
+                 <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <Repeat className="h-4 w-4 text-cyan-400" />
+                        </TooltipTrigger>
+                        <TooltipContent><p>Consistente (Valoraciones muy estables)</p></TooltipContent>
+                    </Tooltip>
+                 </TooltipProvider>
+            )}
+            {performance.isVersatile && (
+                 <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger>
+                           <Gem className="h-4 w-4 text-purple-400" />
+                        </TooltipTrigger>
+                        <TooltipContent><p>Versátil (Rinde bien en múltiples posiciones)</p></TooltipContent>
+                    </Tooltip>
+                 </TooltipProvider>
+            )}
+             {performance.isPromising && (
+                 <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <Zap className="h-4 w-4 text-yellow-400" />
+                        </TooltipTrigger>
+                        <TooltipContent><p>Promesa (Pocos partidos, gran promedio)</p></TooltipContent>
+                    </Tooltip>
+                 </TooltipProvider>
+            )}
+        </div>
+    );
+}
 
 const PlayerToken = ({ player, style, onDiscard }: { player: IdealTeamPlayer | null, style: React.CSSProperties, onDiscard: (cardId: string) => void }) => {
   if (!player || player.player.id.startsWith('placeholder')) {
@@ -137,9 +186,12 @@ const SubstitutePlayerRow = ({ player }: { player: IdealTeamPlayer | null }) => 
         )}
       </div>
       <div className="flex-grow overflow-hidden">
-        <p className="font-semibold text-foreground truncate" title={player.player.name}>
-          {player.player.name}
-        </p>
+        <div className="flex items-center gap-2">
+            <p className="font-semibold text-foreground truncate" title={player.player.name}>
+                {player.player.name}
+            </p>
+            <PerformanceBadges performance={player.performance} />
+        </div>
         <p className={cn("text-xs truncate", specialTextClasses)} title={player.card.name}>
           {player.card.name}
         </p>

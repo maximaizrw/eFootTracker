@@ -1,12 +1,13 @@
 
-import type { Player, FormationStats, IdealTeamPlayer, Position, IdealTeamSlot, PlayerCard } from './types';
-import { calculateAverage } from './utils';
+import type { Player, FormationStats, IdealTeamPlayer, Position, IdealTeamSlot, PlayerCard, PlayerPerformance } from './types';
+import { calculateAverage, calculateStats } from './utils';
 
 type CandidatePlayer = {
   player: Player;
   card: PlayerCard;
   average: number; // The highest average rating for this card, regardless of position
   position: Position; // The position where the highest average was achieved
+  performance: PlayerPerformance; // The performance object for this card
 };
 
 
@@ -34,10 +35,17 @@ export function generateIdealTeam(
 
       if (positionsWithRatings.length === 0) return null;
 
+      let allRatings: number[] = [];
+      const highPerfPositions = new Set<Position>();
+
       for (const pos of positionsWithRatings) {
         const ratings = card.ratingsByPosition![pos];
         if (ratings && ratings.length > 0) {
+          allRatings = allRatings.concat(ratings);
           const avg = calculateAverage(ratings);
+           if (avg >= 7.5) {
+            highPerfPositions.add(pos);
+           }
           if (avg > bestAvg) {
             bestAvg = avg;
             bestPos = pos;
@@ -47,11 +55,25 @@ export function generateIdealTeam(
 
       if (bestPos === null) return null;
 
+      // Calculate performance based on overall card ratings
+      const stats = calculateStats(allRatings);
+      const recentRatings = allRatings.slice(-3);
+      const recentStats = calculateStats(recentRatings);
+      
+      const performance: PlayerPerformance = {
+          stats,
+          isHotStreak: stats.matches >= 3 && recentStats.average > stats.average + 0.5,
+          isConsistent: stats.matches >= 5 && stats.stdDev < 0.5,
+          isPromising: stats.matches < 5 && stats.average >= 8.0,
+          isVersatile: highPerfPositions.size >= 3,
+      };
+
       return {
         player,
         card,
         average: bestAvg,
         position: bestPos,
+        performance,
       };
     }).filter((p): p is CandidatePlayer => p !== null)
   );
@@ -69,9 +91,11 @@ export function generateIdealTeam(
       const displayAverage = averageInPosition > 0 ? averageInPosition : player.average;
 
       return {
-          ...player,
+          player: player.player,
+          card: player.card,
           position: assignedPosition, // The position is the one from the formation slot
           average: displayAverage,
+          performance: player.performance,
       }
   }
   
@@ -79,9 +103,11 @@ export function generateIdealTeam(
       if (!player) return null;
       // When selected by style, the average shown is the player's best overall average.
       return {
-          ...player,
+          player: player.player,
+          card: player.card,
           position: assignedPosition,
           average: player.average,
+          performance: player.performance,
       }
   }
 
@@ -133,6 +159,11 @@ export function generateIdealTeam(
     
     // 5. Add the pair (or placeholders) to the team.
     const createFn = hasStylePreference ? createTeamPlayerByStyle : createTeamPlayer;
+    
+    const placeholderPerformance: PlayerPerformance = {
+        stats: { average: 0, matches: 0, stdDev: 0 },
+        isHotStreak: false, isConsistent: false, isPromising: false, isVersatile: false
+    };
 
     newTeam.push({
         starter: createFn(starter, slot.position) || {
@@ -140,12 +171,14 @@ export function generateIdealTeam(
             card: { id: `placeholder-card-S-${slot.position}-${index}`, name: 'N/A', style: 'Ninguno', ratingsByPosition: {} },
             position: slot.position,
             average: 0,
+            performance: placeholderPerformance
         },
         substitute: createFn(substitute, slot.position) || {
              player: { id: `placeholder-SUB-${slot.position}-${index}`, name: `Vacante`, cards: [] },
             card: { id: `placeholder-card-SUB-${slot.position}-${index}`, name: 'N/A', style: 'Ninguno', ratingsByPosition: {} },
             position: slot.position,
             average: 0,
+            performance: placeholderPerformance
         }
     });
   });

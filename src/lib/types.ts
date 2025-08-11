@@ -59,6 +59,7 @@ export type IdealTeamPlayer = {
   card: PlayerCard;
   position: Position;
   average: number;
+  performance: PlayerPerformance;
 };
 
 export type IdealTeamSlot = {
