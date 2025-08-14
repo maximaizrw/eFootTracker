@@ -5,9 +5,9 @@ import { calculateAverage, calculateStats } from './utils';
 type CandidatePlayer = {
   player: Player;
   card: PlayerCard;
-  average: number; // The highest average rating for this card, regardless of position
-  position: Position; // The position where the highest average was achieved
-  performance: PlayerPerformance; // The performance object for this card
+  average: number; // The highest average rating for this card, for a specific position.
+  position: Position; // The position where the average was achieved.
+  performance: PlayerPerformance;
 };
 
 
@@ -25,176 +25,146 @@ export function generateIdealTeam(
   discardedCardIds: Set<string> = new Set()
 ): IdealTeamSlot[] {
   
-  // 1. Create a flat list of all possible player-card combinations with their best performance.
+  // 1. Create a flat list of all possible player-card-position combinations.
   const allPlayerCandidates: CandidatePlayer[] = players.flatMap(player =>
-    (player.cards || []).map(card => {
-      let bestAvg = -1;
-      let bestPos: Position | null = null;
-      
+    (player.cards || []).flatMap(card => {
       const positionsWithRatings = Object.keys(card.ratingsByPosition || {}) as Position[];
-
-      if (positionsWithRatings.length === 0) return null;
-
-      let allRatings: number[] = [];
-      const highPerfPositions = new Set<Position>();
-
-      for (const pos of positionsWithRatings) {
-        const ratings = card.ratingsByPosition![pos];
-        if (ratings && ratings.length > 0) {
-          const sum = ratings.reduce((a, b) => a + b, 0);
-          const avg = sum / ratings.length;
-           if (avg >= 7.5) {
-            highPerfPositions.add(pos);
-           }
-          if (avg > bestAvg) {
-            bestAvg = avg;
-            bestPos = pos;
-          }
-          allRatings = allRatings.concat(ratings);
-        }
-      }
-
-      if (bestPos === null) return null;
-
-      // Calculate performance based on overall card ratings
-      const stats = calculateStats(allRatings);
-      const recentRatings = allRatings.slice(-3);
-      const recentStats = calculateStats(recentRatings);
       
-      const performance: PlayerPerformance = {
-          stats,
-          isHotStreak: stats.matches >= 3 && recentStats.average > stats.average + 0.5,
-          isConsistent: stats.matches >= 5 && stats.stdDev < 0.5,
-          isPromising: stats.matches < 5 && stats.average >= 8.0,
-          isVersatile: highPerfPositions.size >= 3,
-      };
+      const cardPerformance = (() => {
+          let allRatings: number[] = [];
+          const highPerfPositions = new Set<Position>();
+           for (const pos of positionsWithRatings) {
+                const ratings = card.ratingsByPosition![pos];
+                if (ratings && ratings.length > 0) {
+                  const avg = calculateAverage(ratings);
+                   if (avg >= 7.5) highPerfPositions.add(pos);
+                  allRatings = allRatings.concat(ratings);
+                }
+            }
+            const stats = calculateStats(allRatings);
+            const recentRatings = allRatings.slice(-3);
+            const recentStats = calculateStats(recentRatings);
+            
+            return {
+                stats,
+                isHotStreak: stats.matches >= 3 && recentStats.average > stats.average + 0.5,
+                isConsistent: stats.matches >= 5 && stats.stdDev < 0.5,
+                isPromising: stats.matches < 5 && stats.average >= 8.0,
+                isVersatile: highPerfPositions.size >= 3,
+            };
+      })();
 
-      return {
-        player,
-        card,
-        average: bestAvg,
-        position: bestPos,
-        performance,
-      };
-    }).filter((p): p is CandidatePlayer => p !== null)
+      return positionsWithRatings.map(pos => {
+        const ratings = card.ratingsByPosition![pos]!;
+        if (ratings.length === 0) return null;
+        
+        return {
+          player,
+          card,
+          position: pos,
+          average: calculateAverage(ratings),
+          performance: cardPerformance,
+        };
+      }).filter((p): p is CandidatePlayer => p !== null);
+    })
   );
 
-  const usedCardIds = new Set<string>();
+  const usedPlayerIds = new Set<string>();
   const newTeam: IdealTeamSlot[] = [];
 
   const createTeamPlayer = (player: CandidatePlayer | undefined, assignedPosition: Position): IdealTeamPlayer | null => {
       if (!player) return null;
-      
-      const averageInPosition = calculateAverage(player.card.ratingsByPosition![assignedPosition] ?? []);
-
-      // If the player has no ratings in the assigned position, something is wrong with the selection logic.
-      // However, we should still show the best average to avoid confusion.
-      const displayAverage = averageInPosition > 0 ? averageInPosition : player.average;
-
-      return {
-          player: player.player,
-          card: player.card,
-          position: assignedPosition, // The position is the one from the formation slot
-          average: displayAverage,
-          performance: player.performance,
-      }
-  }
-  
-  const createTeamPlayerByStyle = (player: CandidatePlayer | undefined, assignedPosition: Position): IdealTeamPlayer | null => {
-      if (!player) return null;
-      // When selected by style, the average shown is the player's best overall average.
       return {
           player: player.player,
           card: player.card,
           position: assignedPosition,
-          average: player.average,
+          average: player.average, // Average is already for this position
           performance: player.performance,
       }
   }
 
+  const findBestPlayer = (candidates: CandidatePlayer[]): CandidatePlayer | undefined => {
+      return candidates.find(p => !usedPlayerIds.has(p.player.id) && !discardedCardIds.has(p.card.id));
+    };
 
-  // 2. Iterate through each required slot in the formation.
-  formation.slots.forEach((slot, index) => {
-    
+  // 2. Iterate through each required slot in the formation to select STARTERS first.
+  formation.slots.forEach((slot) => {
     const hasStylePreference = slot.styles && slot.styles.length > 0;
     
     let eligibleCandidates: CandidatePlayer[];
-    let createFn: (player: CandidatePlayer | undefined, assignedPosition: Position) => IdealTeamPlayer | null;
+    
+    // Filter candidates for the specific position and optionally by style.
+    eligibleCandidates = allPlayerCandidates.filter(p => {
+      const positionMatch = p.position === slot.position;
+      const styleMatch = !hasStylePreference || slot.styles!.includes(p.card.style);
+      return positionMatch && styleMatch;
+    });
 
+    // Sort by the average IN THAT SPECIFIC POSITION. This is crucial.
+    eligibleCandidates.sort((a, b) => b.average - a.average);
 
-    if (hasStylePreference) {
-      // Filter by style and sort by the candidate's best overall average.
-      eligibleCandidates = allPlayerCandidates
-        .filter(p => slot.styles!.includes(p.card.style))
-        .sort((a, b) => b.average - a.average);
-      createFn = createTeamPlayerByStyle;
-    } else {
-      // Filter by position and sort by the average IN THAT SPECIFIC POSITION.
-      eligibleCandidates = allPlayerCandidates
-        .filter(p => p.card.ratingsByPosition?.[slot.position] && p.card.ratingsByPosition[slot.position]!.length > 0)
-        .sort((a, b) => {
-            const avgA = calculateAverage(a.card.ratingsByPosition![slot.position]!);
-            const avgB = calculateAverage(b.card.ratingsByPosition![slot.position]!);
-            if (avgB !== avgA) {
-              return avgB - avgA;
-            }
-            // As a tie-breaker, prefer the player with more matches in that position
-            return (b.card.ratingsByPosition![slot.position]!.length || 0) - (a.card.ratingsByPosition![slot.position]!.length || 0);
-        });
-      createFn = createTeamPlayer;
-    }
-
-    const findBestPlayer = (candidates: CandidatePlayer[]): CandidatePlayer | undefined => {
-      return candidates.find(p => !usedCardIds.has(p.card.id) && !discardedCardIds.has(p.card.id));
-    };
-
-    // 3. Find the best available player for the starter.
     const starter = findBestPlayer(eligibleCandidates);
     
     if (starter) {
-      usedCardIds.add(starter.card.id); // Mark starter card as used
+      usedPlayerIds.add(starter.player.id); // Mark player as used.
     }
     
-    // 4. Find the best available player for the substitute, with a specific priority.
-    const hotStreaks = eligibleCandidates.filter(p => p.performance.isHotStreak);
-    const promises = eligibleCandidates.filter(p => p.performance.stats.matches < 10);
-    const experienced = eligibleCandidates.filter(p => p.performance.stats.matches >= 10);
+    // Temporarily store the starter and the pool of candidates for substitutes.
+    newTeam.push({
+      starter: createTeamPlayer(starter, slot.position),
+      substitute: null, // Will be filled in the next loop.
+      _candidatePool: eligibleCandidates, // Store for sub selection.
+    } as any);
+  });
+  
+  // 3. Iterate again to select SUBSTITUTES, ensuring no player is picked twice.
+  newTeam.forEach(slot => {
+    const candidatePool = (slot as any)._candidatePool as CandidatePlayer[];
+    
+    // Define substitute priority groups from the remaining candidates.
+    const hotStreaks = candidatePool.filter(p => p.performance.isHotStreak);
+    const promises = candidatePool.filter(p => p.performance.stats.matches < 10);
+    const experienced = candidatePool.filter(p => p.performance.stats.matches >= 10);
     
     let substitute = findBestPlayer(hotStreaks);
     if (!substitute) {
-        substitute = findBestPlayer(promises); // Try to find a promise second
+        substitute = findBestPlayer(promises);
     }
     if (!substitute) {
-        substitute = findBestPlayer(experienced); // If no promise, find an experienced player
+        substitute = findBestPlayer(candidatePool); // Fallback to any remaining player.
     }
 
     if (substitute) {
-      usedCardIds.add(substitute.card.id); // Mark substitute card as used
+      usedPlayerIds.add(substitute.player.id); // Mark substitute as used.
     }
-    
-    // 5. Add the pair (or placeholders) to the team.
-    const placeholderPerformance: PlayerPerformance = {
+
+    slot.substitute = createTeamPlayer(substitute, slot.starter!.position);
+
+    // Clean up temporary property.
+    delete (slot as any)._candidatePool;
+  });
+
+
+  // 4. Fill any empty slots with placeholders.
+  const placeholderPerformance: PlayerPerformance = {
         stats: { average: 0, matches: 0, stdDev: 0 },
         isHotStreak: false, isConsistent: false, isPromising: false, isVersatile: false
-    };
+  };
 
-    newTeam.push({
-        starter: createFn(starter, slot.position) || {
-            player: { id: `placeholder-S-${slot.position}-${index}`, name: `Vacante`, cards: [] },
-            card: { id: `placeholder-card-S-${slot.position}-${index}`, name: 'N/A', style: 'Ninguno', ratingsByPosition: {} },
-            position: slot.position,
-            average: 0,
-            performance: placeholderPerformance
-        },
-        substitute: createFn(substitute, slot.position) || {
-             player: { id: `placeholder-SUB-${slot.position}-${index}`, name: `Vacante`, cards: [] },
-            card: { id: `placeholder-card-SUB-${slot.position}-${index}`, name: 'N/A', style: 'Ninguno', ratingsByPosition: {} },
-            position: slot.position,
-            average: 0,
-            performance: placeholderPerformance
-        }
-    });
-  });
-  
-  return newTeam;
+  return newTeam.map((slot, index) => ({
+      starter: slot.starter || {
+          player: { id: `placeholder-S-${index}`, name: `Vacante`, cards: [] },
+          card: { id: `placeholder-card-S-${index}`, name: 'N/A', style: 'Ninguno', ratingsByPosition: {} },
+          position: formation.slots[index].position,
+          average: 0,
+          performance: placeholderPerformance
+      },
+      substitute: slot.substitute || {
+           player: { id: `placeholder-SUB-${index}`, name: `Vacante`, cards: [] },
+          card: { id: `placeholder-card-SUB-${index}`, name: 'N/A', style: 'Ninguno', ratingsByPosition: {} },
+          position: formation.slots[index].position,
+          average: 0,
+          performance: placeholderPerformance
+      }
+  }));
 }
