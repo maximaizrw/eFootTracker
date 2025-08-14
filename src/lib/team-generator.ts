@@ -30,7 +30,7 @@ export function generateIdealTeam(
     (player.cards || []).flatMap(card => {
       const positionsWithRatings = Object.keys(card.ratingsByPosition || {}) as Position[];
       
-      // Versatility check - this is the only stat that looks across all positions for a card.
+      // Calculate versatility once per card, as it's a card-level attribute
       const highPerfPositions = new Set<Position>();
       for (const p in card.ratingsByPosition) {
           const positionKey = p as Position;
@@ -56,8 +56,8 @@ export function generateIdealTeam(
             stats,
             isHotStreak: stats.matches >= 3 && recentStats.average > stats.average + 0.5,
             isConsistent: stats.matches >= 5 && stats.stdDev < 0.5,
-            isPromising: stats.matches < 5 && stats.average >= 8.0,
-            isVersatile: isVersatile, // Versatility is a card-level attribute
+            isPromising: stats.matches < 10, // Changed from 5 to 10
+            isVersatile: isVersatile,
         };
 
         return {
@@ -89,7 +89,6 @@ export function generateIdealTeam(
       return candidates.find(p => !usedPlayerIds.has(p.player.id) && !discardedCardIds.has(p.card.id));
   };
   
-  // Create a type to hold temporary data for each slot during processing
   type ProcessingSlot = {
     starter: IdealTeamPlayer | null;
     substitute: IdealTeamPlayer | null;
@@ -103,17 +102,23 @@ export function generateIdealTeam(
   formation.slots.forEach((formationSlot) => {
     const hasStylePreference = formationSlot.styles && formationSlot.styles.length > 0;
     
-    // Filter candidates for the specific position and optionally by style.
-    const eligibleCandidates = allPlayerCandidates.filter(p => {
-      const positionMatch = p.position === formationSlot.position;
-      const styleMatch = !hasStylePreference || formationSlot.styles!.includes(p.card.style);
-      return positionMatch && styleMatch;
-    });
+    // Get all candidates for the specific position.
+    const positionCandidates = allPlayerCandidates
+      .filter(p => p.position === formationSlot.position)
+      .sort((a, b) => b.average - a.average);
 
-    // Sort by the average IN THAT SPECIFIC POSITION.
-    eligibleCandidates.sort((a, b) => b.average - a.average);
-
-    const starterCandidate = findBestPlayer(eligibleCandidates);
+    let starterCandidate: CandidatePlayer | undefined;
+    
+    // First, try to find a player matching the preferred style.
+    if (hasStylePreference) {
+        const styleCandidates = positionCandidates.filter(p => formationSlot.styles!.includes(p.card.style));
+        starterCandidate = findBestPlayer(styleCandidates);
+    }
+    
+    // If no style-matching player is found (or no style was specified), find the best overall for the position.
+    if (!starterCandidate) {
+        starterCandidate = findBestPlayer(positionCandidates);
+    }
     
     if (starterCandidate) {
       usedPlayerIds.add(starterCandidate.player.id);
@@ -122,25 +127,33 @@ export function generateIdealTeam(
     processingSlots.push({
       starter: createTeamPlayer(starterCandidate, formationSlot.position),
       substitute: null,
-      candidatePool: eligibleCandidates,
+      candidatePool: positionCandidates,
       formationSlot: formationSlot,
     });
   });
   
   // 3. Iterate again to select SUBSTITUTES, ensuring no player is picked twice.
   processingSlots.forEach(slot => {
+    // Candidates for this position, already sorted by average rating.
     const candidatePool = slot.candidatePool;
     
     // Define substitute priority groups from the remaining candidates in that position's pool.
     const hotStreaks = candidatePool.filter(p => p.performance.isHotStreak);
     const promises = candidatePool.filter(p => p.performance.isPromising);
     
-    let substituteCandidate = findBestPlayer(hotStreaks);
+    let substituteCandidate: CandidatePlayer | undefined;
+
+    // Priority 1: Find best player in hot streak
+    substituteCandidate = findBestPlayer(hotStreaks);
+    
+    // Priority 2: Find best promising player
     if (!substituteCandidate) {
-        substituteCandidate = findBestPlayer(promises);
+      substituteCandidate = findBestPlayer(promises);
     }
+    
+    // Priority 3: Find best remaining player (fallback)
     if (!substituteCandidate) {
-        substituteCandidate = findBestPlayer(candidatePool); // Fallback to any remaining player.
+      substituteCandidate = findBestPlayer(candidatePool);
     }
 
     if (substituteCandidate) {
