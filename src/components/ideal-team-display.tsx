@@ -1,7 +1,7 @@
 
 "use client";
 
-import type { IdealTeamPlayer, IdealTeamSlot, FormationStats, PlayerPerformance } from '@/lib/types';
+import type { IdealTeamPlayer, IdealTeamSlot, FormationStats, PlayerPerformance, Position } from '@/lib/types';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { formatAverage, cn } from '@/lib/utils';
@@ -202,6 +202,11 @@ const SubstitutePlayerRow = ({ player }: { player: IdealTeamPlayer | null }) => 
   );
 };
 
+// Define the tactical order for substitutes
+const substituteOrder: Position[] = [
+    'PT', 'DFC', 'LI', 'LD', 'MCD', 'MC', 'MDI', 'MDD', 'MO', 'EXI', 'EXD', 'SD', 'DC'
+];
+
 export function IdealTeamDisplay({ teamSlots, formation, onDiscardPlayer }: IdealTeamDisplayProps) {
   if (teamSlots.length === 0 || !formation) {
     return (
@@ -211,7 +216,14 @@ export function IdealTeamDisplay({ teamSlots, formation, onDiscardPlayer }: Idea
     );
   }
   
-  const substitutes = teamSlots.map(slot => slot.substitute).filter(sub => sub !== null);
+  const substitutes = teamSlots
+    .map(slot => slot.substitute)
+    .filter((sub): sub is IdealTeamPlayer => sub !== null && !sub.player.id.startsWith('placeholder'))
+    .sort((a, b) => {
+        const indexA = substituteOrder.indexOf(a.position);
+        const indexB = substituteOrder.indexOf(b.position);
+        return indexA - indexB;
+    });
 
   return (
     <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
