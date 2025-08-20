@@ -7,7 +7,7 @@ import Link from 'next/link';
 import type { FormationStats, MatchResult } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Trash2, Link as LinkIcon, Trophy, LayoutGrid, List, Pencil, History } from 'lucide-react';
+import { PlusCircle, Trash2, Link as LinkIcon, Trophy, LayoutGrid, List, Pencil, History, Star } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
@@ -30,6 +30,7 @@ type FormationsDisplayProps = {
   onDeleteMatchResult: (formationId: string, matchId: string) => void;
   onEdit: (formation: FormationStats) => void;
   onViewImage: (url: string, name: string) => void;
+  onGenerateIdealTeam: (formationId: string) => void;
 };
 
 const calculateStats = (matches: FormationStats['matches']) => {
@@ -108,7 +109,7 @@ const MatchHistory = ({ matches, formationId, onDeleteMatchResult }: { matches: 
   )
 }
 
-const FormationCard = ({ formation, onAddMatch, onDeleteFormation, onEdit, onViewImage, onDeleteMatchResult }: Omit<FormationsDisplayProps, 'formations' | 'onDelete'> & { formation: FormationStats }) => {
+const FormationCard = ({ formation, onAddMatch, onDeleteFormation, onEdit, onViewImage, onDeleteMatchResult, onGenerateIdealTeam }: Omit<FormationsDisplayProps, 'formations'>) => {
     const stats = calculateStats(formation.matches);
     const effectivenessColor = 
       stats.effectiveness >= 66 ? 'text-green-400' :
@@ -227,37 +228,41 @@ const FormationCard = ({ formation, onAddMatch, onDeleteFormation, onEdit, onVie
                 onDeleteMatchResult={onDeleteMatchResult}
             />
         </CardContent>
-        <CardFooter className="p-4 border-t border-white/10 flex justify-between">
-          <Button onClick={() => onAddMatch(formation.id, formation.name)}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Añadir Partido
-          </Button>
-          <div className="flex items-center gap-2">
-            <TooltipProvider>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button variant="outline" size="icon" onClick={() => onEdit(formation)}>
-                            <Pencil className="h-4 w-4" />
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent><p>Editar Formación</p></TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button variant="destructive" size="icon" onClick={() => onDeleteFormation(formation)}>
-                            <Trash2 className="h-4 w-4" />
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent><p>Eliminar Formación</p></TooltipContent>
-                </Tooltip>
-            </TooltipProvider>
-          </div>
+        <CardFooter className="p-4 border-t border-white/10 grid grid-cols-2 gap-2">
+            <Button variant="secondary" onClick={() => onGenerateIdealTeam(formation.id)}>
+                <Star className="mr-2 h-4 w-4" />
+                Generar 11 Ideal
+            </Button>
+            <Button onClick={() => onAddMatch(formation.id, formation.name)}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Añadir Partido
+            </Button>
+            <div className="col-span-2 flex items-center justify-end gap-2 mt-2">
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="outline" size="icon" onClick={() => onEdit(formation)}>
+                                <Pencil className="h-4 w-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent><p>Editar Formación</p></TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="destructive" size="icon" onClick={() => onDeleteFormation(formation)}>
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent><p>Eliminar Formación</p></TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            </div>
         </CardFooter>
       </Card>
     );
 };
 
-const FormationRow = ({ formation, onAddMatch, onEdit, onDeleteFormation }: Omit<FormationsDisplayProps, 'formations' | 'onViewImage' | 'onDeleteMatchResult' | 'onDelete'> & { onDeleteFormation: FormationsDisplayProps['onDeleteFormation'] }) => {
+const FormationRow = ({ formation, onAddMatch, onEdit, onDeleteFormation, onGenerateIdealTeam }: Omit<FormationsDisplayProps, 'formations' | 'onViewImage' | 'onDeleteMatchResult'>) => {
     const stats = calculateStats(formation.matches);
      const effectivenessColor = 
       stats.effectiveness >= 66 ? 'text-green-400' :
@@ -281,6 +286,10 @@ const FormationRow = ({ formation, onAddMatch, onEdit, onDeleteFormation }: Omit
                 </div>
             </div>
             <div className="flex items-center gap-2">
+                <Button size="sm" variant="secondary" onClick={() => onGenerateIdealTeam(formation.id)}>
+                    <Star className="mr-2 h-4 w-4" />
+                    11 Ideal
+                </Button>
                 <Button size="sm" onClick={() => onAddMatch(formation.id, formation.name)}>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Partido
@@ -308,7 +317,7 @@ const FormationRow = ({ formation, onAddMatch, onEdit, onDeleteFormation }: Omit
     );
 };
 
-export function FormationsDisplay({ formations, onAddMatch, onDeleteFormation, onEdit, onViewImage, onDeleteMatchResult }: FormationsDisplayProps) {
+export function FormationsDisplay({ formations, onAddMatch, onDeleteFormation, onEdit, onViewImage, onDeleteMatchResult, onGenerateIdealTeam }: FormationsDisplayProps) {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const sortedFormations = [...formations].sort((a, b) => {
@@ -351,6 +360,7 @@ export function FormationsDisplay({ formations, onAddMatch, onDeleteFormation, o
                         onEdit={onEdit}
                         onViewImage={onViewImage}
                         onDeleteMatchResult={onDeleteMatchResult}
+                        onGenerateIdealTeam={onGenerateIdealTeam}
                     />
                 ))}
             </div>
@@ -363,6 +373,7 @@ export function FormationsDisplay({ formations, onAddMatch, onDeleteFormation, o
                         onAddMatch={onAddMatch}
                         onEdit={onEdit}
                         onDeleteFormation={onDeleteFormation}
+                        onGenerateIdealTeam={onGenerateIdealTeam}
                     />
                 ))}
             </div>

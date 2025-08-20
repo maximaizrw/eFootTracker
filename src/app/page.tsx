@@ -203,6 +203,11 @@ export default function Home() {
     setIdealTeam([]); // Clear team when formation changes
     setDiscardedCardIds(new Set()); // Clear discarded players when formation changes
   };
+  
+  const handleGoToIdealTeam = (formationId: string) => {
+    setActiveTab('ideal-11');
+    handleFormationSelectionChange(formationId);
+  }
 
   const handleDiscardPlayer = (cardId: string) => {
     setDiscardedCardIds(prev => new Set(prev).add(cardId));
@@ -416,6 +421,7 @@ export default function Home() {
               onEdit={handleOpenEditFormation}
               onViewImage={handleViewImage}
               onDeleteMatchResult={deleteMatchResult}
+              onGenerateIdealTeam={handleGoToIdealTeam}
             />
           </TabsContent>
 
