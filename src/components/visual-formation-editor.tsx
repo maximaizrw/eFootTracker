@@ -51,14 +51,14 @@ const PlayerToken = ({
     <div
         className={cn(
             "absolute -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full flex flex-col items-center justify-center transition-all duration-200 cursor-grab",
-            "bg-primary/20 border-2 border-primary/80 text-primary-foreground",
-            "hover:bg-primary/40 hover:scale-105",
-             isSelected && "ring-4 ring-accent scale-110 z-10 cursor-grabbing"
+            "bg-primary/80 border-2 border-primary text-primary-foreground",
+            "hover:bg-primary hover:scale-105",
+             isSelected && "ring-4 ring-accent scale-110 z-10 cursor-grabbing shadow-lg"
         )}
-        style={style}
+        style={{...style, textShadow: '0 1px 2px rgba(0,0,0,0.4)'}}
         onMouseDown={onMouseDown}
     >
-      <span className="font-bold text-lg text-white">{slot.position}</span>
+      <span className="font-bold text-lg">{slot.position}</span>
       <div className="absolute top-0.5 right-0.5 flex gap-0.5">
           <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
             <PopoverTrigger asChild>
@@ -207,7 +207,7 @@ export function VisualFormationEditor({ value, onChange }: VisualFormationEditor
     <div 
         ref={editorRef}
         className={cn(
-            "relative w-full aspect-video bg-field-gradient rounded-lg border border-white/10 overflow-hidden",
+            "relative w-full aspect-video bg-field-gradient rounded-lg border border-primary/50 shadow-[0_0_20px_theme(colors.primary/0.4)] overflow-hidden",
             movingTokenIndex !== null && "cursor-grabbing"
         )}
     >

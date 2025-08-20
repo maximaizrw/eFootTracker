@@ -381,7 +381,7 @@ export default function Home() {
 
       <header className="sticky top-0 z-10 bg-background/70 backdrop-blur-lg border-b border-white/10">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-3xl font-bold font-headline text-primary" style={{ textShadow: '0 0 8px hsl(var(--primary))' }}>
+          <h1 className="text-3xl font-bold font-headline text-primary" style={{ textShadow: '0 0 10px hsl(var(--primary))' }}>
             eFootTracker
           </h1>
           <div className="flex items-center gap-2">
@@ -403,11 +403,11 @@ export default function Home() {
                 {pos}
               </TabsTrigger>
             ))}
-             <TabsTrigger value="formations" className="py-2 data-[state=active]:bg-accent/20 data-[state=active]:text-accent">
+             <TabsTrigger value="formations" className="py-2 data-[state=active]:bg-accent/20 data-[state=active]:text-accent data-[state=active]:shadow-[0_0_10px_theme(colors.accent)]">
                 <Trophy className="mr-2 h-5 w-5"/>
                 Formaciones
             </TabsTrigger>
-            <TabsTrigger value="ideal-11" className="py-2 data-[state=active]:bg-accent/20 data-[state=active]:text-accent">
+            <TabsTrigger value="ideal-11" className="py-2 data-[state=active]:bg-accent/20 data-[state=active]:text-accent data-[state=active]:shadow-[0_0_10px_theme(colors.accent)]">
                 <Star className="mr-2 h-5 w-5"/>
                 11 Ideal
             </TabsTrigger>
@@ -537,8 +537,8 @@ export default function Home() {
           <TabsContent value="ideal-11" className="mt-6">
              <Card className="bg-card/60 border-white/10">
                <CardHeader>
-                 <CardTitle className="flex items-center gap-2">
-                   <Star className="text-accent"/>
+                 <CardTitle className="flex items-center gap-2 text-accent">
+                   <Star />
                    Generador de 11 Ideal
                  </CardTitle>
                  <CardDescription>

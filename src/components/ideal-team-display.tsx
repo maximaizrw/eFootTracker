@@ -91,7 +91,7 @@ const PlayerToken = ({ player, style, onDiscard }: { player: IdealTeamPlayer | n
       className={cn(
         "absolute -translate-x-1/2 -translate-y-1/2 w-24 h-28 rounded-lg flex flex-col items-center justify-between text-center transition-all duration-200 p-1 group",
         "bg-card/80 backdrop-blur-sm border",
-        cardStyleInfo ? "bg-[--card-color]/10 border-[--card-color]/40" : "border-white/10"
+        cardStyleInfo ? "bg-[--card-color]/10 border-[--card-color]/40" : "border-primary/40"
       )}
       style={{...style, ...cardColorStyle}}
     >
@@ -229,7 +229,7 @@ export function IdealTeamDisplay({ teamSlots, formation, onDiscardPlayer }: Idea
     <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
       <div className="lg:col-span-2">
         <div 
-            className="relative w-full aspect-video bg-field-gradient rounded-lg border border-white/10 overflow-hidden"
+            className="relative w-full aspect-video bg-field-gradient rounded-lg border border-primary/50 shadow-[0_0_20px_theme(colors.primary/0.4)] overflow-hidden"
         >
           {/* Field markings */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-36 h-36 md:w-48 md:h-48 border-2 border-white/20 rounded-full pointer-events-none" />
