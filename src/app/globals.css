@@ -10,7 +10,7 @@
     --card: 240 10% 8%;
     --card-foreground: 0 0% 98%;
 
-    --popover: 240 10% 3.9%;
+    --popover: 240 10% 8%;
     --popover-foreground: 0 0% 98%;
 
     --primary: 90 100% 50%; /* Electric Green */
@@ -42,9 +42,9 @@
   }
   body {
     @apply bg-background text-foreground;
-    background: radial-gradient(circle at top left, hsl(var(--accent), 0.1) 0%, transparent 25%),
-                radial-gradient(circle at bottom right, hsl(var(--primary), 0.1) 0%, transparent 25%),
-                hsl(var(--background));
+    background-color: hsl(var(--background));
+    background-image: radial-gradient(circle at top left, hsl(var(--accent), 0.1) 0%, transparent 25%),
+                radial-gradient(circle at bottom right, hsl(var(--primary), 0.1) 0%, transparent 25%);
     min-height: 100vh;
   }
 }
