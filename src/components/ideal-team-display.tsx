@@ -147,7 +147,7 @@ const PlayerToken = ({ player, style, onDiscard }: { player: IdealTeamPlayer | n
   );
 };
 
-const SubstitutePlayerRow = ({ player }: { player: IdealTeamPlayer | null }) => {
+const SubstitutePlayerRow = ({ player, onDiscard }: { player: IdealTeamPlayer | null, onDiscard: (cardId: string) => void }) => {
   if (!player || player.player.id.startsWith('placeholder')) {
     return (
       <div className="flex items-center gap-3 p-2 rounded-lg bg-black/20 border-2 border-dashed border-white/30 h-16">
@@ -168,7 +168,7 @@ const SubstitutePlayerRow = ({ player }: { player: IdealTeamPlayer | null }) => 
   return (
     <div 
         className={cn(
-            "flex items-center gap-3 p-2 rounded-lg bg-card/60 border border-white/10 h-16",
+            "group flex items-center gap-3 p-2 rounded-lg bg-card/60 border border-white/10 h-16 relative",
             cardStyleInfo && "bg-[--card-color]/10 border-[--card-color]/40"
         )}
         style={cardColorStyle}
@@ -198,6 +198,23 @@ const SubstitutePlayerRow = ({ player }: { player: IdealTeamPlayer | null }) => 
       </div>
       <Badge variant="secondary" className="bg-white/5 text-white/70 text-xs">{player.card.style}</Badge>
       <div className="font-bold text-lg w-12 text-center">{formatAverage(player.average)}</div>
+      <TooltipProvider>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-1/2 -translate-y-1/2 right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                        onClick={() => onDiscard(player.card.id)}
+                    >
+                        <X className="h-3 w-3" />
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent side="left">
+                    <p>Descartar jugador</p>
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
     </div>
   );
 };
@@ -222,6 +239,9 @@ export function IdealTeamDisplay({ teamSlots, formation, onDiscardPlayer }: Idea
     .sort((a, b) => {
         const indexA = substituteOrder.indexOf(a.position);
         const indexB = substituteOrder.indexOf(b.position);
+        if(indexA === -1 && indexB === -1) return 0;
+        if(indexA === -1) return 1;
+        if(indexB === -1) return -1;
         return indexA - indexB;
     });
 
@@ -254,7 +274,7 @@ export function IdealTeamDisplay({ teamSlots, formation, onDiscardPlayer }: Idea
         <h3 className="text-xl font-semibold mb-4 text-center">Banquillo de Suplentes</h3>
         <div className="space-y-2">
           {substitutes.map((sub, index) => (
-             <SubstitutePlayerRow key={sub?.card.id || `sub-${index}`} player={sub} />
+             <SubstitutePlayerRow key={sub?.card.id || `sub-${index}`} player={sub} onDiscard={onDiscardPlayer}/>
           ))}
         </div>
       </div>
