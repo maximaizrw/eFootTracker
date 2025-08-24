@@ -201,7 +201,6 @@ export default function Home() {
   const handleFormationSelectionChange = (id: string) => {
     setSelectedFormationId(id);
     setIdealTeam([]); // Clear team when formation changes
-    setDiscardedCardIds(new Set()); // Clear discarded players when formation changes
   };
   
   const handleGoToIdealTeam = (formationId: string) => {
