@@ -69,7 +69,7 @@ const PlayerToken = ({ player, style, onDiscard }: { player: IdealTeamPlayer | n
   if (!player || player.player.id.startsWith('placeholder')) {
     return (
       <div 
-        className="absolute -translate-x-1/2 -translate-y-1/2 w-24 h-28 rounded-lg flex flex-col items-center justify-center transition-all duration-200 border-2 border-dashed border-white/30 bg-black/20"
+        className="absolute -translate-x-1/2 -translate-y-1/2 w-20 h-24 rounded-lg flex flex-col items-center justify-center transition-all duration-200 border-2 border-dashed border-white/30 bg-black/20"
         style={style}
       >
         <Shirt className="w-8 h-8 text-white/40" />
@@ -89,7 +89,7 @@ const PlayerToken = ({ player, style, onDiscard }: { player: IdealTeamPlayer | n
   return (
     <div 
       className={cn(
-        "absolute -translate-x-1/2 -translate-y-1/2 w-24 h-28 rounded-lg flex flex-col items-center justify-between text-center transition-all duration-200 p-1 group",
+        "absolute -translate-x-1/2 -translate-y-1/2 w-20 h-24 rounded-lg flex flex-col items-center justify-between text-center transition-all duration-200 p-1 group",
         "bg-card/80 backdrop-blur-sm border",
         cardStyleInfo ? "bg-[--card-color]/10 border-[--card-color]/40" : "border-primary/40"
       )}
@@ -113,18 +113,18 @@ const PlayerToken = ({ player, style, onDiscard }: { player: IdealTeamPlayer | n
             </Tooltip>
         </TooltipProvider>
 
-      <div className="relative w-14 h-14 flex-shrink-0 mt-1">
+      <div className="relative w-12 h-12 flex-shrink-0 mt-1">
         {player.card.imageUrl ? (
           <Image
             src={player.card.imageUrl}
             alt={player.card.name}
             fill
-            sizes="56px"
+            sizes="48px"
             className="object-contain"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-muted/40 rounded-full">
-            <Users className="w-8 h-8 text-muted-foreground/60" />
+            <Users className="w-7 h-7 text-muted-foreground/60" />
           </div>
         )}
         <div 
@@ -137,11 +137,11 @@ const PlayerToken = ({ player, style, onDiscard }: { player: IdealTeamPlayer | n
            {formatAverage(player.average)}
         </div>
       </div>
-      <div className="w-full mb-1">
+      <div className="w-full mb-0.5">
         <p className="font-semibold text-xs text-foreground truncate w-full" title={player.player.name}>
           {player.player.name}
         </p>
-        <p className="font-bold text-lg leading-tight -mt-0.5">{player.position}</p>
+        <p className="font-bold text-base leading-tight">{player.position}</p>
       </div>
     </div>
   );

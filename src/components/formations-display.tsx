@@ -109,7 +109,7 @@ const MatchHistory = ({ matches, formationId, onDeleteMatchResult }: { matches: 
   )
 }
 
-const FormationCard = ({ formation, onAddMatch, onDeleteFormation, onEdit, onViewImage, onDeleteMatchResult, onGenerateIdealTeam }: Omit<FormationsDisplayProps, 'formations'>) => {
+const FormationCard = ({ formation, onAddMatch, onDeleteFormation, onEdit, onViewImage, onDeleteMatchResult, onGenerateIdealTeam }: Omit<FormationsDisplayProps, 'formations' | 'onGenerateIdealTeam'> & { onGenerateIdealTeam: (id: string) => void }) => {
     const stats = calculateStats(formation.matches);
     const effectivenessColor = 
       stats.effectiveness >= 66 ? 'text-green-400' :
@@ -262,7 +262,7 @@ const FormationCard = ({ formation, onAddMatch, onDeleteFormation, onEdit, onVie
     );
 };
 
-const FormationRow = ({ formation, onAddMatch, onEdit, onDeleteFormation, onGenerateIdealTeam }: Omit<FormationsDisplayProps, 'formations' | 'onViewImage' | 'onDeleteMatchResult'>) => {
+const FormationRow = ({ formation, onAddMatch, onEdit, onDeleteFormation, onGenerateIdealTeam }: Omit<FormationsDisplayProps, 'formations' | 'onViewImage' | 'onDeleteMatchResult' | 'onAddMatch'> & { onAddMatch: (id: string, name: string) => void }) => {
     const stats = calculateStats(formation.matches);
      const effectivenessColor = 
       stats.effectiveness >= 66 ? 'text-green-400' :
@@ -270,22 +270,22 @@ const FormationRow = ({ formation, onAddMatch, onEdit, onDeleteFormation, onGene
       stats.total > 0 ? 'text-red-400' : 'text-muted-foreground';
 
     return (
-        <div className="flex items-center justify-between p-4 bg-card/60 border border-white/10 rounded-lg">
-            <div className="flex-1">
-                <p className="text-lg font-semibold">{formation.name} {formation.creator && <span className="font-normal text-muted-foreground">- {formation.creator}</span>}</p>
-                <p className="text-sm text-muted-foreground">{formation.playStyle}</p>
+        <div className="flex items-center justify-between p-4 bg-card/60 border border-white/10 rounded-lg hover:bg-card/80 transition-colors">
+            <div className="flex-1 overflow-hidden">
+                <p className="text-lg font-semibold truncate">{formation.name}</p>
+                <p className="text-sm text-muted-foreground truncate">{formation.creator ? `${formation.creator} - ${formation.playStyle}` : formation.playStyle}</p>
             </div>
-            <div className="flex items-center gap-6 mx-6">
-                <div className="text-center">
+            <div className="flex items-center gap-6 mx-6 flex-shrink-0">
+                <div className="text-center w-20">
                     <p className="text-xl font-bold">{stats.wins}-{stats.draws}-{stats.losses}</p>
                     <p className="text-xs text-muted-foreground">V-E-D</p>
                 </div>
-                 <div className="text-center">
+                 <div className="text-center w-24">
                     <p className={cn("text-xl font-bold", effectivenessColor)}>{stats.effectiveness.toFixed(0)}%</p>
                     <p className="text-xs text-muted-foreground">Efectividad</p>
                 </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
                 <Button size="sm" variant="secondary" onClick={() => onGenerateIdealTeam(formation.id)}>
                     <Star className="mr-2 h-4 w-4" />
                     11 Ideal
@@ -318,7 +318,7 @@ const FormationRow = ({ formation, onAddMatch, onEdit, onDeleteFormation, onGene
 };
 
 export function FormationsDisplay({ formations, onAddMatch, onDeleteFormation, onEdit, onViewImage, onDeleteMatchResult, onGenerateIdealTeam }: FormationsDisplayProps) {
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
   const sortedFormations = [...formations].sort((a, b) => {
     const statsA = calculateStats(a.matches);
