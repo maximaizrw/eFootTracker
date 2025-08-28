@@ -41,20 +41,6 @@ export function generateIdealTeam(
       
       const positionsWithRatings = Object.keys(card.ratingsByPosition || {}) as Position[];
 
-      // If a card has no ratings at all, create a candidate with 0 average for all positions in the formation
-      // so it can be picked as a last resort.
-      if (positionsWithRatings.length === 0) {
-          return formation.slots.map(slot => {
-            const stats = calculateStats([]);
-            const performance: PlayerPerformance = {
-              stats, isHotStreak: false, isConsistent: false, isPromising: true, isVersatile: false,
-            };
-            return {
-              player, card, position: slot.position, average: 0, performance,
-            }
-          })
-      }
-
       return positionsWithRatings.map(pos => {
         const ratings = card.ratingsByPosition![pos]!;
         const stats = calculateStats(ratings);
@@ -65,7 +51,7 @@ export function generateIdealTeam(
             stats,
             isHotStreak: stats.matches >= 3 && recentStats.average > stats.average + 0.5,
             isConsistent: stats.matches >= 5 && stats.stdDev < 0.5,
-            isPromising: stats.matches < 10,
+            isPromising: stats.matches > 0 && stats.matches < 10,
             isVersatile: isVersatile,
         };
 
@@ -146,16 +132,14 @@ export function generateIdealTeam(
     // Define different groups of candidates based on performance and style preferences.
     const getPerformanceGroups = (candidates: CandidatePlayer[]) => ({
         hotStreaks: candidates.filter(p => p.performance.isHotStreak),
-        promisingWithRatings: candidates.filter(p => p.performance.isPromising && p.performance.stats.matches > 0 && p.performance.stats.matches < 10),
-        promisingUnrated: candidates.filter(p => p.performance.isPromising && p.performance.stats.matches === 0),
-        others: candidates,
+        promising: candidates.filter(p => p.performance.isPromising),
+        others: candidates.filter(p => !p.performance.isHotStreak && !p.performance.isPromising),
     });
 
     const findSubstitute = (candidates: CandidatePlayer[]) => {
       const groups = getPerformanceGroups(candidates);
       return findBestPlayer(groups.hotStreaks) || 
-             findBestPlayer(groups.promisingWithRatings) ||
-             findBestPlayer(groups.promisingUnrated) || 
+             findBestPlayer(groups.promising) ||
              findBestPlayer(groups.others);
     }
 
@@ -203,5 +187,3 @@ export function generateIdealTeam(
     };
   });
 }
-
-    

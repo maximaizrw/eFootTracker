@@ -24,14 +24,6 @@ export type Player = {
   cards: PlayerCard[];
 };
 
-export type AddPlayerFormValues = {
-    playerId?: string;
-    playerName: string;
-    cardName: string;
-    style: PlayerStyle;
-    imageUrl?: string;
-}
-
 export type AddRatingFormValues = {
     playerId?: string;
     playerName: string;
@@ -164,5 +156,3 @@ export type FlatPlayer = {
   ratingsForPos: number[];
   performance: PlayerPerformance;
 };
-
-    
