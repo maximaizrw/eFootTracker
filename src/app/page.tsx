@@ -202,8 +202,7 @@ export default function Home() {
   
   const handleFormationSelectionChange = (id: string) => {
     setSelectedFormationId(id);
-    // Don't reset discards here, let it be a manual action
-    // setDiscardedCardIds(new Set());
+    // setDiscardedCardIds(new Set()); // This was removed
   };
   
   const handleGoToIdealTeam = (formationId: string) => {
@@ -440,7 +439,7 @@ export default function Home() {
           </TabsContent>
 
           {positions.map((pos) => {
-            // 1. Calculate detailed stats for each player/card combination for the *current* position tab
+            // 1. Calculate detailed stats for each player/card combination
             const flatPlayerList: FlatPlayer[] = allPlayers.flatMap(player => 
                 (player.cards || []).map(card => {
                     const ratingsForPos = card.ratingsByPosition?.[pos] || [];
@@ -448,16 +447,13 @@ export default function Home() {
                     const recentRatings = ratingsForPos.slice(-3);
                     const recentStats = calculateStats(recentRatings);
 
-                    // Versatility check - Does the player perform well in other positions?
                     const highPerfPositions = new Set<Position>();
                     for (const p in card.ratingsByPosition) {
                         const positionKey = p as Position;
                         const posRatings = card.ratingsByPosition[positionKey];
                         if (posRatings && posRatings.length > 0) {
                            const posAvg = calculateStats(posRatings).average;
-                           if (posAvg >= 7.5) {
-                            highPerfPositions.add(positionKey);
-                           }
+                           if (posAvg >= 7.5) highPerfPositions.add(positionKey);
                         }
                     }
 
@@ -469,25 +465,23 @@ export default function Home() {
                         isVersatile: highPerfPositions.size >= 3,
                     };
 
-                    return { 
-                        player, 
-                        card,
-                        ratingsForPos,
-                        performance,
-                    };
+                    return { player, card, ratingsForPos, performance };
                 })
             );
             
             // 2. Filter the list
-            const filteredPlayerList = flatPlayerList.filter(({ player, card, performance }) => {
+            const filteredPlayerList = flatPlayerList.filter(({ player, card, performance, ratingsForPos }) => {
                 const searchMatch = normalizeText(player.name).includes(normalizeText(searchTerm));
                 const styleMatch = styleFilter === 'all' || card.style === styleFilter;
                 const cardMatch = cardFilter === 'all' || card.name === cardFilter;
                 
-                // Keep players with ratings for this position, or players with no ratings at all (new players)
-                const isRelevantForPosition = performance.stats.matches > 0 || player.cards.every(c => Object.keys(c.ratingsByPosition).length === 0);
+                // Keep players if they have ratings for this position,
+                // OR if they are a brand new player with no ratings anywhere.
+                const totalRatingsForCard = Object.values(card.ratingsByPosition || {}).flat().length;
+                const isBrandNew = totalRatingsForCard === 0;
 
-                return searchMatch && styleMatch && cardMatch;
+                return searchMatch && styleMatch && cardMatch && (ratingsForPos.length > 0 || isBrandNew);
+
             }).sort((a, b) => {
               // 3. Sort the list
               const avgA = a.performance.stats.average;
@@ -500,9 +494,7 @@ export default function Home() {
               if (matchesA > 0 && matchesB === 0) return -1;
               
               // Then sort by average rating
-              if (avgB !== avgA) {
-                return avgB - avgA;
-              }
+              if (avgB !== avgA) return avgB - avgA;
 
               // Finally, sort by number of matches
               return matchesB - matchesA;

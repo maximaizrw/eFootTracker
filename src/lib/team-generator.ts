@@ -28,23 +28,16 @@ export function generateIdealTeam(
   // Create a flat list of all possible player-card-position combinations
   const allPlayerCandidates: CandidatePlayer[] = players.flatMap(player =>
     (player.cards || []).flatMap(card => {
-      // Create a set of all positions a player has ratings for.
-      const ratedPositions = new Set<Position>(Object.keys(card.ratingsByPosition || {}) as Position[]);
-
-      const isVersatile = (() => {
-        const highPerfPositions = new Set<Position>();
-        for (const p in card.ratingsByPosition) {
-            const positionKey = p as Position;
-            const posRatings = card.ratingsByPosition[positionKey];
-            if (posRatings && posRatings.length > 0) {
-                const posAvg = calculateStats(posRatings).average;
-                if (posAvg >= 7.5) {
-                    highPerfPositions.add(positionKey);
-                }
-            }
-        }
-        return highPerfPositions.size >= 3;
-      })();
+      const highPerfPositions = new Set<Position>();
+      for (const p in card.ratingsByPosition) {
+          const positionKey = p as Position;
+          const posRatings = card.ratingsByPosition[positionKey];
+          if (posRatings && posRatings.length > 0) {
+              const posAvg = calculateStats(posRatings).average;
+              if (posAvg >= 7.5) highPerfPositions.add(positionKey);
+          }
+      }
+      const isVersatile = highPerfPositions.size >= 3;
       
       const positionsWithRatings = Object.keys(card.ratingsByPosition || {}) as Position[];
 
@@ -62,10 +55,8 @@ export function generateIdealTeam(
           })
       }
 
-
       return positionsWithRatings.map(pos => {
         const ratings = card.ratingsByPosition![pos]!;
-        
         const stats = calculateStats(ratings);
         const recentRatings = ratings.slice(-3);
         const recentStats = calculateStats(recentRatings);
@@ -151,11 +142,11 @@ export function generateIdealTeam(
       .sort((a, b) => b.average - a.average);
 
     let substituteCandidate: CandidatePlayer | undefined;
-
+    
     // Define different groups of candidates based on performance and style preferences.
     const getPerformanceGroups = (candidates: CandidatePlayer[]) => ({
         hotStreaks: candidates.filter(p => p.performance.isHotStreak),
-        promisingWithRatings: candidates.filter(p => p.performance.isPromising && p.performance.stats.matches > 0),
+        promisingWithRatings: candidates.filter(p => p.performance.isPromising && p.performance.stats.matches > 0 && p.performance.stats.matches < 10),
         promisingUnrated: candidates.filter(p => p.performance.isPromising && p.performance.stats.matches === 0),
         others: candidates,
     });
@@ -167,7 +158,6 @@ export function generateIdealTeam(
              findBestPlayer(groups.promisingUnrated) || 
              findBestPlayer(groups.others);
     }
-
 
     // Attempt to find a substitute with the preferred style first.
     if (hasStylePreference) {
