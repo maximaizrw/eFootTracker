@@ -202,7 +202,6 @@ export default function Home() {
   
   const handleFormationSelectionChange = (id: string) => {
     setSelectedFormationId(id);
-    // setDiscardedCardIds(new Set()); // This was removed
   };
   
   const handleGoToIdealTeam = (formationId: string) => {
@@ -470,17 +469,18 @@ export default function Home() {
             );
             
             // 2. Filter the list
-            const filteredPlayerList = flatPlayerList.filter(({ player, card, performance, ratingsForPos }) => {
+            const filteredPlayerList = flatPlayerList.filter(({ player, card, ratingsForPos }) => {
                 const searchMatch = normalizeText(player.name).includes(normalizeText(searchTerm));
                 const styleMatch = styleFilter === 'all' || card.style === styleFilter;
                 const cardMatch = cardFilter === 'all' || card.name === cardFilter;
                 
-                // Keep players if they have ratings for this position,
-                // OR if they are a brand new player with no ratings anywhere.
-                const totalRatingsForCard = Object.values(card.ratingsByPosition || {}).flat().length;
-                const isBrandNew = totalRatingsForCard === 0;
+                // A player is considered "brand new" if they have no ratings across ALL their cards.
+                const totalRatingsForPlayer = player.cards.reduce((total, c) => {
+                    return total + Object.values(c.ratingsByPosition || {}).flat().length;
+                }, 0);
+                const isBrandNewPlayer = totalRatingsForPlayer === 0;
 
-                return searchMatch && styleMatch && cardMatch && (ratingsForPos.length > 0 || isBrandNew);
+                return searchMatch && styleMatch && cardMatch && (ratingsForPos.length > 0 || isBrandNewPlayer);
 
             }).sort((a, b) => {
               // 3. Sort the list
