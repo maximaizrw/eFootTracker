@@ -13,7 +13,6 @@ import { normalizeText } from '@/lib/utils';
 
 export function usePlayers() {
   const [players, setPlayers] = useState<Player[]>([]);
-  const [playersByPosition, setPlayersByPosition] = useState<PlayersByPosition | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -35,6 +34,7 @@ export function usePlayers() {
                 name: data.name,
                 cards: (data.cards || []).map((card: any) => ({
                     ...card,
+                    id: card.id || uuidv4(), // Ensure card has an ID
                     style: card.style || 'Ninguno',
                     imageUrl: card.imageUrl || '',
                     ratingsByPosition: card.ratingsByPosition || {}
@@ -68,37 +68,15 @@ export function usePlayers() {
 
     return () => unsub();
   }, [toast]);
-
-  useEffect(() => {
-    if (players !== null) {
-      const grouped = positions.reduce((acc, pos) => {
-        acc[pos] = [];
-        return acc;
-      }, {} as PlayersByPosition);
-      
-      players.forEach(player => {
-        const playerPositions = new Set<Position>();
-        (player.cards || []).forEach(card => {
-          Object.keys(card.ratingsByPosition || {}).forEach(pos => {
-            if ((card.ratingsByPosition?.[pos as Position] ?? []).length > 0) {
-              playerPositions.add(pos as Position);
-            }
-          });
-        });
-
-        playerPositions.forEach(pos => {
-          if (grouped[pos]) {
-            grouped[pos].push(player);
-          }
-        });
-      });
-      setPlayersByPosition(grouped);
-    }
-  }, [players]);
   
   const addPlayer = async (values: AddPlayerFormValues) => {
     const { playerName, cardName, style, imageUrl } = values;
     let { playerId } = values;
+
+    if (!db) {
+        toast({ variant: "destructive", title: "Error de Conexión", description: "No se puede conectar a la base de datos." });
+        return;
+    }
 
     try {
       if (!playerId) {
@@ -149,6 +127,11 @@ export function usePlayers() {
     const { playerName, cardName, position, rating, style } = values;
     let { playerId } = values;
 
+    if (!db) {
+        toast({ variant: "destructive", title: "Error de Conexión", description: "No se puede conectar a la base de datos." });
+        return;
+    }
+
     try {
       // Find player ignoring case and accents
       if (!playerId) {
@@ -192,6 +175,7 @@ export function usePlayers() {
   };
 
   const editCard = async (values: EditCardFormValues) => {
+    if (!db) return;
     const player = players.find(p => p.id === values.playerId);
     if (!player) return;
 
@@ -213,6 +197,7 @@ export function usePlayers() {
   };
 
   const editPlayer = async (values: EditPlayerFormValues) => {
+    if (!db) return;
     try {
       await updateDoc(doc(db, 'players', values.playerId), { name: values.currentPlayerName });
       toast({ title: "Jugador Actualizado", description: "El nombre del jugador se ha actualizado." });
@@ -223,6 +208,7 @@ export function usePlayers() {
   };
 
   const deletePlayer = async (playerId: string) => {
+    if (!db) return;
     try {
         await deleteDoc(doc(db, 'players', playerId));
         toast({ title: "Jugador Eliminado", description: "El jugador ha sido eliminado." });
@@ -233,6 +219,7 @@ export function usePlayers() {
   };
 
   const deleteCard = async (playerId: string, cardId: string, position: Position) => {
+    if (!db) return;
     const player = players.find(p => p.id === playerId);
     if (!player) return;
 
@@ -247,11 +234,19 @@ export function usePlayers() {
     delete cardToUpdate.ratingsByPosition[position];
 
     const hasRatingsLeft = Object.keys(cardToUpdate.ratingsByPosition).length > 0;
+    
+    // Only remove the card if it has no ratings left in *any* position
     const finalCards = hasRatingsLeft ? newCards.map(c => c.id === cardId ? cardToUpdate : c) : newCards.filter(c => c.id !== cardId);
 
     try {
-        await updateDoc(doc(db, 'players', playerId), { cards: finalCards });
-        toast({ title: "Acción Completada", description: `Se eliminaron las valoraciones de ${player.name} para la posición ${position}.` });
+        if (finalCards.length === 0) {
+            // If the player has no cards left, delete the player
+            await deleteDoc(doc(db, 'players', playerId));
+            toast({ title: "Jugador Eliminado", description: `Se eliminaron las valoraciones de ${player.name} para ${position}, y como no tenía más cartas, fue eliminado.` });
+        } else {
+            await updateDoc(doc(db, 'players', playerId), { cards: finalCards });
+            toast({ title: "Acción Completada", description: `Se eliminaron las valoraciones de ${player.name} para la posición ${position}.` });
+        }
     } catch (error) {
         console.error("Error deleting position ratings: ", error);
         toast({ variant: "destructive", title: "Error al Eliminar", description: "No se pudo completar la acción." });
@@ -259,6 +254,7 @@ export function usePlayers() {
   };
 
   const deleteRating = async (playerId: string, cardId: string, position: Position, ratingIndex: number) => {
+    if (!db) return;
     const player = players.find(p => p.id === playerId);
     if (!player) return;
 
@@ -298,7 +294,9 @@ export function usePlayers() {
     }
   };
 
-  return { players, playersByPosition, loading, error, addPlayer, addRating, editCard, editPlayer, deletePlayer, deleteCard, deleteRating, downloadBackup };
+  return { players, loading, error, addPlayer, addRating, editCard, editPlayer, deletePlayer, deleteCard, deleteRating, downloadBackup };
 }
+
+    
 
     

@@ -28,18 +28,8 @@ export function generateIdealTeam(
   // Create a flat list of all possible player-card-position combinations
   const allPlayerCandidates: CandidatePlayer[] = players.flatMap(player =>
     (player.cards || []).flatMap(card => {
-      // Create a set of all positions a player can play, even if they have 0 ratings.
-      const allPossiblePositions = new Set<Position>(Object.keys(card.ratingsByPosition || {}) as Position[]);
-      if (allPossiblePositions.size === 0) {
-        // If a card has no rated positions, we can't use it.
-        // Or we could make it available for all positions with a 0 rating.
-        // For now, let's assume it can't be used if it has no ratings at all.
-        // A player added with no ratings should be available though.
-        // The problem is that we dont know which positions a player can play if they have no ratings.
-        // Let's assume for now that if a card has NO ratings at all, it's not a candidate.
-        // A card with an empty ratingsByPosition will be skipped. A card with a position with an empty array will be processed.
-      }
-
+      // Create a set of all positions a player has ratings for.
+      const ratedPositions = new Set<Position>(Object.keys(card.ratingsByPosition || {}) as Position[]);
 
       const isVersatile = (() => {
         const highPerfPositions = new Set<Position>();
@@ -58,14 +48,13 @@ export function generateIdealTeam(
       
       const positionsWithRatings = Object.keys(card.ratingsByPosition || {}) as Position[];
 
-      // If a card has no positions with ratings, we can't generate stats.
-      // But we still want to consider the player.
-      // Let's create a candidate with 0 rating for *every* position in the formation.
+      // If a card has no ratings at all, create a candidate with 0 average for all positions in the formation
+      // so it can be picked as a last resort.
       if (positionsWithRatings.length === 0) {
           return formation.slots.map(slot => {
             const stats = calculateStats([]);
             const performance: PlayerPerformance = {
-              stats, isHotStreak: false, isConsistent: false, isPromising: false, isVersatile: false,
+              stats, isHotStreak: false, isConsistent: false, isPromising: true, isVersatile: false,
             };
             return {
               player, card, position: slot.position, average: 0, performance,
@@ -76,8 +65,6 @@ export function generateIdealTeam(
 
       return positionsWithRatings.map(pos => {
         const ratings = card.ratingsByPosition![pos]!;
-        // A player can have a position key with an empty array.
-        // if (ratings.length === 0) return null;
         
         const stats = calculateStats(ratings);
         const recentRatings = ratings.slice(-3);
@@ -168,14 +155,17 @@ export function generateIdealTeam(
     // Define different groups of candidates based on performance and style preferences.
     const getPerformanceGroups = (candidates: CandidatePlayer[]) => ({
         hotStreaks: candidates.filter(p => p.performance.isHotStreak),
-        promising: candidates.filter(p => p.performance.isPromising && p.performance.stats.matches > 0),
-        unratedPromising: candidates.filter(p => p.performance.isPromising && p.performance.stats.matches === 0),
+        promisingWithRatings: candidates.filter(p => p.performance.isPromising && p.performance.stats.matches > 0),
+        promisingUnrated: candidates.filter(p => p.performance.isPromising && p.performance.stats.matches === 0),
         others: candidates,
     });
 
     const findSubstitute = (candidates: CandidatePlayer[]) => {
       const groups = getPerformanceGroups(candidates);
-      return findBestPlayer(groups.hotStreaks) || findBestPlayer(groups.promising) || findBestPlayer(groups.unratedPromising) || findBestPlayer(groups.others);
+      return findBestPlayer(groups.hotStreaks) || 
+             findBestPlayer(groups.promisingWithRatings) ||
+             findBestPlayer(groups.promisingUnrated) || 
+             findBestPlayer(groups.others);
     }
 
 
