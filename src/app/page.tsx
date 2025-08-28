@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 import { AddRatingDialog, type FormValues as AddRatingFormValues } from '@/components/add-rating-dialog';
+import { AddPlayerDialog, type FormValues as AddPlayerFormValues } from '@/components/add-player-dialog';
 import { EditCardDialog, type FormValues as EditCardFormValues } from '@/components/edit-card-dialog';
 import { EditPlayerDialog, type FormValues as EditPlayerFormValues } from '@/components/edit-player-dialog';
 import { AddFormationDialog, type AddFormationFormValues } from '@/components/add-formation-dialog';
@@ -47,7 +48,8 @@ export default function Home() {
     players, 
     playersByPosition, 
     loading: playersLoading, 
-    error: playersError, 
+    error: playersError,
+    addPlayer,
     addRating,
     editCard,
     editPlayer,
@@ -74,6 +76,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<string>('DC');
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddRatingDialogOpen, setAddRatingDialogOpen] = useState(false);
+  const [isAddPlayerDialogOpen, setAddPlayerDialogOpen] = useState(false);
   const [isAddFormationDialogOpen, setAddFormationDialogOpen] = useState(false);
   const [isEditFormationDialogOpen, setEditFormationDialogOpen] = useState(false);
   const [isAddMatchDialogOpen, setAddMatchDialogOpen] = useState(false);
@@ -200,7 +203,6 @@ export default function Home() {
   
   const handleFormationSelectionChange = (id: string) => {
     setSelectedFormationId(id);
-    setIdealTeam([]); // Clear team when formation changes
   };
   
   const handleGoToIdealTeam = (formationId: string) => {
@@ -262,7 +264,7 @@ export default function Home() {
     setCardFilter('all');
   };
   
-  const getHeaderButton = () => {
+  const getHeaderButtons = () => {
     switch(activeTab) {
       case 'formations':
         return (
@@ -275,10 +277,16 @@ export default function Home() {
         return null;
       default:
         return (
-          <Button onClick={() => handleOpenAddRating({ position: activeTab as Position })}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Añadir Valoración
-          </Button>
+          <>
+            <Button variant="outline" onClick={() => setAddPlayerDialogOpen(true)}>
+              <NotebookPen className="mr-2 h-4 w-4" />
+              Añadir Jugador
+            </Button>
+            <Button onClick={() => handleOpenAddRating({ position: activeTab as Position })}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Añadir Valoración
+            </Button>
+          </>
         );
     }
   };
@@ -320,6 +328,12 @@ export default function Home() {
         onAddRating={addRating}
         players={allPlayers}
         initialData={addDialogInitialData}
+      />
+      <AddPlayerDialog
+        open={isAddPlayerDialogOpen}
+        onOpenChange={setAddPlayerDialogOpen}
+        onAddPlayer={addPlayer}
+        players={allPlayers}
       />
       <AddFormationDialog
         open={isAddFormationDialogOpen}
@@ -388,7 +402,7 @@ export default function Home() {
                 <Download className="mr-2 h-4 w-4" />
                 Descargar Backup
             </Button>
-            {getHeaderButton()}
+            {getHeaderButtons()}
           </div>
         </div>
       </header>
@@ -578,3 +592,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

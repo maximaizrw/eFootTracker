@@ -3,10 +3,10 @@
 
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDoc, getDocs } from 'firebase/firestore';
+import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDoc, getDocs, setDoc } from 'firebase/firestore';
 import { useToast } from './use-toast';
 import { v4 as uuidv4 } from 'uuid';
-import type { Player, PlayerCard, Position, PlayersByPosition, AddRatingFormValues, EditCardFormValues, EditPlayerFormValues } from '@/lib/types';
+import type { Player, PlayerCard, Position, PlayersByPosition, AddRatingFormValues, EditCardFormValues, EditPlayerFormValues, AddPlayerFormValues } from '@/lib/types';
 import { positions } from '@/lib/types';
 import { normalizeText } from '@/lib/utils';
 
@@ -95,6 +95,55 @@ export function usePlayers() {
       setPlayersByPosition(grouped);
     }
   }, [players]);
+  
+  const addPlayer = async (values: AddPlayerFormValues) => {
+    const { playerName, cardName, style, imageUrl } = values;
+    let { playerId } = values;
+
+    try {
+      if (!playerId) {
+        const normalizedPlayerName = normalizeText(playerName);
+        const existingPlayer = players.find(p => normalizeText(p.name) === normalizedPlayerName);
+        if (existingPlayer) {
+          playerId = existingPlayer.id;
+        }
+      }
+
+      const newCard: PlayerCard = {
+        id: uuidv4(),
+        name: cardName,
+        style: style,
+        imageUrl: imageUrl || '',
+        ratingsByPosition: {}, // No ratings initially
+      };
+
+      if (playerId) {
+        // Player exists, add a new card to them
+        const playerRef = doc(db, 'players', playerId);
+        const playerDoc = await getDoc(playerRef);
+        if (!playerDoc.exists()) throw new Error("Player not found");
+        
+        const playerData = playerDoc.data() as Player;
+        const newCards: PlayerCard[] = [...(playerData.cards || []), newCard];
+        
+        await updateDoc(playerRef, { cards: newCards });
+        toast({ title: "Carta Añadida", description: `Nueva carta "${cardName}" añadida a ${playerName}.` });
+
+      } else {
+        // Player is new, create a new document
+        const newPlayerDoc = {
+          name: playerName,
+          cards: [newCard],
+        };
+        await addDoc(collection(db, 'players'), newPlayerDoc);
+        toast({ title: "Jugador Añadido", description: `${playerName} ha sido añadido a tu club.` });
+      }
+    } catch (error) {
+      console.error("Error adding player/card: ", error);
+      toast({ variant: "destructive", title: "Error al Guardar", description: "No se pudo guardar el jugador/carta." });
+    }
+  };
+
 
   const addRating = async (values: AddRatingFormValues) => {
     const { playerName, cardName, position, rating, style } = values;
@@ -249,5 +298,7 @@ export function usePlayers() {
     }
   };
 
-  return { players, playersByPosition, loading, error, addRating, editCard, editPlayer, deletePlayer, deleteCard, deleteRating, downloadBackup };
+  return { players, playersByPosition, loading, error, addPlayer, addRating, editCard, editPlayer, deletePlayer, deleteCard, deleteRating, downloadBackup };
 }
+
+    

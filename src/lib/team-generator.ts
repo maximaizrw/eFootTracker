@@ -28,8 +28,19 @@ export function generateIdealTeam(
   // Create a flat list of all possible player-card-position combinations
   const allPlayerCandidates: CandidatePlayer[] = players.flatMap(player =>
     (player.cards || []).flatMap(card => {
-      const positionsWithRatings = Object.keys(card.ratingsByPosition || {}) as Position[];
-      
+      // Create a set of all positions a player can play, even if they have 0 ratings.
+      const allPossiblePositions = new Set<Position>(Object.keys(card.ratingsByPosition || {}) as Position[]);
+      if (allPossiblePositions.size === 0) {
+        // If a card has no rated positions, we can't use it.
+        // Or we could make it available for all positions with a 0 rating.
+        // For now, let's assume it can't be used if it has no ratings at all.
+        // A player added with no ratings should be available though.
+        // The problem is that we dont know which positions a player can play if they have no ratings.
+        // Let's assume for now that if a card has NO ratings at all, it's not a candidate.
+        // A card with an empty ratingsByPosition will be skipped. A card with a position with an empty array will be processed.
+      }
+
+
       const isVersatile = (() => {
         const highPerfPositions = new Set<Position>();
         for (const p in card.ratingsByPosition) {
@@ -44,10 +55,29 @@ export function generateIdealTeam(
         }
         return highPerfPositions.size >= 3;
       })();
+      
+      const positionsWithRatings = Object.keys(card.ratingsByPosition || {}) as Position[];
+
+      // If a card has no positions with ratings, we can't generate stats.
+      // But we still want to consider the player.
+      // Let's create a candidate with 0 rating for *every* position in the formation.
+      if (positionsWithRatings.length === 0) {
+          return formation.slots.map(slot => {
+            const stats = calculateStats([]);
+            const performance: PlayerPerformance = {
+              stats, isHotStreak: false, isConsistent: false, isPromising: false, isVersatile: false,
+            };
+            return {
+              player, card, position: slot.position, average: 0, performance,
+            }
+          })
+      }
+
 
       return positionsWithRatings.map(pos => {
         const ratings = card.ratingsByPosition![pos]!;
-        if (ratings.length === 0) return null;
+        // A player can have a position key with an empty array.
+        // if (ratings.length === 0) return null;
         
         const stats = calculateStats(ratings);
         const recentRatings = ratings.slice(-3);
@@ -57,7 +87,7 @@ export function generateIdealTeam(
             stats,
             isHotStreak: stats.matches >= 3 && recentStats.average > stats.average + 0.5,
             isConsistent: stats.matches >= 5 && stats.stdDev < 0.5,
-            isPromising: stats.matches < 10, // A player is promising if they have less than 10 matches
+            isPromising: stats.matches < 10,
             isVersatile: isVersatile,
         };
 
@@ -138,21 +168,26 @@ export function generateIdealTeam(
     // Define different groups of candidates based on performance and style preferences.
     const getPerformanceGroups = (candidates: CandidatePlayer[]) => ({
         hotStreaks: candidates.filter(p => p.performance.isHotStreak),
-        promising: candidates.filter(p => p.performance.isPromising), // Players with < 10 matches
+        promising: candidates.filter(p => p.performance.isPromising && p.performance.stats.matches > 0),
+        unratedPromising: candidates.filter(p => p.performance.isPromising && p.performance.stats.matches === 0),
         others: candidates,
     });
+
+    const findSubstitute = (candidates: CandidatePlayer[]) => {
+      const groups = getPerformanceGroups(candidates);
+      return findBestPlayer(groups.hotStreaks) || findBestPlayer(groups.promising) || findBestPlayer(groups.unratedPromising) || findBestPlayer(groups.others);
+    }
+
 
     // Attempt to find a substitute with the preferred style first.
     if (hasStylePreference) {
         const styleCandidates = positionCandidates.filter(p => formationSlot.styles!.includes(p.card.style));
-        const groups = getPerformanceGroups(styleCandidates);
-        substituteCandidate = findBestPlayer(groups.hotStreaks) || findBestPlayer(groups.promising) || findBestPlayer(groups.others);
+        substituteCandidate = findSubstitute(styleCandidates);
     }
     
     // Fallback: If no style match, find from the general pool for the position.
     if (!substituteCandidate) {
-        const groups = getPerformanceGroups(positionCandidates);
-        substituteCandidate = findBestPlayer(groups.hotStreaks) || findBestPlayer(groups.promising) || findBestPlayer(groups.others);
+        substituteCandidate = findSubstitute(positionCandidates);
     }
 
     if (substituteCandidate) {
@@ -188,3 +223,5 @@ export function generateIdealTeam(
     };
   });
 }
+
+    
