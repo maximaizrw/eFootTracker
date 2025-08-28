@@ -57,7 +57,7 @@ export function generateIdealTeam(
             stats,
             isHotStreak: stats.matches >= 3 && recentStats.average > stats.average + 0.5,
             isConsistent: stats.matches >= 5 && stats.stdDev < 0.5,
-            isPromising: stats.matches < 10,
+            isPromising: stats.matches < 10, // A player is promising if they have less than 10 matches
             isVersatile: isVersatile,
         };
 
@@ -138,7 +138,7 @@ export function generateIdealTeam(
     // Define different groups of candidates based on performance and style preferences.
     const getPerformanceGroups = (candidates: CandidatePlayer[]) => ({
         hotStreaks: candidates.filter(p => p.performance.isHotStreak),
-        promises: candidates.filter(p => p.performance.isPromising),
+        promising: candidates.filter(p => p.performance.isPromising), // Players with < 10 matches
         others: candidates,
     });
 
@@ -146,13 +146,13 @@ export function generateIdealTeam(
     if (hasStylePreference) {
         const styleCandidates = positionCandidates.filter(p => formationSlot.styles!.includes(p.card.style));
         const groups = getPerformanceGroups(styleCandidates);
-        substituteCandidate = findBestPlayer(groups.hotStreaks) || findBestPlayer(groups.promises) || findBestPlayer(groups.others);
+        substituteCandidate = findBestPlayer(groups.hotStreaks) || findBestPlayer(groups.promising) || findBestPlayer(groups.others);
     }
     
     // Fallback: If no style match, find from the general pool for the position.
     if (!substituteCandidate) {
         const groups = getPerformanceGroups(positionCandidates);
-        substituteCandidate = findBestPlayer(groups.hotStreaks) || findBestPlayer(groups.promises) || findBestPlayer(groups.others);
+        substituteCandidate = findBestPlayer(groups.hotStreaks) || findBestPlayer(groups.promising) || findBestPlayer(groups.others);
     }
 
     if (substituteCandidate) {
