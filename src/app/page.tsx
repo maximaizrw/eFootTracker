@@ -474,13 +474,7 @@ export default function Home() {
                 const styleMatch = styleFilter === 'all' || card.style === styleFilter;
                 const cardMatch = cardFilter === 'all' || card.name === cardFilter;
                 
-                // A player is considered "brand new" if they have no ratings across ALL their cards.
-                const totalRatingsForPlayer = player.cards.reduce((total, c) => {
-                    return total + Object.values(c.ratingsByPosition || {}).flat().length;
-                }, 0);
-                const isBrandNewPlayer = totalRatingsForPlayer === 0;
-
-                return searchMatch && styleMatch && cardMatch && (ratingsForPos.length > 0 || isBrandNewPlayer);
+                return searchMatch && styleMatch && cardMatch && ratingsForPos.length > 0;
 
             }).sort((a, b) => {
               // 3. Sort the list
@@ -508,11 +502,19 @@ export default function Home() {
             const totalPages = Math.ceil(filteredPlayerList.length / ITEMS_PER_PAGE);
             
             const allPositionalStyles = new Set<string>();
-            flatPlayerList.forEach(p => p.card.style && allPositionalStyles.add(p.card.style));
+            flatPlayerList.forEach(p => {
+              if (p.ratingsForPos.length > 0 && p.card.style) {
+                allPositionalStyles.add(p.card.style)
+              }
+            });
             const uniqueStyles = ['all', ...Array.from(allPositionalStyles)];
             
             const allPositionalCards = new Set<string>();
-            flatPlayerList.forEach(p => allPositionalCards.add(p.card.name));
+            flatPlayerList.forEach(p => {
+              if (p.ratingsForPos.length > 0) {
+                allPositionalCards.add(p.card.name)
+              }
+            });
             const uniqueCardNames = ['all', ...Array.from(allPositionalCards)];
 
             return (
@@ -599,7 +601,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
-
-    
