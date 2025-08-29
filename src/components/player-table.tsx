@@ -8,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PlusCircle, Trash2, X, Wrench, Pencil, LineChart, Search, Zap, TrendingUp, Gem, Repeat } from 'lucide-react';
+import { PlusCircle, Trash2, X, Wrench, Pencil, LineChart, Search, Zap, TrendingUp, Gem, Repeat, NotebookPen } from 'lucide-react';
 import { cn, formatAverage, getAverageColorClass } from '@/lib/utils';
 import { getCardStyle } from '@/lib/card-styles';
 import type { Player, PlayerCard, Position, FlatPlayer, PlayerPerformance } from '@/lib/types';
@@ -206,7 +206,7 @@ export function PlayerTable({
       </TableHeader>
       <TableBody>
         {flatPlayers.map((flatPlayer) => {
-          const { player, card, ratingsForPos, performance } = flatPlayer;
+          const { player, card, ratingsForPos, performance, hasTrainingBuild } = flatPlayer;
           const cardAverage = performance.stats.average;
           const cardMatches = performance.stats.matches;
           const cardStyle = getCardStyle(card.name);
@@ -256,6 +256,16 @@ export function PlayerTable({
                         >
                             {player.name}
                         </button>
+                        {hasTrainingBuild && (
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <NotebookPen className="h-4 w-4 text-accent" />
+                                    </TooltipTrigger>
+                                    <TooltipContent><p>Build de Entrenamiento Guardada</p></TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        )}
                         <PerformanceBadges performance={performance} />
                         <TooltipProvider>
                            <Tooltip>

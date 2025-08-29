@@ -442,6 +442,8 @@ export default function Home() {
                            if (posAvg >= 7.5) highPerfPositions.add(positionKey);
                         }
                     }
+                    
+                    const hasBuildForPos = !!(card.trainingBuilds?.[pos] && Object.keys(card.trainingBuilds[pos]!).length > 0);
 
                     const performance: PlayerPerformance = {
                         stats,
@@ -451,7 +453,7 @@ export default function Home() {
                         isVersatile: highPerfPositions.size >= 3,
                     };
 
-                    return { player, card, ratingsForPos, performance };
+                    return { player, card, ratingsForPos, performance, hasTrainingBuild: hasBuildForPos };
                 })
             );
             

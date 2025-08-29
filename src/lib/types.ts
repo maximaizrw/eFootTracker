@@ -167,4 +167,5 @@ export type FlatPlayer = {
   card: PlayerCardType;
   ratingsForPos: number[];
   performance: PlayerPerformance;
+  hasTrainingBuild: boolean;
 };
