@@ -54,6 +54,7 @@ export default function Home() {
     deleteCard,
     deleteRating,
     downloadBackup: downloadPlayersBackup,
+    saveTrainingBuild,
   } = usePlayers();
 
   const {
@@ -352,6 +353,7 @@ export default function Home() {
         open={isPlayerDetailDialogOpen}
         onOpenChange={setPlayerDetailDialogOpen}
         player={selectedPlayerForDetail}
+        onSaveTrainingBuild={saveTrainingBuild}
       />
       <AlertDialog open={isImageViewerOpen} onOpenChange={setImageViewerOpen}>
         <AlertDialogContent className="max-w-xl p-0">
@@ -454,14 +456,16 @@ export default function Home() {
             );
             
             // 2. Filter the list
-            const filteredPlayerList = flatPlayerList.filter(({ player, card, ratingsForPos }) => {
+            const filteredPlayerList = flatPlayerList.filter(({ ratingsForPos }) => {
+                // This is the strict filter: only show if there are ratings for this specific position.
+                return ratingsForPos.length > 0;
+
+            }).filter(({ player, card }) => {
                 const searchMatch = normalizeText(player.name).includes(normalizeText(searchTerm));
                 const styleMatch = styleFilter === 'all' || card.style === styleFilter;
                 const cardMatch = cardFilter === 'all' || card.name === cardFilter;
-                
-                // This is the strict filter: only show if there are ratings for this specific position.
-                return searchMatch && styleMatch && cardMatch && ratingsForPos.length > 0;
-
+                return searchMatch && styleMatch && cardMatch;
+            
             }).sort((a, b) => {
               // 3. Sort the list
               const avgA = a.performance.stats.average;

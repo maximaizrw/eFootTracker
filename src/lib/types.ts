@@ -8,6 +8,17 @@ export type PlayerStyle = typeof playerStyles[number];
 export const positions = ['PT', 'DFC', 'LI', 'LD', 'MCD', 'MC', 'MDI', 'MDD', 'MO', 'EXI', 'EXD', 'SD', 'DC'] as const;
 export type Position = typeof positions[number];
 
+export const trainingAttributes = [
+    'Shooting', 'Passing', 'Dribbling', 'Dexterity', 
+    'Lower Body Strength', 'Aerial Strength', 'Defending', 
+    'GK 1', 'GK 2', 'GK 3'
+] as const;
+export type TrainingAttribute = typeof trainingAttributes[number];
+
+export type TrainingBuild = {
+    [key in TrainingAttribute]?: number;
+};
+
 export type PositionGroup = 'Goalkeeper' | 'Defender' | 'Midfielder' | 'Forward';
 
 export type PlayerCard = {
@@ -16,6 +27,7 @@ export type PlayerCard = {
   style: PlayerStyle;
   imageUrl?: string;
   ratingsByPosition: { [key in Position]?: number[] };
+  trainingBuilds?: { [key in Position]?: TrainingBuild };
 };
 
 export type Player = {

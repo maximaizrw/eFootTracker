@@ -6,7 +6,7 @@ import { db } from '@/lib/firebase';
 import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDoc, getDocs, setDoc } from 'firebase/firestore';
 import { useToast } from './use-toast';
 import { v4 as uuidv4 } from 'uuid';
-import type { Player, PlayerCard, Position, PlayersByPosition, AddRatingFormValues, EditCardFormValues, EditPlayerFormValues } from '@/lib/types';
+import type { Player, PlayerCard, Position, PlayersByPosition, AddRatingFormValues, EditCardFormValues, EditPlayerFormValues, TrainingBuild } from '@/lib/types';
 import { positions } from '@/lib/types';
 import { normalizeText } from '@/lib/utils';
 
@@ -37,7 +37,8 @@ export function usePlayers() {
                     id: card.id || uuidv4(), // Ensure card has an ID
                     style: card.style || 'Ninguno',
                     imageUrl: card.imageUrl || '',
-                    ratingsByPosition: card.ratingsByPosition || {}
+                    ratingsByPosition: card.ratingsByPosition || {},
+                    trainingBuilds: card.trainingBuilds || {}
                 })),
             } as Player;
         });
@@ -102,14 +103,28 @@ export function usePlayers() {
           if (!card.ratingsByPosition[position]) card.ratingsByPosition[position] = [];
           card.ratingsByPosition[position]!.push(rating);
         } else {
-          card = { id: uuidv4(), name: cardName, style: style, imageUrl: '', ratingsByPosition: { [position]: [rating] } };
+          card = { 
+              id: uuidv4(), 
+              name: cardName, 
+              style: style, 
+              imageUrl: '', 
+              ratingsByPosition: { [position]: [rating] },
+              trainingBuilds: {}
+          };
           newCards.push(card);
         }
         await updateDoc(playerRef, { cards: newCards });
       } else {
         const newPlayer = {
           name: playerName,
-          cards: [{ id: uuidv4(), name: cardName, style: style, imageUrl: '', ratingsByPosition: { [position]: [rating] } }],
+          cards: [{ 
+              id: uuidv4(), 
+              name: cardName, 
+              style: style, 
+              imageUrl: '', 
+              ratingsByPosition: { [position]: [rating] },
+              trainingBuilds: {}
+          }],
         };
         await addDoc(collection(db, 'players'), newPlayer);
       }
@@ -224,6 +239,30 @@ export function usePlayers() {
         toast({ variant: "destructive", title: "Error al Eliminar", description: "No se pudo eliminar la valoración." });
     }
   };
+  
+  const saveTrainingBuild = async (playerId: string, cardId: string, position: Position, build: TrainingBuild) => {
+     if (!db) return;
+    const player = players.find(p => p.id === playerId);
+    if (!player) return;
+
+    const newCards = JSON.parse(JSON.stringify(player.cards)) as PlayerCard[];
+    const cardToUpdate = newCards.find(c => c.id === cardId);
+
+    if (cardToUpdate) {
+        if (!cardToUpdate.trainingBuilds) {
+            cardToUpdate.trainingBuilds = {};
+        }
+        cardToUpdate.trainingBuilds[position] = build;
+        
+        try {
+            await updateDoc(doc(db, 'players', playerId), { cards: newCards });
+            // The toast is handled in the component for better UX
+        } catch (error) {
+            console.error("Error saving training build: ", error);
+            toast({ variant: "destructive", title: "Error al Guardar", description: "No se pudo guardar la build de entrenamiento." });
+        }
+    }
+  };
 
   const downloadBackup = async () => {
     if (!db) return null;
@@ -240,5 +279,5 @@ export function usePlayers() {
     }
   };
 
-  return { players, loading, error, addRating, editCard, editPlayer, deletePlayer, deleteCard, deleteRating, downloadBackup };
+  return { players, loading, error, addRating, editCard, editPlayer, deletePlayer, deleteCard, deleteRating, saveTrainingBuild, downloadBackup };
 }
