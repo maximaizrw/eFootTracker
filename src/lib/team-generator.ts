@@ -67,6 +67,7 @@ export function generateIdealTeam(
   );
 
   const usedPlayerIds = new Set<string>();
+  const usedCardIds = new Set<string>();
   const finalTeamSlots: IdealTeamSlot[] = [];
 
   const createTeamPlayer = (candidate: CandidatePlayer | undefined, assignedPosition: Position): IdealTeamPlayer | null => {
@@ -82,7 +83,7 @@ export function generateIdealTeam(
 
   // Finds the best player from a list of candidates who hasn't been used yet.
   const findBestPlayer = (candidates: CandidatePlayer[]): CandidatePlayer | undefined => {
-      return candidates.find(p => !usedPlayerIds.has(p.player.id) && !discardedCardIds.has(p.card.id));
+      return candidates.find(p => !usedPlayerIds.has(p.player.id) && !usedCardIds.has(p.card.id) && !discardedCardIds.has(p.card.id));
   };
   
   // --- STARTER SELECTION ---
@@ -109,6 +110,7 @@ export function generateIdealTeam(
     
     if (starterCandidate) {
       usedPlayerIds.add(starterCandidate.player.id);
+      usedCardIds.add(starterCandidate.card.id);
     }
     
     finalTeamSlots.push({
@@ -129,18 +131,14 @@ export function generateIdealTeam(
 
     let substituteCandidate: CandidatePlayer | undefined;
     
-    // Define different groups of candidates based on performance and style preferences.
-    const getPerformanceGroups = (candidates: CandidatePlayer[]) => ({
-        hotStreaks: candidates.filter(p => p.performance.isHotStreak),
-        promising: candidates.filter(p => p.performance.isPromising),
-        others: candidates.filter(p => !p.performance.isHotStreak && !p.performance.isPromising),
-    });
-
     const findSubstitute = (candidates: CandidatePlayer[]) => {
-      const groups = getPerformanceGroups(candidates);
-      return findBestPlayer(groups.hotStreaks) || 
-             findBestPlayer(groups.promising) ||
-             findBestPlayer(groups.others);
+        const hotStreaks = candidates.filter(p => p.performance.isHotStreak);
+        const promising = candidates.filter(p => p.performance.isPromising);
+        const others = candidates.filter(p => !p.performance.isHotStreak && !p.performance.isPromising);
+
+        return findBestPlayer(hotStreaks) || 
+               findBestPlayer(promising) ||
+               findBestPlayer(others);
     }
 
     // Attempt to find a substitute with the preferred style first.
@@ -156,6 +154,7 @@ export function generateIdealTeam(
 
     if (substituteCandidate) {
       usedPlayerIds.add(substituteCandidate.player.id);
+      usedCardIds.add(substituteCandidate.card.id);
     }
     
     slot.substitute = createTeamPlayer(substituteCandidate, formationSlot.position);
