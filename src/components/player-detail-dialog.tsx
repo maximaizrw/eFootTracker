@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts';
-import type { Player, Position, PlayerCard as PlayerCardType, TrainingBuild, TrainingAttribute } from "@/lib/types";
+import type { Player, Position, PlayerCard as PlayerCardType, TrainingBuild, TrainingAttribute, FlatPlayer } from "@/lib/types";
 import { trainingAttributes } from "@/lib/types";
 import {
   Dialog,
@@ -23,7 +23,7 @@ import { Slider } from "./ui/slider";
 type PlayerDetailDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  player: Player | null;
+  flatPlayer: FlatPlayer | null;
   onSaveTrainingBuild: (playerId: string, cardId: string, position: Position, build: TrainingBuild) => void;
 };
 
@@ -78,8 +78,7 @@ const TrainingBuildEditor = ({ build: initialBuild, onSave, onCancel }: { build:
 };
 
 
-export function PlayerDetailDialog({ open, onOpenChange, player, onSaveTrainingBuild }: PlayerDetailDialogProps) {
-  const [selectedCardId, setSelectedCardId] = React.useState<string | undefined>();
+export function PlayerDetailDialog({ open, onOpenChange, flatPlayer, onSaveTrainingBuild }: PlayerDetailDialogProps) {
   const [selectedPosition, setSelectedPosition] = React.useState<Position | undefined>();
   const [isEditingBuild, setIsEditingBuild] = React.useState(false);
   
@@ -87,26 +86,24 @@ export function PlayerDetailDialog({ open, onOpenChange, player, onSaveTrainingB
   
   // Reset state when dialog opens or player changes
   React.useEffect(() => {
-    if (open && player && player.cards.length > 0) {
-      const firstCard = player.cards[0];
-      setSelectedCardId(firstCard.id);
-      
-      const firstPos = Object.keys(firstCard.ratingsByPosition || {})[0] as Position | undefined;
+    if (open && flatPlayer) {
+      const card = flatPlayer.card;
+      const firstPos = Object.keys(card.ratingsByPosition || {})[0] as Position | undefined;
       setSelectedPosition(firstPos || 'DC'); // Default to DC if no ratings
     } else {
-      setSelectedCardId(undefined);
       setSelectedPosition(undefined);
     }
     setIsEditingBuild(false);
-  }, [open, player]);
+  }, [open, flatPlayer]);
 
 
   const performanceData = React.useMemo(() => {
-    if (!player) return [];
+    if (!flatPlayer) return [];
     
     const performanceMap = new Map<Position, { total: number; count: number }>();
-    
-    player.cards.forEach(card => {
+    const allCardsFromPlayer = flatPlayer.player.cards;
+
+    allCardsFromPlayer.forEach(card => {
       for (const pos in card.ratingsByPosition) {
         const position = pos as Position;
         const ratings = card.ratingsByPosition[position];
@@ -127,15 +124,16 @@ export function PlayerDetailDialog({ open, onOpenChange, player, onSaveTrainingB
       matches: data.count,
     })).sort((a, b) => b.average - a.average);
     
-  }, [player]);
+  }, [flatPlayer]);
 
-  const selectedPlayerCard = player?.cards.find(c => c.id === selectedCardId);
-  const currentBuild = (selectedCardId && selectedPosition && selectedPlayerCard?.trainingBuilds?.[selectedPosition]) || {};
-  const availablePositions = Array.from(new Set(player?.cards.flatMap(c => Object.keys(c.ratingsByPosition || {})) || ['DC'])) as Position[];
+  const card = flatPlayer?.card;
+  const player = flatPlayer?.player;
+  const currentBuild = (card && selectedPosition && card.trainingBuilds?.[selectedPosition]) || {};
+  const availablePositions = Array.from(new Set(card?.ratingsByPosition ? Object.keys(card.ratingsByPosition) : ['DC'])) as Position[];
 
   const handleSave = (newBuild: TrainingBuild) => {
-    if (player && selectedCardId && selectedPosition) {
-      onSaveTrainingBuild(player.id, selectedCardId, selectedPosition, newBuild);
+    if (player && card && selectedPosition) {
+      onSaveTrainingBuild(player.id, card.id, selectedPosition, newBuild);
       setIsEditingBuild(false);
     }
   };
@@ -144,7 +142,7 @@ export function PlayerDetailDialog({ open, onOpenChange, player, onSaveTrainingB
     <Dialog open={open} onOpenChange={(isOpen) => { onOpenChange(isOpen); if (!isOpen) setIsEditingBuild(false); }}>
       <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
-          <DialogTitle>Estadísticas de {player?.name}</DialogTitle>
+          <DialogTitle>Estadísticas de {player?.name} <span className="text-muted-foreground">({card?.name})</span></DialogTitle>
           <DialogDescription>
             Análisis detallado del rendimiento y la progresión de entrenamiento del jugador.
           </DialogDescription>
@@ -189,22 +187,9 @@ export function PlayerDetailDialog({ open, onOpenChange, player, onSaveTrainingB
                 <CardTitle>Build de Entrenamiento</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   <div>
-                    <Label>Carta</Label>
-                    <Select value={selectedCardId} onValueChange={setSelectedCardId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecciona una carta" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {player?.cards.map(card => (
-                          <SelectItem key={card.id} value={card.id}>{card.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Posición</Label>
+                    <Label>Posición de la Build</Label>
                     <Select value={selectedPosition} onValueChange={(v) => setSelectedPosition(v as Position)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecciona una posición" />
@@ -245,3 +230,5 @@ export function PlayerDetailDialog({ open, onOpenChange, player, onSaveTrainingB
     </Dialog>
   );
 }
+
+    

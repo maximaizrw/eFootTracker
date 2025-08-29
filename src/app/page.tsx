@@ -88,7 +88,7 @@ export default function Home() {
   const [editCardDialogInitialData, setEditCardDialogInitialData] = useState<EditCardFormValues | undefined>(undefined);
   const [editPlayerDialogInitialData, setEditPlayerDialogInitialData] = useState<EditPlayerFormValues | undefined>(undefined);
   const [editFormationDialogInitialData, setEditFormationDialogInitialData] = useState<FormationStats | undefined>(undefined);
-  const [selectedPlayerForDetail, setSelectedPlayerForDetail] = useState<Player | null>(null);
+  const [selectedFlatPlayer, setSelectedFlatPlayer] = useState<FlatPlayer | null>(null);
   
   const [selectedFormationId, setSelectedFormationId] = useState<string | undefined>(undefined);
   const [idealTeam, setIdealTeam] = useState<IdealTeamSlot[]>([]);
@@ -145,8 +145,8 @@ export default function Home() {
     setEditPlayerDialogOpen(true);
   };
 
-  const handleOpenPlayerDetail = (player: Player) => {
-    setSelectedPlayerForDetail(player);
+  const handleOpenPlayerDetail = (flatPlayer: FlatPlayer) => {
+    setSelectedFlatPlayer(flatPlayer);
     setPlayerDetailDialogOpen(true);
   };
   
@@ -352,7 +352,7 @@ export default function Home() {
       <PlayerDetailDialog
         open={isPlayerDetailDialogOpen}
         onOpenChange={setPlayerDetailDialogOpen}
-        player={selectedPlayerForDetail}
+        flatPlayer={selectedFlatPlayer}
         onSaveTrainingBuild={saveTrainingBuild}
       />
       <AlertDialog open={isImageViewerOpen} onOpenChange={setImageViewerOpen}>
@@ -526,7 +526,6 @@ export default function Home() {
                     <PlayerTable
                       players={paginatedPlayers}
                       position={pos}
-                      searchTerm={searchTerm}
                       onOpenAddRating={handleOpenAddRating}
                       onOpenEditCard={handleOpenEditCard}
                       onOpenEditPlayer={handleOpenEditPlayer}
@@ -591,3 +590,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

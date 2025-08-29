@@ -17,11 +17,10 @@ import type { FormValues as AddRatingFormValues } from '@/components/add-rating-
 type PlayerTableProps = {
   players: FlatPlayer[];
   position: Position;
-  searchTerm: string;
   onOpenAddRating: (initialData?: Partial<AddRatingFormValues>) => void;
   onOpenEditCard: (player: Player, card: PlayerCard) => void;
   onOpenEditPlayer: (player: Player) => void;
-  onOpenPlayerDetail: (player: Player) => void;
+  onOpenPlayerDetail: (flatPlayer: FlatPlayer) => void;
   onViewImage: (url: string, name: string) => void;
   onDeletePlayer: (playerId: string) => void;
   onDeleteCard: (playerId: string, cardId: string, position: Position) => void;
@@ -168,9 +167,8 @@ const PerformanceBadges = ({ performance }: { performance: PlayerPerformance }) 
 }
 
 export function PlayerTable({
-  players,
+  players: flatPlayers,
   position,
-  searchTerm,
   onOpenAddRating,
   onOpenEditCard,
   onOpenEditPlayer,
@@ -181,14 +179,14 @@ export function PlayerTable({
   onDeleteRating,
 }: PlayerTableProps) {
   
-  if (players.length === 0) {
+  if (flatPlayers.length === 0) {
     return (
       <div className="col-span-full flex flex-col items-center justify-center text-center p-10">
         <p className="text-lg font-medium text-muted-foreground">
-          {searchTerm ? `No se encontraron jugadores para "${searchTerm}" en ${position}.` : `Todavía no hay jugadores en la posición de ${position}.`}
+          {`Todavía no hay jugadores en la posición de ${position}.`}
         </p>
         <p className="text-sm text-muted-foreground">
-          {searchTerm ? "Intenta con otro nombre o borra la búsqueda." : "¡Haz clic en 'Añadir Valoración' para empezar!"}
+          {"¡Haz clic en 'Añadir Valoración' para empezar!"}
         </p>
       </div>
     );
@@ -207,7 +205,8 @@ export function PlayerTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {players.map(({ player, card, ratingsForPos, performance }) => {
+        {flatPlayers.map((flatPlayer) => {
+          const { player, card, ratingsForPos, performance } = flatPlayer;
           const cardAverage = performance.stats.average;
           const cardMatches = performance.stats.matches;
           const cardStyle = getCardStyle(card.name);
@@ -252,7 +251,7 @@ export function PlayerTable({
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                         <button 
-                            onClick={() => onOpenPlayerDetail(player)}
+                            onClick={() => onOpenPlayerDetail(flatPlayer)}
                             className="font-medium text-base hover:underline"
                         >
                             {player.name}
@@ -319,7 +318,7 @@ export function PlayerTable({
                           size="icon"
                           className="h-8 w-8 rounded-full"
                           aria-label={`Ver estadísticas de ${player.name}`}
-                          onClick={() => onOpenPlayerDetail(player)}
+                          onClick={() => onOpenPlayerDetail(flatPlayer)}
                       >
                           <LineChart className="h-4 w-4 text-accent/80 hover:text-accent" />
                       </Button>
@@ -381,3 +380,5 @@ export function PlayerTable({
 
 PlayerTable.Filters = Filters;
 PlayerTable.Pagination = Pagination;
+
+    
