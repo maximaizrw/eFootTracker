@@ -9,9 +9,9 @@ export const positions = ['PT', 'DFC', 'LI', 'LD', 'MCD', 'MC', 'MDI', 'MDD', 'M
 export type Position = typeof positions[number];
 
 export const trainingAttributes = [
-    'Shooting', 'Passing', 'Dribbling', 'Dexterity', 
-    'Lower Body Strength', 'Aerial Strength', 'Defending', 
-    'GK 1', 'GK 2', 'GK 3'
+    'shooting', 'passing', 'dribbling', 'dexterity', 
+    'lower_body_strength', 'aerial_strength', 'defending', 
+    'gk_1', 'gk_2', 'gk_3'
 ] as const;
 export type TrainingAttribute = typeof trainingAttributes[number];
 
@@ -159,7 +159,7 @@ export type PlayerPerformance = {
     isHotStreak: boolean;
     isConsistent: boolean;
     isPromising: boolean;
-isVersatile: boolean;
+    isVersatile: boolean;
 };
 
 export type FlatPlayer = {
