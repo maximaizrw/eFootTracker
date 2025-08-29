@@ -137,23 +137,26 @@ export function usePlayers() {
 
   const editCard = async (values: EditCardFormValues) => {
     if (!db) return;
-    const player = players.find(p => p.id === values.playerId);
-    if (!player) return;
+    const playerRef = doc(db, 'players', values.playerId);
+    try {
+      const playerDoc = await getDoc(playerRef);
+      if (!playerDoc.exists()) throw new Error("Player not found");
+      
+      const playerData = playerDoc.data() as Player;
+      const newCards = JSON.parse(JSON.stringify(playerData.cards || [])) as PlayerCard[];
+      const cardToUpdate = newCards.find(c => c.id === values.cardId);
 
-    const newCards = JSON.parse(JSON.stringify(player.cards)) as PlayerCard[];
-    const cardToUpdate = newCards.find(c => c.id === values.cardId);
-
-    if (cardToUpdate) {
-        cardToUpdate.name = values.currentCardName;
-        cardToUpdate.style = values.currentStyle;
-        cardToUpdate.imageUrl = values.imageUrl || '';
-        try {
-            await updateDoc(doc(db, 'players', values.playerId), { cards: newCards });
-            toast({ title: "Carta Actualizada", description: "Los datos de la carta se han actualizado." });
-        } catch (error) {
-            console.error("Error updating card: ", error);
-            toast({ variant: "destructive", title: "Error al Actualizar", description: "No se pudieron guardar los cambios." });
-        }
+      if (cardToUpdate) {
+          cardToUpdate.name = values.currentCardName;
+          cardToUpdate.style = values.currentStyle;
+          cardToUpdate.imageUrl = values.imageUrl || '';
+          
+          await updateDoc(playerRef, { cards: newCards });
+          toast({ title: "Carta Actualizada", description: "Los datos de la carta se han actualizado." });
+      }
+    } catch (error) {
+      console.error("Error updating card: ", error);
+      toast({ variant: "destructive", title: "Error al Actualizar", description: "No se pudieron guardar los cambios." });
     }
   };
 
@@ -181,33 +184,33 @@ export function usePlayers() {
 
   const deleteCard = async (playerId: string, cardId: string, position: Position) => {
     if (!db) return;
-    const player = players.find(p => p.id === playerId);
-    if (!player) return;
-
-    const newCards: PlayerCard[] = JSON.parse(JSON.stringify(player.cards));
-    const cardToUpdate = newCards.find(c => c.id === cardId);
-
-    if (!cardToUpdate?.ratingsByPosition?.[position]) {
-        toast({ variant: "destructive", title: "Error", description: "No se encontraron valoraciones para esta posición." });
-        return;
-    }
-    
-    delete cardToUpdate.ratingsByPosition[position];
-
-    const hasRatingsLeft = Object.keys(cardToUpdate.ratingsByPosition).length > 0;
-    
-    // Only remove the card if it has no ratings left in *any* position
-    const finalCards = hasRatingsLeft ? newCards.map(c => c.id === cardId ? cardToUpdate : c) : newCards.filter(c => c.id !== cardId);
-
+    const playerRef = doc(db, 'players', playerId);
     try {
-        if (finalCards.length === 0) {
-            // If the player has no cards left, delete the player
-            await deleteDoc(doc(db, 'players', playerId));
-            toast({ title: "Jugador Eliminado", description: `Se eliminaron las valoraciones de ${player.name} para ${position}, y como no tenía más cartas, fue eliminado.` });
-        } else {
-            await updateDoc(doc(db, 'players', playerId), { cards: finalCards });
-            toast({ title: "Acción Completada", description: `Se eliminaron las valoraciones de ${player.name} para la posición ${position}.` });
-        }
+      const playerDoc = await getDoc(playerRef);
+      if (!playerDoc.exists()) throw new Error("Player not found");
+      
+      const playerData = playerDoc.data() as Player;
+      const newCards: PlayerCard[] = JSON.parse(JSON.stringify(playerData.cards));
+      const cardToUpdate = newCards.find(c => c.id === cardId);
+
+      if (!cardToUpdate?.ratingsByPosition?.[position]) {
+          toast({ variant: "destructive", title: "Error", description: "No se encontraron valoraciones para esta posición." });
+          return;
+      }
+      
+      delete cardToUpdate.ratingsByPosition[position];
+
+      const hasRatingsLeft = Object.keys(cardToUpdate.ratingsByPosition).length > 0;
+      
+      const finalCards = hasRatingsLeft ? newCards.map(c => c.id === cardId ? cardToUpdate : c) : newCards.filter(c => c.id !== cardId);
+
+      if (finalCards.length === 0) {
+          await deleteDoc(playerRef);
+          toast({ title: "Jugador Eliminado", description: `Se eliminaron las valoraciones de ${playerData.name} para ${position}, y como no tenía más cartas, fue eliminado.` });
+      } else {
+          await updateDoc(playerRef, { cards: finalCards });
+          toast({ title: "Acción Completada", description: `Se eliminaron las valoraciones de ${playerData.name} para la posición ${position}.` });
+      }
     } catch (error) {
         console.error("Error deleting position ratings: ", error);
         toast({ variant: "destructive", title: "Error al Eliminar", description: "No se pudo completar la acción." });
@@ -216,24 +219,23 @@ export function usePlayers() {
 
   const deleteRating = async (playerId: string, cardId: string, position: Position, ratingIndex: number) => {
     if (!db) return;
-    const player = players.find(p => p.id === playerId);
-    if (!player) return;
-
-    const newCards = JSON.parse(JSON.stringify(player.cards)) as PlayerCard[];
-    const card = newCards.find(c => c.id === cardId);
-    
-    if(card?.ratingsByPosition?.[position]) {
-        card.ratingsByPosition[position]!.splice(ratingIndex, 1);
-        if (card.ratingsByPosition[position]!.length === 0) {
-            delete card.ratingsByPosition[position];
-        }
-    } else {
-        return;
-    }
-    
+    const playerRef = doc(db, 'players', playerId);
     try {
-        await updateDoc(doc(db, 'players', playerId), { cards: newCards });
-        toast({ title: "Valoración Eliminada", description: "La valoración ha sido eliminada." });
+      const playerDoc = await getDoc(playerRef);
+      if (!playerDoc.exists()) throw new Error("Player not found");
+      
+      const playerData = playerDoc.data() as Player;
+      const newCards = JSON.parse(JSON.stringify(playerData.cards)) as PlayerCard[];
+      const card = newCards.find(c => c.id === cardId);
+      
+      if(card?.ratingsByPosition?.[position]) {
+          card.ratingsByPosition[position]!.splice(ratingIndex, 1);
+          if (card.ratingsByPosition[position]!.length === 0) {
+              delete card.ratingsByPosition[position];
+          }
+          await updateDoc(playerRef, { cards: newCards });
+          toast({ title: "Valoración Eliminada", description: "La valoración ha sido eliminada." });
+      }
     } catch (error) {
         console.error("Error deleting rating: ", error);
         toast({ variant: "destructive", title: "Error al Eliminar", description: "No se pudo eliminar la valoración." });
@@ -241,26 +243,32 @@ export function usePlayers() {
   };
   
   const saveTrainingBuild = async (playerId: string, cardId: string, position: Position, build: TrainingBuild) => {
-     if (!db) return;
-    const player = players.find(p => p.id === playerId);
-    if (!player) return;
-
-    const newCards = JSON.parse(JSON.stringify(player.cards)) as PlayerCard[];
-    const cardToUpdate = newCards.find(c => c.id === cardId);
-
-    if (cardToUpdate) {
-        if (!cardToUpdate.trainingBuilds) {
-            cardToUpdate.trainingBuilds = {};
+    if (!db) return;
+    const playerRef = doc(db, 'players', playerId);
+    try {
+        const playerDoc = await getDoc(playerRef);
+        if (!playerDoc.exists()) {
+            throw new Error("Player document not found!");
         }
-        cardToUpdate.trainingBuilds[position] = build;
-        
-        try {
-            await updateDoc(doc(db, 'players', playerId), { cards: newCards });
-            // The toast is handled in the component for better UX
-        } catch (error) {
-            console.error("Error saving training build: ", error);
-            toast({ variant: "destructive", title: "Error al Guardar", description: "No se pudo guardar la build de entrenamiento." });
+
+        const playerData = playerDoc.data() as Player;
+        const newCards = JSON.parse(JSON.stringify(playerData.cards || [])) as PlayerCard[];
+        const cardToUpdate = newCards.find(c => c.id === cardId);
+
+        if (cardToUpdate) {
+            if (!cardToUpdate.trainingBuilds) {
+                cardToUpdate.trainingBuilds = {};
+            }
+            cardToUpdate.trainingBuilds[position] = build;
+            
+            await updateDoc(playerRef, { cards: newCards });
+            toast({ title: "Build Guardada", description: "La progresión de entrenamiento se ha guardado correctamente." });
+        } else {
+            throw new Error("Card not found in player data!");
         }
+    } catch (error) {
+        console.error("Error saving training build: ", error);
+        toast({ variant: "destructive", title: "Error al Guardar", description: "No se pudo guardar la build de entrenamiento." });
     }
   };
 

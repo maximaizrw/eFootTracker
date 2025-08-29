@@ -35,8 +35,7 @@ type PerformanceData = {
 
 const TrainingBuildEditor = ({ build: initialBuild, onSave, onCancel }: { build: TrainingBuild, onSave: (newBuild: TrainingBuild) => void, onCancel: () => void }) => {
     const [build, setBuild] = React.useState<TrainingBuild>(initialBuild);
-    const { toast } = useToast();
-
+    
     const handleSliderChange = (attribute: TrainingAttribute, value: number) => {
         setBuild(prev => ({ ...prev, [attribute]: value }));
     };
@@ -45,7 +44,6 @@ const TrainingBuildEditor = ({ build: initialBuild, onSave, onCancel }: { build:
     
     const handleSave = () => {
         onSave(build);
-        toast({ title: "Build Guardada", description: "La progresión de entrenamiento se ha guardado." });
     };
 
     return (
@@ -84,13 +82,24 @@ export function PlayerDetailDialog({ open, onOpenChange, flatPlayer, onSaveTrain
   
   const { toast } = useToast();
   
-  // Reset state when dialog opens or player changes
   React.useEffect(() => {
     if (open && flatPlayer) {
+      // The `flatPlayer` object comes from a specific row in the table,
+      // which corresponds to a specific position. We can get that position from it.
+      // The `position` property is not standard on FlatPlayer, so we cast to `any`.
+      const positionFromTable = (flatPlayer as any).position as Position;
+      
       const card = flatPlayer.card;
-      // When a flat player is passed, it relates to a specific position from the table.
-      // We should default to that position.
-      setSelectedPosition(flatPlayer.performance.stats.matches > 0 ? flatPlayer.ratingsForPos.length > 0 ? (flatPlayer as any).position : Object.keys(card.ratingsByPosition || {})[0] as Position | undefined : undefined);
+      const availablePositions = card.ratingsByPosition ? Object.keys(card.ratingsByPosition) as Position[] : [];
+
+      if (positionFromTable && availablePositions.includes(positionFromTable)) {
+         setSelectedPosition(positionFromTable);
+      } else if (availablePositions.length > 0) {
+         setSelectedPosition(availablePositions[0]);
+      } else {
+         setSelectedPosition(undefined);
+      }
+
     } else {
       setSelectedPosition(undefined);
     }
@@ -101,19 +110,17 @@ export function PlayerDetailDialog({ open, onOpenChange, flatPlayer, onSaveTrain
     if (!flatPlayer) return [];
     
     const performanceMap = new Map<Position, { total: number; count: number }>();
-
-    // We only care about the ratings from the specific card we are viewing
     const card = flatPlayer.card;
+
     if (card && card.ratingsByPosition) {
         for (const pos in card.ratingsByPosition) {
             const position = pos as Position;
             const ratings = card.ratingsByPosition[position];
             if (ratings && ratings.length > 0) {
                 const sum = ratings.reduce((a, b) => a + b, 0);
-                const current = performanceMap.get(position) || { total: 0, count: 0 };
                 performanceMap.set(position, {
-                    total: current.total + sum,
-                    count: current.count + ratings.length,
+                    total: sum,
+                    count: ratings.length,
                 });
             }
         }
@@ -129,15 +136,10 @@ export function PlayerDetailDialog({ open, onOpenChange, flatPlayer, onSaveTrain
 
   const card = flatPlayer?.card;
   const player = flatPlayer?.player;
+  
+  // Directly use flatPlayer.card, as it's the specific card instance
   const currentBuild = (card && selectedPosition && card.trainingBuilds?.[selectedPosition]) || {};
-  const availablePositions = Array.from(new Set(card?.ratingsByPosition ? Object.keys(card.ratingsByPosition) : [])) as Position[];
-
-  React.useEffect(() => {
-      if (availablePositions.length > 0 && !selectedPosition) {
-          setSelectedPosition(availablePositions[0]);
-      }
-  }, [availablePositions, selectedPosition]);
-
+  const availablePositions = card?.ratingsByPosition ? Object.keys(card.ratingsByPosition) as Position[] : [];
 
   const handleSave = (newBuild: TrainingBuild) => {
     if (player && card && selectedPosition) {
